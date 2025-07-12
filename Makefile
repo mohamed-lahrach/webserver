@@ -5,7 +5,6 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 SRC = main.cpp \
       config/parser.cpp \
       server/server.cpp \
-      # Add other .cpp files here
 
 OBJ = $(SRC:.cpp=.o)
 
