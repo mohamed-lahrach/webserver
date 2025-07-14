@@ -10,18 +10,19 @@
 
 class Server
 {
-    public:
-        Server(int port);
-        ~Server();
-        void run();
-
 private:
-        int _port;
-        int _server_fd;
+    int server_fd;
+    int port;
+    int epoll_fd;
+    struct sockaddr_in address;
 
-        void createSocket();
-        void bindSocket();
-        void startListening();
+public:
+    Server(int port);
+    ~Server();
+
+    void setupSocket();
+    void setupEpoll();
+    void run(); // Accept connections and handle events
 };
 
 #endif // SERVER_HPP
