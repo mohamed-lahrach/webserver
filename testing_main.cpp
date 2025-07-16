@@ -4,23 +4,16 @@
 #include <sstream>
 
 int main() {
-    std::cout << "Testing Lexer with String Content...\n";
     
-    std::string simpleConfig = 
-        "server {\n"
-        "    listen 80;\n"
-        "    server_name example.com;\n"
-        "    root /var/www/html;\n"
-        "}\n";
-    
-    std::cout << "Simple configuration:\n" << simpleConfig << "\n";
-    
-    // Create a Lexer instance with the string content
-    Lexer lexer(simpleConfig);
-    
-    std::cout << "Tokenizing simple configuration...\n";
-    std::cout << "-----------------------------------\n";
+    // Example usage of Lexer
+    Lexer lexer("./test_configs/default.conf");
 
+    while (lexer.hasMoreTokens()) {
+        Token token = lexer.getNextToken();
+        std::cout << "Token: Type=" << token.type << ", Value='" << token.value 
+                  << "', Line=" << token.line << ", Column=" << token.column << std::endl;
+        std::cout << "----------------------------------" << std::endl;
+    }
     
     return 0;
 }

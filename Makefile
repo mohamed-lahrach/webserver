@@ -1,40 +1,28 @@
-NAME = webserv
-SIMPLE_TEST = simple_test
-CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 
-SRC = main.cpp \
-      config/parser.cpp \
-      server/server.cpp \
-      # Add other .cpp files here
+CXX = g++
+CXXFLAGS = -Wall -Wextra -std=c++98 -g -O0 -DDEBUG
 
-SIMPLE_TEST_SRC = simple_test.cpp \
-                  config/Lexer.cpp
+# Source files
+LEXER_SRC = config/Lexer.cpp
+TEST_SRC = testing_main.cpp
+TARGET = config_debug
 
-OBJ = $(SRC:.cpp=.o)
-SIMPLE_TEST_OBJ = $(SIMPLE_TEST_SRC:.cpp=.o)
+# Default target
+all: $(TARGET)
 
-all: $(NAME)
-
-$(NAME): $(OBJ)
-	$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJ)
-
-# Simple test target
-simple-test: $(SIMPLE_TEST)
-
-$(SIMPLE_TEST): $(SIMPLE_TEST_OBJ)
-	$(CXX) $(CXXFLAGS) -o $(SIMPLE_TEST) $(SIMPLE_TEST_OBJ)
-
-# Run simple test
-run-simple-test: $(SIMPLE_TEST)
-	./$(SIMPLE_TEST)
-
+# Build target
+$(TARGET): $(LEXER_SRC) $(TEST_SRC)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+# Clean
 clean:
-	rm -f $(OBJ) $(SIMPLE_TEST_OBJ)
+	rm -f $(TARGET)
 
-fclean: clean
-	rm -f $(NAME) $(SIMPLE_TEST)
+# Run
+run: $(TARGET)
+	./$(TARGET)
 
-re: fclean all
+# Debug with GDB
+gdb: $(TARGET)
+	gdb ./$(TARGET)
 
-.PHONY: all simple-test run-simple-test clean fclean re
+.PHONY: all clean run gdb

@@ -6,7 +6,7 @@
 #include <fstream>   // std::ifstream
 #include <sstream>   // std::ostringstream
 #include <stdexcept> // std::runtime_error
-
+#include <iostream>
 // ──────────────────────────────────────────────────────────────
 // 3. Token kinds (enum class is safer, but a plain enum works fine)
 enum TokenType {

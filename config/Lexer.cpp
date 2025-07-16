@@ -3,9 +3,9 @@
 //  Build with:  g++ -Wall -Wextra -Werror -std=c++98 Lexer.cpp
 // ---------------------------------------------------------------
 #include "Lexer.hpp"
-
 #include <cctype>      // std::isspace, std::isdigit, std::isalpha
 #include <string>
+#include <iostream>
 
 // ──────────────────────────────────────────────────────────────
 //  Keyword lookup – simple if‑else chain (C++98 friendly)
@@ -236,6 +236,7 @@ Lexer::Lexer(const std::string& filePath)
     position = 0;             // reset position
     line = 1;                 // reset line number
     column = 1;               // reset column number
+    std::cout << "File content loaded from: " << filePath << std::endl;
 }
 
 // --------------------------------------------------
