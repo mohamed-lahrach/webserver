@@ -7,6 +7,8 @@
 #include <sstream>   // std::ostringstream
 #include <stdexcept> // std::runtime_error
 #include <iostream>
+#include <vector>  // Add this line
+
 // ──────────────────────────────────────────────────────────────
 // 3. Token kinds (enum class is safer, but a plain enum works fine)
 enum TokenType {
@@ -19,12 +21,14 @@ enum TokenType {
     ERROR_PAGE_KEYWORD,    // “error_page”
     ALLOWED_METHODS_KEYWORD, // “allowed_methods”
     AUTOINDEX_KEYWORD,     // “autoindex”
+    CLIENT_MAX_BODY_SIZE_KEYWORD, // “client_max_body_size”
 
     LEFT_BRACE, RIGHT_BRACE, // { }
     SEMICOLON,               // ;
     COLON,                   // :   (you’ll likely add this)
     COMMA,                   // ,   (optional, for lists)
     SLASH,                   // /
+    DOT,                     // .   (optional, for file paths)
 
     STRING,                  // “/var/www”, “example.com”
     NUMBER,                  // 80, 404
@@ -61,11 +65,16 @@ public:
 
 
     // 5.2 Primary API – get tokens
-    Token getNextToken();  // returns one Token and advances
-    bool  hasMoreTokens(); // true until we emit EOF_TOKEN
+    
+    std::vector<Token> tokenizeAll();
+
 
 private:
+    // main tokenization function 
+    Token getNextToken();  // returns one Token and advances
+
     // 5.3 Helpers – make the top method readable
+    bool  hasMoreTokens(); // true until we emit EOF_TOKEN
     char currentChar() const;   // char at ‘position’ or '\0' if EoF
     char peekChar() const;      // look‑ahead one char
     void advance();             // move position++, update line/column
@@ -76,6 +85,7 @@ private:
     Token readString();         // handles quoted or bare strings
     Token readNumber();         // handles integers
     Token readIdentifier();     // keywords / identifiers
+    Token readSizeValue();      // handles size values like 100M, 1G, etc.
 
     TokenType getKeywordType(const std::string& word); // map to enum
 };

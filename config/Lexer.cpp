@@ -8,12 +8,12 @@
 #include <iostream>
 
 // toString helper for error messages
-static std::string toString(int number) {
+static std::string toString(int number)
+{
     std::ostringstream oss;
     oss << number;
     return oss.str();
 }
-
 
 // ──────────────────────────────────────────────────────────────
 //  Keyword lookup – simple if‑else chain (C++98 friendly)
@@ -38,7 +38,10 @@ static TokenType keywordLookup(const std::string &word)
         return ALLOWED_METHODS_KEYWORD;
     if (word == "autoindex")
         return AUTOINDEX_KEYWORD;
-    return IDENTIFIER;
+    if (word == "client_max_body_size")
+        return CLIENT_MAX_BODY_SIZE_KEYWORD;
+
+    return IDENTIFIER; // default to identifier if no match
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -156,7 +159,8 @@ Token Lexer::readString()
         {
             if (currentChar() == quoteChar)
             {
-                advance(); // consume closing quote
+                quoted = false; // end of quoted string
+                advance();      // consume closing quote
                 break;
             }
         }
@@ -186,6 +190,23 @@ Token Lexer::readString()
     tok.line = startLine;
     tok.column = startCol;
     return tok;
+}
+
+Token Lexer::readSizeValue()
+{
+    std::string value;
+    int startLine = line;
+    int startCol = column;
+    while (std::isdigit(static_cast<unsigned char>(currentChar())))
+        value += currentChar(), advance();
+    while (std::isalpha(static_cast<unsigned char>(currentChar())))
+        value += currentChar(), advance();
+    Token token;
+    token.type = STRING;
+    token.value = value;
+    token.line = startLine;
+    token.column = startCol;
+    return token;
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -218,8 +239,16 @@ Token Lexer::getNextToken()
         }
 
         // 3. Literals and identifiers
-        if (std::isdigit(static_cast<unsigned char>(currentChar())))
-            return readNumber();
+        if (isdigit(currentChar()))
+        {
+            // Look ahead for alpha after number to detect size units
+            size_t temp = position;
+            while (isdigit(input[temp]))
+                temp++;
+            if (isalpha(input[temp]))
+                return readSizeValue(); // 1000000M → STRING
+            return readNumber();        // 80, 443 → NUMBER
+        }
 
         if (std::isalpha(static_cast<unsigned char>(currentChar())) || currentChar() == '_')
             return readIdentifier();
@@ -253,6 +282,10 @@ Token Lexer::getNextToken()
             tok.type = COMMA;
             tok.value = ",";
             break;
+        case '.':
+            tok.type = DOT;
+            tok.value = ".";
+            break;
         default:
             tok.type = UNKNOWN;
             tok.value = std::string(1, currentChar());
@@ -269,6 +302,20 @@ Token Lexer::getNextToken()
 bool Lexer::hasMoreTokens()
 {
     return currentChar() != '\0';
+}
+std::vector<Token> Lexer::tokenizeAll()
+{
+    std::vector<Token> tokens;
+
+    while (hasMoreTokens())
+    {
+        Token token = getNextToken();
+        tokens.push_back(token);
+        if (token.type == EOF_TOKEN)
+            break;
+    }
+
+    return tokens;
 }
 
 // ──────────────────────────────────────────────────────────────

@@ -2,18 +2,24 @@
 
 #include <iostream>
 #include <sstream>
+#include <vector>
 
-int main() {
-    
+int main()
+{
+
     // Example usage of Lexer
     Lexer lexer("./test_configs/default.conf");
 
-    while (lexer.hasMoreTokens()) {
-        Token token = lexer.getNextToken();
-        std::cout << "Token: Type=" << token.type << ", Value='" << token.value 
-                  << "', Line=" << token.line << ", Column=" << token.column << std::endl;
-        std::cout << "----------------------------------" << std::endl;
+    std::vector<Token> allTokens = lexer.tokenizeAll();
+
+    for (std::vector<Token>::iterator it = allTokens.begin(); it != allTokens.end(); ++it)
+    {
+        std::cout << "Token: " << it->value
+                  << " | Type: " << it->type
+                  << " | Line: " << it->line
+                  << " | Column: " << it->column << std::endl;
+        std::cout << "-----------------------------------" << std::endl;
     }
-    
+
     return 0;
 }
