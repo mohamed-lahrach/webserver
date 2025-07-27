@@ -6,14 +6,14 @@ void Server::run()
 {
     std::cout << "=== RUNNING SERVER ===" << std::endl;
     std::cout << "Server starting on port " << port << std::endl; 
-    int serverSocket = setup_Socket(port);
-    if (serverSocket == -1)
+    server_fd = setup_Socket(port);
+    if (server_fd == -1)
     {
         throw std::runtime_error("Failed to setup server socket on port ");
     }
-    int epoll_fd = setup_epoll(serverSocket);
+    epoll_fd = setup_epoll(server_fd);
     if (epoll_fd == -1) {
-        close(serverSocket);
+        close(server_fd);
         throw std::runtime_error("Failed to setup epoll"); 
     }
     
@@ -44,9 +44,9 @@ void Server::run()
         for (int i = 0; i < num_events; i++) {
             int fd = events[i].data.fd;
             
-            if (fd == serverSocket) {
+            if (fd == server_fd) {
                 // New connection
-                handle_new_connection(serverSocket, epoll_fd);
+                handle_new_connection(server_fd, epoll_fd);
             } else {
                 // Data from existing client
                 handle_client_data(fd, epoll_fd);
@@ -56,8 +56,8 @@ void Server::run()
 }
 
 // Add these helper functions
-void Server::handle_new_connection(int serverSocket, int epoll_fd) {
-    int clientSocket = accept(serverSocket, NULL, NULL);
+void Server::handle_new_connection(int server_fd, int epoll_fd) {
+    int clientSocket = accept(server_fd, NULL, NULL);
     if (clientSocket == -1) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
             std::cout << "Error accepting connection: " << strerror(errno) << std::endl;

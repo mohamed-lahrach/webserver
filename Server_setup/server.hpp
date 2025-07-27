@@ -23,8 +23,8 @@ class Server
 private:
     int server_fd;
     int port;
-    std::string hostname;
     int epoll_fd;
+    std::string hostname;
 
     std::map<int, Client> active_clients;
     struct sockaddr_in address;
