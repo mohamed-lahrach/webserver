@@ -37,8 +37,6 @@ class Server
 
 	int setup_Socket(int port);
 	int setup_epoll(int serverSocket);
-
-	// Accept connections and handle events
 };
 
 #endif

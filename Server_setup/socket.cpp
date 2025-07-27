@@ -1,4 +1,8 @@
 #include "server.hpp"
+#include <arpa/inet.h>  // For in_addr and other network types
+#include <netdb.h>      // For gethostbyname() and hostent
+#include <netinet/in.h> // For sockaddr_in
+#include <sys/socket.h> // For socket functions
 
 int Server::setup_Socket(int port)
 {
@@ -23,18 +27,23 @@ int Server::setup_Socket(int port)
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_port = htons(port);
 
-	if (hostname == "web")
-	{
-		// Special handling for "web" hostname
-		std::cout << "✓ Configuring " << hostname << " server for local access" << std::endl;
-		serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
-			// Bind to localhost for "web"
-	}
-	else
-	{
-		// Default behavior
-		serverAddress.sin_addr.s_addr = INADDR_ANY;
-	}
+    
+	// Try to parse hostname as IP address first
+    if (!hostname.empty())
+    {
+        if (inet_pton(AF_INET, hostname.c_str(), &serverAddress.sin_addr) <= 0) {
+            std::cerr << "Invalid IP address: " << hostname << std::endl;
+            close(serverSocket);
+            return -1;
+        }
+        std::cout << "✓ Using IP address: " << hostname << std::endl;
+    }
+    else
+    {
+        // Use INADDR_ANY for localhost or empty hostname
+        serverAddress.sin_addr.s_addr = INADDR_ANY;
+        std::cout << "✓ Using all interfaces (0.0.0.0)" << std::endl;
+    }
 
 	// Binding socket
 	if (bind(serverSocket, (struct sockaddr *)&serverAddress,
@@ -44,16 +53,7 @@ int Server::setup_Socket(int port)
 		close(serverSocket);
 		return (-1);
 	}
-
-	if (!hostname.empty())
-	{
-		std::cout << "✓ " << hostname << " server bound to port " << port << std::endl;
-	}
-	else
-	{
-		std::cout << "✓ Socket bound to port " << port << std::endl;
-	}
-
+    
 	// Listening to the assigned socket
 	if (listen(serverSocket, 5) == -1)
 	{
