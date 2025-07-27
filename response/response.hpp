@@ -1,21 +1,20 @@
 #ifndef RESPONSE_HPP
-#define RESPONSE_HPP
+# define RESPONSE_HPP
 
-#include <string>
-#include <iostream>
-#include <sys/socket.h>
-#include <cstring>
+# include <cstring>
+# include <iostream>
+# include <string>
+# include <sys/socket.h>
 class Response
 {
-private:
-    
-public:
-    // Constructor
-    Response();
-    
-    // Destructor
-    ~Response();
-    void handle_response(int client_fd);
+  private:
+  public:
+	// Constructor
+	Response();
+
+	// Destructor
+	~Response();
+	void handle_response(int client_fd);
 };
 
 #endif
