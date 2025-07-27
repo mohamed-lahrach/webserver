@@ -41,9 +41,9 @@ class Client
 	// Setter methods
 	void set_connect_time(time_t time);
 	void increment_request_count();
-	static bool handle_new_connection(int server_fd, int epoll_fd, std::map<int,
+	static void handle_new_connection(int server_fd, int epoll_fd, std::map<int,
 		Client> &active_clients);
-	bool handle_client_data(int epoll_fd, std::map<int,
+	void handle_client_data(int epoll_fd, std::map<int,
 		Client> &active_clients);
 };
 

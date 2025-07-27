@@ -36,7 +36,7 @@ void Client::increment_request_count()
 
 //////
 
-bool Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int,
+void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int,
 	Client> &active_clients)
 {
 	Client				client;
@@ -52,31 +52,30 @@ bool Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int,
 	{
 		if (errno != EAGAIN && errno != EWOULDBLOCK)
 		{
-			std::cout << "Error accepting connection: " << strerror(errno) << std::endl;
+			std::string error_msg = "Error accepting connection: ";
+			error_msg += strerror(errno);
+			throw std::runtime_error(error_msg);
 		}
-		return (false);
 	}
 	std::cout << "✓ New client connected: " << client.client_fd << std::endl;
 	// Set connection time
-	// client.set_connect_time(time(NULL));
+	client.set_connect_time(time(NULL));
 	// Add client to epoll
 	client_event.events = EPOLLIN;
 	client_event.data.fd = client.client_fd;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client.client_fd, &client_event) ==
 		-1)
 	{
-		std::cout << "Failed to add client to epoll" << std::endl;
 		close(client.client_fd);
-		return (false);
+		throw std::runtime_error("Failed to add client to epoll");
 	}
 	// Add to active clients map
 	active_clients[client.client_fd] = client;
 	std::cout << "✓ Client " << client.client_fd << " added to map" << std::endl;
 	std::cout << "✓ Total active clients: " << active_clients.size() << std::endl;
-	return (true);
 }
 
-bool Client::handle_client_data(int epoll_fd, std::map<int,
+void Client::handle_client_data(int epoll_fd, std::map<int,
 	Client> &active_clients)
 {
 	char buffer[1024] = {0};
@@ -106,7 +105,7 @@ bool Client::handle_client_data(int epoll_fd, std::map<int,
 		}
 		else
 		{
-			std::cout << "✗ Request processing failed" << std::endl;
+			throw std::runtime_error("Failed to process HTTP request from client ");
 		}
 	}
 	else if (bytes_received == 0)
@@ -117,7 +116,7 @@ bool Client::handle_client_data(int epoll_fd, std::map<int,
 	{
 		if (errno != EAGAIN && errno != EWOULDBLOCK)
 		{
-			std::cout << "Error receiving data: " << strerror(errno) << std::endl;
+			throw std::runtime_error("Error receiving data:");
 		}
 	}
 
@@ -130,10 +129,8 @@ bool Client::handle_client_data(int epoll_fd, std::map<int,
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
 	close(client_fd);
 
-	// Remove from active clients map
+	//Remove from active clients map
 	active_clients.erase(client_fd);
 	std::cout << "✓ Client " << client_fd << " connection closed" << std::endl;
 	std::cout << "✓ Remaining active clients: " << active_clients.size() << std::endl;
-
-	return (true);
 }
