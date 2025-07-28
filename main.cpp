@@ -6,7 +6,7 @@ int	main(void)
 	Server server;
 
 	PORT = 2440;
-	std::string hostname = "127.100.100.1";
+	std::string hostname = "127.0.0.1";
 	try
 	{
 		server.init_data(PORT, hostname);
