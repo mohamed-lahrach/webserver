@@ -1,6 +1,4 @@
 #include "server.hpp"
-#include <cstdio>
-#include <cstring>
 
 void Server::run()
 {
