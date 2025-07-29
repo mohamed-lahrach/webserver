@@ -23,6 +23,8 @@ enum TokenType {
     AUTOINDEX_KEYWORD,     // “autoindex”
     CLIENT_MAX_BODY_SIZE_KEYWORD, // “client_max_body_size”
 
+    HTTP_METHOD_KEYWORD, // GET, POST, etc. (optional helper)
+
     LEFT_BRACE, RIGHT_BRACE, // { }
     SEMICOLON,               // ;
     COLON,                   // :   (you’ll likely add this)
@@ -30,10 +32,12 @@ enum TokenType {
     SLASH,                   // /
     DOT,                     // .   (optional, for file paths)
 
-    STRING,                  // “/var/www”, “example.com”
+    STRING,                  // “/var/www”, “example.com” all none keywords
     NUMBER,                  // 80, 404
     IDENTIFIER,              // GET, POST, on, off
     BOOLEAN_LITERAL,         // on, off    (optional helper)
+    SIZE,
+    PATH,                    // /var/www/html (optional helper)
 
     EOF_TOKEN,               // End‑of‑file sentinel
     UNKNOWN                  // Anything unrecognised

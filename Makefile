@@ -3,9 +3,9 @@ CXX = g++
 CXXFLAGS = -Wall -Wextra -std=c++98 -g -O0 -DDEBUG
 
 # Source files
-LEXER_SRC = config/Lexer.cpp
+LEXER_SRC = config/Lexer.cpp config/parser.cpp
 TEST_SRC = testing_main.cpp
-TARGET = config_debug
+TARGET = debug
 
 # Default target
 all: $(TARGET)

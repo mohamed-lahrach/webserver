@@ -13,6 +13,7 @@
                 "-std=c++98",
                 "-DDEBUG",
                 "config/Lexer.cpp",
+                "config/parser.cpp",
                 "testing_main.cpp",
                 "-o",
                 "config_debug"

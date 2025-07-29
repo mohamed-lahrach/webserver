@@ -40,8 +40,13 @@ static TokenType keywordLookup(const std::string &word)
         return AUTOINDEX_KEYWORD;
     if (word == "client_max_body_size")
         return CLIENT_MAX_BODY_SIZE_KEYWORD;
+    if ( word == "GET" || word == "POST" 
+        || word == "PUT" || word == "DELETE" 
+        || word == "HEAD" || word == "OPTIONS" 
+        || word == "PATCH")
+        return HTTP_METHOD_KEYWORD;
 
-    return IDENTIFIER; // default to identifier if no match
+    return STRING; // default to STRING for identifiers
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -251,10 +256,10 @@ Token Lexer::getNextToken()
         }
 
         if (std::isalpha(static_cast<unsigned char>(currentChar())) || currentChar() == '_')
-            return readIdentifier();
+            return readIdentifier(); // server, location, listen, etc.
 
         if (currentChar() == '"' || currentChar() == '\'' || currentChar() == '/')
-            return readString();
+            return readString(); // "/var/www", "example.com", 'on', 'off'
 
         // 4. Single‑char symbols
         Token tok;
