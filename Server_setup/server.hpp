@@ -11,32 +11,34 @@
 # include <fcntl.h>
 # include <iostream>
 # include <map>
+# include <netdb.h>
 # include <netinet/in.h>
 # include <stdexcept>
 # include <sys/epoll.h>
 # include <sys/socket.h>
 # include <unistd.h>
+
 class	Client;
 class Server
 {
   private:
-	int server_fd;
-	int port;
-	int epoll_fd;
-	std::string hostname;
+    int server_fd;
+    int port;
+    int epoll_fd;
+    std::string hostname;
 
-	std::map<int, Client> active_clients;
-	struct sockaddr_in address;
+    std::map<int, Client> active_clients;
+    struct sockaddr_in address;
 
   public:
-	Server();
-	~Server();
+    Server();
+    ~Server();
 
-	void init_data(int PORT, std::string hostname);
-	void run();
+    void init_data(int PORT, std::string hostname);
+    void run();
 
-	int setup_Socket(int port);
-	int setup_epoll(int serverSocket);
+    int setup_Socket(int port);
+    int setup_epoll(int serverSocket);
 };
 
 #endif
