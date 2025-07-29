@@ -67,11 +67,13 @@ void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int,
 	std::cout << "✓ Total active clients: " << active_clients.size() << std::endl;
 }
 
-void Client::handle_client_data_input(int epoll_fd,std::map<int, Client> &active_clients)
+void Client::handle_client_data_input(int epoll_fd, std::map<int,
+	Client> &active_clients)
 {
-	char	buffer[1024] = {0};
-	ssize_t	bytes_received;
-	Request request;
+	char				buffer[1024] = {0};
+	ssize_t				bytes_received;
+	Request				request;
+	struct epoll_event	ev;
 
 	bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 	if (bytes_received > 0)
@@ -92,10 +94,13 @@ void Client::handle_client_data_input(int epoll_fd,std::map<int, Client> &active
 		{
 			throw std::runtime_error("Failed to process HTTP request from client ");
 		}
-		struct epoll_event ev;
 		ev.events = EPOLLOUT;
 		ev.data.fd = client_fd;
-		epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &ev);
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &ev) == -1)
+		{
+			cleanup_connection(epoll_fd, active_clients); // ← Better cleanup
+			throw std::runtime_error("Failed to modify client socket to EPOLLOUT mode");
+		}
 	}
 	else if (bytes_received == 0)
 	{
@@ -109,45 +114,47 @@ void Client::handle_client_data_input(int epoll_fd,std::map<int, Client> &active
 	}
 }
 
-void Client::handle_client_data_output(int client_fd, int epoll_fd, std::map<int,
-		Client> &active_clients)
+void Client::handle_client_data_output(int client_fd, int epoll_fd,
+	std::map<int, Client> &active_clients)
 {
-	Response response;
+	Response	response;
+
 	response.handle_response(client_fd);
-	cleanup_connection(epoll_fd,active_clients);
+	cleanup_connection(epoll_fd, active_clients);
 }
 
-void Client::cleanup_connection(int epoll_fd, std::map<int, Client> &active_clients)
+void Client::cleanup_connection(int epoll_fd, std::map<int,
+	Client> &active_clients)
 {
-    std::cout << "=== CLEANING UP CLIENT " << client_fd << " ===" << std::endl;
-    
-    // Display connection statistics
-    std::cout << "✓ Client " << client_fd << " was connected for " 
-              << (time(NULL) - get_connect_time()) << " seconds" << std::endl;
-    std::cout << "✓ Client " << client_fd << " made " << get_request_count() << " requests" << std::endl;
-    
-    // Remove from epoll monitoring
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1)
-    {
-        std::cout << "Warning: Failed to remove client " << client_fd << " from epoll" << std::endl;
-    }
-    else
-    {
-        std::cout << "✓ Client " << client_fd << " removed from epoll" << std::endl;
-    }
-    
-    // Close the socket
-    if (close(client_fd) == -1)
-    {
-        std::cout << "Warning: Failed to close client " << client_fd << " socket" << std::endl;
-    }
-    else
-    {
-        std::cout << "✓ Client " << client_fd << " socket closed" << std::endl;
-    }
-    
-    // Remove from active clients map
-    active_clients.erase(client_fd);
-    std::cout << "✓ Client " << client_fd << " removed from active clients map" << std::endl;
-    std::cout << "✓ Remaining active clients: " << active_clients.size() << std::endl;
+	std::cout << "=== CLEANING UP CLIENT " << client_fd << " ===" << std::endl;
+
+	// Display connection statistics
+	std::cout << "✓ Client " << client_fd << " was connected for " << (time(NULL)
+		- get_connect_time()) << " seconds" << std::endl;
+	std::cout << "✓ Client " << client_fd << " made " << get_request_count() << " requests" << std::endl;
+
+	// Remove from epoll monitoring
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1)
+	{
+		std::cout << "Warning: Failed to remove client " << client_fd << " from epoll" << std::endl;
+	}
+	else
+	{
+		std::cout << "✓ Client " << client_fd << " removed from epoll" << std::endl;
+	}
+
+	// Close the socket
+	if (close(client_fd) == -1)
+	{
+		std::cout << "Warning: Failed to close client " << client_fd << " socket" << std::endl;
+	}
+	else
+	{
+		std::cout << "✓ Client " << client_fd << " socket closed" << std::endl;
+	}
+
+	// Remove from active clients map
+	active_clients.erase(client_fd);
+	std::cout << "✓ Client " << client_fd << " removed from active clients map" << std::endl;
+	std::cout << "✓ Remaining active clients: " << active_clients.size() << std::endl;
 }
