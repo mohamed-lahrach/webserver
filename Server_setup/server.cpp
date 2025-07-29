@@ -29,8 +29,7 @@ void Server::run()
 		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, 1000);
 		if (num_events == -1)
 		{
-			std::cout << "Error in epoll_wait: " << strerror(errno) << std::endl;
-			break ;
+			throw std::runtime_error("Error in epoll_wait:");
 		}
 		if (num_events == 0)
 		{

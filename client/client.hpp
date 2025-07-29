@@ -6,7 +6,6 @@
 # include <arpa/inet.h>
 # include <cstring>
 # include <ctime>
-# include <errno.h>
 # include <exception>
 # include <fcntl.h>
 # include <iostream>

@@ -6,7 +6,6 @@
 # include "../response/response.hpp"
 # include <arpa/inet.h>
 # include <cstring>
-# include <errno.h>
 # include <exception>
 # include <fcntl.h>
 # include <iostream>
