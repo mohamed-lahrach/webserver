@@ -3,7 +3,6 @@
 // Constructor
 Response::Response()
 {
-    
 }
 
 // Destructor
