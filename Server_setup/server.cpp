@@ -51,7 +51,7 @@ void Server::run()
 				if (it != active_clients.end())
 				{
 					if (events[i].events & EPOLLIN)
-						it->second.handle_client_data_input(epoll_fd);
+						it->second.handle_client_data_input(epoll_fd, active_clients);
 				  	else if (events[i].events & EPOLLOUT)
 						it->second.handle_client_data_output(fd,epoll_fd,active_clients);
 				}

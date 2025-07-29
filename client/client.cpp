@@ -67,7 +67,7 @@ void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int,
 	std::cout << "✓ Total active clients: " << active_clients.size() << std::endl;
 }
 
-void Client::handle_client_data_input(int epoll_fd)
+void Client::handle_client_data_input(int epoll_fd,std::map<int, Client> &active_clients)
 {
 	char	buffer[1024] = {0};
 	ssize_t	bytes_received;
@@ -100,9 +100,11 @@ void Client::handle_client_data_input(int epoll_fd)
 	else if (bytes_received == 0)
 	{
 		std::cout << "Client " << client_fd << " disconnected" << std::endl;
+		cleanup_connection(epoll_fd, active_clients);
 	}
 	else
 	{
+		cleanup_connection(epoll_fd, active_clients);
 		throw std::runtime_error("Error receiving data:");
 	}
 }

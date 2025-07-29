@@ -46,7 +46,7 @@ class Client
 
 	static void handle_new_connection(int server_fd, int epoll_fd, std::map<int,
 		Client> &active_clients);
-	void handle_client_data_input(int epoll_fd);
+	void handle_client_data_input(int epoll_fd,std::map<int, Client> &active_clients);
 	void handle_client_data_output(int client_fd, int epoll_fd, std::map<int,
 		Client> &active_clients);
 	void cleanup_connection(int epoll_fd, std::map<int, Client> &active_clients);
