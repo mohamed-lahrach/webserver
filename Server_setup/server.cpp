@@ -50,7 +50,10 @@ void Server::run()
 				std::map<int, Client>::iterator it = active_clients.find(fd);
 				if (it != active_clients.end())
 				{
-					it->second.handle_client_data(epoll_fd, active_clients);
+					if (events[i].events & EPOLLIN)
+						it->second.handle_client_data_input(epoll_fd);
+				  	else if (events[i].events & EPOLLOUT)
+						it->second.handle_client_data_output(fd,epoll_fd,active_clients);
 				}
 				else
 				{

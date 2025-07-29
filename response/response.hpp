@@ -5,6 +5,7 @@
 # include <iostream>
 # include <string>
 # include <sys/socket.h>
+class Client;
 class Response
 {
   private:
