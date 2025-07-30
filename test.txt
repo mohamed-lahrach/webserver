@@ -1,4 +1,18 @@
 ./webserv > test_post.log 2>&1 &
 echo -e "GET /index.html HTTP/1.0\r\nHost: localhost\r\n\r\n" | nc localhost 2440
-cat test_post.log | grep -E "Method:|Path:|Version:" | tail -12
+grep -A 10 "Method" test.log
 
+# Test 1: Basic GET
+curl http://localhost:2440/
+
+# Test 2: GET with path  
+curl http://localhost:2440/index.html
+
+# Test 3: POST
+curl -X POST http://localhost:2440/submit
+
+# Test 4: DELETE
+curl -X DELETE http://localhost:2440/users/123
+
+# Test 5: POST with data
+curl -X POST -d "username=test&password=123" http://localhost:2440/login
