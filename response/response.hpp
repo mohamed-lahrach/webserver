@@ -6,6 +6,8 @@
 # include <string>
 # include <sys/socket.h>
 # include <map>
+
+class Client;
 class Response
 {
   private:

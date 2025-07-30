@@ -1,7 +1,11 @@
 #include "response.hpp"
 #include <sstream>
-#include <iostream>
-
+#include <iostream>     // For std::cout
+#include <cstring>      // For strlen()
+#include <sys/socket.h> // For send()
+#include <sys/epoll.h>  // For epoll_ctl(), EPOLL_CTL_DEL
+#include <unistd.h>     // For close()
+#include <map>
 // Constructor
 Response::Response() : status_code(200), content("Welcome to My Web Server!")
 {
@@ -13,6 +17,7 @@ Response::Response() : status_code(200), content("Welcome to My Web Server!")
 // Destructor
 Response::~Response()
 {
+
 }
 
 // Setter methods

@@ -1,6 +1,4 @@
 #include "server.hpp"
-#include <cstdio>
-#include <cstring>
 
 void Server::run()
 {
@@ -31,8 +29,7 @@ void Server::run()
 		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, 1000);
 		if (num_events == -1)
 		{
-			std::cout << "Error in epoll_wait: " << strerror(errno) << std::endl;
-			break ;
+			throw std::runtime_error("Error in epoll_wait:");
 		}
 		if (num_events == 0)
 		{
@@ -52,7 +49,10 @@ void Server::run()
 				std::map<int, Client>::iterator it = active_clients.find(fd);
 				if (it != active_clients.end())
 				{
-					it->second.handle_client_data(epoll_fd, active_clients);
+					if (events[i].events & EPOLLIN)
+						it->second.handle_client_data_input(epoll_fd, active_clients);
+				  	else if (events[i].events & EPOLLOUT)
+						it->second.handle_client_data_output(fd,epoll_fd,active_clients);
 				}
 				else
 				{
