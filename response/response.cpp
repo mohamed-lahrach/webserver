@@ -5,9 +5,13 @@
 // Constructor
 Response::Response() : status_code(200), content("Welcome to My Web Server!")
 {
+<<<<<<< HEAD
 	// Set default headers
 	set_header("Content-Type", "text/html");
 	set_header("Connection", "close");
+=======
+    
+>>>>>>> 35ba3d0 (Refactor server and client code: update socket handling, improve error reporting, and adjust function signatures for clarity)
 }
 
 // Destructor
