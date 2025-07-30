@@ -99,7 +99,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int,
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &ev) == -1)
 		{
 			cleanup_connection(epoll_fd, active_clients); // ← Better cleanup
-			throw std::runtime_error("Failed to modify client socket to EPOLLOUT mode");
+			throw std::runtime_error("failed to modify client socket to EPOLLOUT mode");
 		}
 	}
 	else if (bytes_received == 0)
@@ -117,6 +117,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int,
 void Client::handle_client_data_output(int client_fd, int epoll_fd,
 	std::map<int, Client> &active_clients)
 {
+
 	Response	response;
 
 	response.handle_response(client_fd);
