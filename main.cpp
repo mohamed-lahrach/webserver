@@ -1,5 +1,4 @@
 #include "Server_setup/server.hpp"
-
 int	main(void)
 {
 	int	PORT;
