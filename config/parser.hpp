@@ -3,13 +3,13 @@
 
 #include <vector>
 #include "Lexer.hpp"
-#include <sstream>  // Add at top of your parser.cpp
+#include <sstream> // Add at top of your parser.cpp
 
 class Parser
 {
 private:
-    std::vector<Token> tokens;
     size_t current;
+    std::vector<Token> tokens;
 
 public:
     Parser(const std::vector<Token> &tokenStream);
@@ -20,14 +20,14 @@ public:
     bool match(TokenType type);
     void parse();
     void parseServerBlock();
-    void expect(TokenType type, const std::string& errorMessage);
+    void expect(TokenType type, const std::string &errorMessage);
 
     // Directive-specific parsing functions
     void parseListenDirective();
     void parseRootDirective();
     void parseIndexDirective();
     void parseServerNameDirective();
-
+    void parseClientMaxBodySizeDirective();
 };
 
 #endif

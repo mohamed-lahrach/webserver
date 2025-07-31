@@ -1,15 +1,19 @@
 #include "parser.hpp"
 #include "Lexer.hpp"
+#include <sstream>
+#include <cstdlib>
+
 static std::string toString(int number)
 {
     std::ostringstream oss;
     oss << number;
     return oss.str();
 }
+
 Parser::Parser(const std::vector<Token> &tokenStream)
 {
-    tokens = tokenStream;
     current = 0;
+    tokens = tokenStream;
 }
 
 const Token &Parser::peek()
@@ -33,7 +37,6 @@ bool Parser::isAtEnd()
     return current >= tokens.size();
 }
 
-// Checks if the current token matches the expected type.
 bool Parser::match(TokenType type)
 {
     if (isAtEnd())
@@ -66,7 +69,8 @@ void Parser::parseServerBlock()
     expect(SERVER_KEYWORD, "Expected 'server' keyword");
     expect(LEFT_BRACE, "Expected '{' after 'server'");
 
-    // For now just consume tokens until '}'
+    bool seenClientMaxBodySize = false;
+
     while (!isAtEnd() && peek().type != RIGHT_BRACE)
     {
         switch (peek().type)
@@ -74,16 +78,16 @@ void Parser::parseServerBlock()
         case LISTEN_KEYWORD:
             parseListenDirective();
             break;
-        case SERVER_NAME_KEYWORD:
-            std::cout << "[Server Name] " << peek().value << std::endl;
-            advance(); // Consume the server name token
-            break;
         case ROOT_KEYWORD:
             parseRootDirective();
             break;
-        case INDEX_KEYWORD:
-            std::cout << "[Index] " << peek().value << std::endl;
-            advance(); // Consume the index token
+        case CLIENT_MAX_BODY_SIZE_KEYWORD:
+            if (seenClientMaxBodySize)
+            {
+                throw std::runtime_error("Duplicate 'client_max_body_size' directive at line " + toString(peek().line));
+            }
+            seenClientMaxBodySize = true;
+            parseClientMaxBodySizeDirective();
             break;
         default:
             throw std::runtime_error("Unexpected directive at line " + toString(peek().line));
@@ -103,62 +107,109 @@ void Parser::expect(TokenType type, const std::string &errorMessage)
     }
 }
 
-// Directive-specific parsing functions
+// Directive-specific parsing
 
-// Parses the listen directive, which can include an IP address and port.
-void Parser::parseListenDirective() {
+void Parser::parseListenDirective()
+{
     expect(LISTEN_KEYWORD, "Expected 'listen' directive");
 
     std::string host;
     std::string port;
     bool foundColon = false;
 
-    // Match IP address and port
-    while (!isAtEnd()) {
+    while (!isAtEnd())
+    {
         Token token = peek();
         if (token.type == SEMICOLON)
             break;
 
-        if (token.type == DOT || token.type == COLON || token.type == NUMBER) {
-            if (token.type == COLON) {
+        if (token.type == DOT || token.type == COLON || token.type == NUMBER)
+        {
+            if (token.type == COLON)
+            {
                 foundColon = true;
-            } else if (!foundColon) {
+            }
+            else if (!foundColon)
+            {
                 host += token.value;
-            } else {
+            }
+            else
+            {
                 port += token.value;
             }
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Unexpected token in listen directive at line " + toString(token.line));
         }
 
         advance();
     }
-    
+
     expect(SEMICOLON, "Expected ';' after listen directive");
-    
-    // Display the parsed values
+
     std::cout << "[Listen] Host: " << host;
-    if (!port.empty()) {
+    if (!port.empty())
+    {
         std::cout << ", Port: " << port;
     }
     std::cout << std::endl;
 }
 
-
-
-void Parser::parseRootDirective() {
+void Parser::parseRootDirective()
+{
     expect(ROOT_KEYWORD, "Expected 'root' directive");
 
-    if (peek().type != STRING) {
+    if (peek().type != STRING)
+    {
         throw std::runtime_error("Expected path after 'root' at line " + toString(peek().line));
     }
 
     std::string path = peek().value;
-    // Ensure the path is a valid path
-    validatePath(path);
     advance();
 
     expect(SEMICOLON, "Expected ';' after root directive");
 
     std::cout << "[Root] " << path << std::endl;
+}
+
+void Parser::parseClientMaxBodySizeDirective()
+{
+    expect(CLIENT_MAX_BODY_SIZE_KEYWORD, "Expected 'client_max_body_size' directive");
+
+    if (peek().type != NUMBER)
+    {
+        throw std::runtime_error("Expected numeric size value after 'client_max_body_size' at line " + toString(peek().line));
+    }
+
+    long long size = std::atoll(peek().value.c_str());
+    advance();
+
+    std::string unit;
+    if (!isAtEnd() && peek().type == IDENTIFIER)
+    {
+        unit = peek().value;
+        if (unit != "M" && unit != "K" && unit != "G")
+        {
+            throw std::runtime_error("Invalid unit for 'client_max_body_size' at line " + toString(peek().line));
+        }
+        advance();
+    }
+
+    expect(SEMICOLON, "Expected ';' after 'client_max_body_size' directive");
+
+    // Convert to bytes for validation
+    long long bytes = size;
+    if (unit == "K") bytes *= 1024LL;
+    else if (unit == "M") bytes *= 1024LL * 1024LL;
+    else if (unit == "G") bytes *= 1024LL * 1024LL * 1024LL;
+
+    std::cout << "[ClientMaxBodySize] Parsed: " << bytes << " bytes" << std::endl;
+
+    // Example: impose a limit like 10 GB
+    long long maxAllowed = 10LL * 1024LL * 1024LL * 1024LL;
+    if (bytes > maxAllowed)
+    {
+        throw std::runtime_error("'client_max_body_size' exceeds allowed limit at line " + toString(peek().line));
+    }
 }

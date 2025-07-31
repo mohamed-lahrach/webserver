@@ -75,13 +75,15 @@ public:
 
 private:
     // main tokenization function 
-    Token getNextToken();  // returns one Token and advances
+    Token getNextToken(); // returns one Token and advances
 
     // 5.3 Helpers – make the top method readable
     bool  hasMoreTokens(); // true until we emit EOF_TOKEN
     char currentChar() const;   // char at ‘position’ or '\0' if EoF
     char peekChar() const;      // look‑ahead one char
     void advance();             // move position++, update line/column
+    bool isAtEnd() const;
+
 
     void skipWhitespace();      // spaces, tabs, newlines
     void skipComment();         // ‘# … \n’
@@ -92,6 +94,7 @@ private:
     Token readSizeValue();      // handles size values like 100M, 1G, etc.
 
     TokenType getKeywordType(const std::string& word); // map to enum
+    Token readWordOrPath();
 };
 
 #endif // LEXER_HPP        // 6. End of include guard

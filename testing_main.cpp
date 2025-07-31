@@ -31,6 +31,7 @@ std::string tokenTypeToString(TokenType type) {
         case EOF_TOKEN: return "EOF_TOKEN";
         case UNKNOWN: return "UNKNOWN";
         case HTTP_METHOD_KEYWORD: return "HTTP_METHOD_KEYWORD";
+        case PATH: return "PATH";
         default: return "UNKNOWN_TOKEN_TYPE";
     }
 }

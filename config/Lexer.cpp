@@ -8,12 +8,7 @@
 #include <iostream>
 
 // toString helper for error messages
-static std::string toString(int number)
-{
-    std::ostringstream oss;
-    oss << number;
-    return oss.str();
-}
+
 
 // ──────────────────────────────────────────────────────────────
 //  Keyword lookup – simple if‑else chain (C++98 friendly)
@@ -40,10 +35,7 @@ static TokenType keywordLookup(const std::string &word)
         return AUTOINDEX_KEYWORD;
     if (word == "client_max_body_size")
         return CLIENT_MAX_BODY_SIZE_KEYWORD;
-    if ( word == "GET" || word == "POST" 
-        || word == "PUT" || word == "DELETE" 
-        || word == "HEAD" || word == "OPTIONS" 
-        || word == "PATCH")
+    if (word == "GET" || word == "POST" || word == "PUT" || word == "DELETE" || word == "HEAD" || word == "OPTIONS" || word == "PATCH")
         return HTTP_METHOD_KEYWORD;
 
     return STRING; // default to STRING for identifiers
@@ -116,85 +108,72 @@ Token Lexer::readNumber()
     return tok;
 }
 
-Token Lexer::readIdentifier()
+// ──────────────────────────────────────────────────────────────
+//  Core token factory
+//
+
+Token Lexer::readWordOrPath()
 {
     int startLine = line;
-    int startCol = column;
+    int startColumn = column;
     std::string word;
-    while (std::isalnum(static_cast<unsigned char>(currentChar())) || currentChar() == '.' || currentChar() == '_')
-    {
-        word.push_back(currentChar());
-        advance();
-    }
 
-    Token tok;
-    tok.value = word;
-    tok.line = startLine;
-    tok.column = startCol;
-
-    if (word == "on" || word == "off")
-    {
-        tok.type = BOOLEAN_LITERAL;
-        return tok;
-    }
-
-    tok.type = keywordLookup(word);
-    return tok;
-}
-
-Token Lexer::readString()
-{
-    int startLine = line;
-    int startCol = column;
-    std::string result;
-
-    bool quoted = false;
-    char quoteChar = '\0';
-
+    // Quoted string
     if (currentChar() == '"' || currentChar() == '\'')
     {
-        quoted = true;
-        quoteChar = currentChar();
-        advance(); // consume opening quote
+        char quote = currentChar();
+        advance();
+
+        while (!isAtEnd() && currentChar() != quote)
+        {
+            word += currentChar();
+            advance();
+        }
+
+        if (currentChar() == quote)
+            advance();
+        else
+            throw std::runtime_error("Unterminated quoted string");
+
+        Token token;
+        token.type = STRING;
+        token.value = word;
+        token.line = startLine;
+        token.column = startColumn;
+        return token;
     }
 
-    while (currentChar() != '\0')
+    // Path (starts with '/')
+    if (currentChar() == '/')
     {
-        if (quoted)
+        while (!isAtEnd() && !std::isspace(currentChar()) &&
+               currentChar() != ';' && currentChar() != '}')
         {
-            if (currentChar() == quoteChar)
-            {
-                quoted = false; // end of quoted string
-                advance();      // consume closing quote
-                break;
-            }
-        }
-        else
-        {
-            char c = currentChar();
-            if (std::isspace(static_cast<unsigned char>(c)) || c == '{' || c == '}' || c == ';' || c == ':' || c == ',')
-                break;
+            word += currentChar();
+            advance();
         }
 
-        // Support simple escaped quote or backslash inside quoted strings
-        if (quoted && currentChar() == '\\' && (peekChar() == quoteChar || peekChar() == '\\'))
-            advance(); // skip escape char but keep next char literal
+        Token token;
+        token.type = STRING; // Use STRING type for file paths
+        token.value = word;
+        token.line = startLine;
+        token.column = startColumn;
+        return token;
+    }
 
-        result.push_back(currentChar());
+    // Identifier or keyword
+    while (!isAtEnd() && (std::isalnum(currentChar()) || currentChar() == '_' || currentChar() == '.'))
+    {
+        word += currentChar();
         advance();
     }
-    if (quoted && currentChar() != quoteChar)
-    {
-        throw std::runtime_error("Unterminated string starting at line " +
-                                 toString(startLine) + ", column " + toString(startCol));
-    }
 
-    Token tok;
-    tok.type = STRING;
-    tok.value = result;
-    tok.line = startLine;
-    tok.column = startCol;
-    return tok;
+    Token token;
+    token.type = keywordLookup(word);
+    token.value = word;
+    token.line = startLine;
+    token.column = startColumn;
+    return token;
 }
 
 Token Lexer::readSizeValue()
@@ -213,10 +192,6 @@ Token Lexer::readSizeValue()
     token.column = startCol;
     return token;
 }
-
-// ──────────────────────────────────────────────────────────────
-//  Core token factory
-//
 Token Lexer::getNextToken()
 {
     while (true)
@@ -254,12 +229,10 @@ Token Lexer::getNextToken()
                 return readSizeValue(); // 1000000M → STRING
             return readNumber();        // 80, 443 → NUMBER
         }
-
-        if (std::isalpha(static_cast<unsigned char>(currentChar())) || currentChar() == '_')
-            return readIdentifier(); // server, location, listen, etc.
-
-        if (currentChar() == '"' || currentChar() == '\'' || currentChar() == '/')
-            return readString(); // "/var/www", "example.com", 'on', 'off'
+        if (std::isalpha(currentChar()) || currentChar() == '_' || currentChar() == '/' ||
+            currentChar() == '"' || currentChar() == '\'')
+            return readWordOrPath(); // "server", "location", "/var/www/html" → STRING or IDENTIFIER
+        
 
         // 4. Single‑char symbols
         Token tok;
@@ -304,6 +277,12 @@ Token Lexer::getNextToken()
 // ──────────────────────────────────────────────────────────────
 //  Simple helper – any chars left?
 //
+
+bool Lexer::isAtEnd() const
+{
+    return position >= input.size();
+}
+
 bool Lexer::hasMoreTokens()
 {
     return currentChar() != '\0';
