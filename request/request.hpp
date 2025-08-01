@@ -3,25 +3,50 @@
 
 # include <string>
 # include <map>
+# include "request_status.hpp"
+# include "get_handler.hpp"
+# include "post_handler.hpp"
+# include "delete_handler.hpp"
 
 class Request
 {
   private:
-  std::string method;
-  std::string path;
-  std::string version;
-  std::map<std::string, std::string> headers;
+  std::string http_method;       
+  std::string requested_path;    
+  std::string http_version;     
+  std::map<std::string, std::string> http_headers;  
+  
+
+  std::string incoming_data;      
+  bool got_all_headers;          
+  size_t expected_body_size;     
+  std::string request_body;       
+  
+  
+  GetHandler get_handler;
+  PostHandler post_handler;
+  DeleteHandler delete_handler;       
+  
   public:
-	// Constructor
+
 	Request();
 
-	// Destructor
+	
 	~Request();
-	const std::string& get_method() const { return method; }
-	const std::string& get_path() const { return path; }
-	const std::string& get_version() const { return version; }
-	const std::map<std::string, std::string>& get_headers() const { return headers; }
+	
+	const std::string& get_http_method() const { return http_method; }
+	const std::string& get_requested_path() const { return requested_path; }
+	const std::string& get_http_version() const { return http_version; }
+	const std::map<std::string, std::string>& get_all_headers() const { return http_headers; }
+	const std::string& get_request_body() const { return request_body; }
 
+
+	RequestStatus add_new_data(const char *new_data, size_t data_size);
+	RequestStatus figure_out_http_method();
+	
+
+	bool read_http_headers(const std::string& header_text);
+	
 	bool handle_request(int client_fd, const char *request_data);
 };
 

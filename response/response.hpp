@@ -15,16 +15,22 @@ class Response
   std::string content;
   std::map<std::string, std::string> headers;
   public:
-	// Constructor
+
 	Response();
 
-	// Destructor
+
 	~Response();
 	
-	// Setter methods
+
 	void set_code(int code);
 	void set_content(const std::string& body_content);
 	void set_header(const std::string& key, const std::string& value);
+	
+	
+	void analyze_request_and_set_response(const std::string& path);
+	
+
+	std::string what_reason(int code);
 	
 	void handle_response(int client_fd);
 };

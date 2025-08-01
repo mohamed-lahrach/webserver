@@ -26,6 +26,7 @@ class Client
 	time_t connect_time; // Keep same order as in constructor
 	int request_count;   // Move this after connect_time
 	int client_fd;
+	Request current_request;
 
   public:
 	// Constructor

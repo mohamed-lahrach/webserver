@@ -1,0 +1,13 @@
+#ifndef REQUEST_STATUS_HPP
+#define REQUEST_STATUS_HPP
+
+
+enum RequestStatus {
+	NEED_MORE_DATA,       
+	HEADERS_ARE_READY,      
+	BODY_BEING_READ,      
+	EVERYTHING_IS_READY,   
+	SOMETHING_WENT_WRONG    
+};
+
+#endif 
