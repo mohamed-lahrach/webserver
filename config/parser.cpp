@@ -83,11 +83,21 @@ void Parser::parseServerBlock()
             break;
         case CLIENT_MAX_BODY_SIZE_KEYWORD:
             if (seenClientMaxBodySize)
-            {
                 throw std::runtime_error("Duplicate 'client_max_body_size' directive at line " + toString(peek().line));
-            }
             seenClientMaxBodySize = true;
             parseClientMaxBodySizeDirective();
+            break;
+        case INDEX_KEYWORD:
+            parseIndexDirective();
+            break;
+        case ERROR_PAGE_KEYWORD:
+            parseErrorPageDirective();
+            break;
+        case AUTOINDEX_KEYWORD:
+            parseAutoindexDirective();
+            break;
+        case LOCATION_KEYWORD:
+            parseLocationBlock();
             break;
         default:
             throw std::runtime_error("Unexpected directive at line " + toString(peek().line));
@@ -108,6 +118,29 @@ void Parser::expect(TokenType type, const std::string &errorMessage)
 }
 
 // Directive-specific parsing
+void Parser::parseIndexDirective()
+{
+    advance(); // consume 'index'
+
+    std::vector<std::string> indexFiles;
+
+    while (!isAtEnd() && peek().type == STRING)
+    {
+        indexFiles.push_back(peek().value);
+        advance(); // consume the identifier
+    }
+
+    if (indexFiles.empty())
+        throw std::runtime_error("Expected at least one file after 'index' at line " + toString(peek().line));
+
+    expect(SEMICOLON, "Expected ';' after index directive");
+
+    // Just print for now
+    std::cout << "Parsed index directive with files:";
+    for (size_t i = 0; i < indexFiles.size(); ++i)
+        std::cout << " " << indexFiles[i];
+    std::cout << std::endl;
+}
 
 void Parser::parseListenDirective()
 {
@@ -173,43 +206,139 @@ void Parser::parseRootDirective()
     std::cout << "[Root] " << path << std::endl;
 }
 
+static bool isValidSizeWithUnit(const std::string& value)
+{
+    if (value.empty())
+        return false;
+
+    size_t len = value.length();
+    if (len < 2)
+        return false; // at least one digit + 1 unit
+
+    char unit = value[len - 1];
+    if (unit != 'M' && unit != 'K' && unit != 'G')
+        return false;
+
+    for (size_t i = 0; i < len - 1; ++i)
+    {
+        if (!std::isdigit(value[i]))
+            return false;
+    }
+
+    return true;
+}
+
 void Parser::parseClientMaxBodySizeDirective()
 {
     expect(CLIENT_MAX_BODY_SIZE_KEYWORD, "Expected 'client_max_body_size' directive");
 
-    if (peek().type != NUMBER)
+    // Accept string token like "1000000M"
+    if (peek().type != STRING)
     {
-        throw std::runtime_error("Expected numeric size value after 'client_max_body_size' at line " + toString(peek().line));
+        throw std::runtime_error("Expected value like '1000M', '200K', or '1G' after 'client_max_body_size' at line " + toString(peek().line));
     }
 
-    long long size = std::atoll(peek().value.c_str());
+    std::string value = peek().value;
     advance();
 
-    std::string unit;
-    if (!isAtEnd() && peek().type == IDENTIFIER)
+    // Validate format: digits + [M|K|G]
+    if (!isValidSizeWithUnit(value))
     {
-        unit = peek().value;
-        if (unit != "M" && unit != "K" && unit != "G")
-        {
-            throw std::runtime_error("Invalid unit for 'client_max_body_size' at line " + toString(peek().line));
-        }
-        advance();
+        throw std::runtime_error("Invalid format for 'client_max_body_size' at line " + toString(peek().line));
     }
+
+    char unit = value[value.length() - 1];
+    long long number = std::atoll(value.substr(0, value.length() - 1).c_str());
+
+    long long bytes = number;
+    if (unit == 'K') bytes *= 1024LL;
+    else if (unit == 'M') bytes *= 1024LL * 1024LL;
+    else if (unit == 'G') bytes *= 1024LL * 1024LL * 1024LL;
 
     expect(SEMICOLON, "Expected ';' after 'client_max_body_size' directive");
 
-    // Convert to bytes for validation
-    long long bytes = size;
-    if (unit == "K") bytes *= 1024LL;
-    else if (unit == "M") bytes *= 1024LL * 1024LL;
-    else if (unit == "G") bytes *= 1024LL * 1024LL * 1024LL;
-
-    std::cout << "[ClientMaxBodySize] Parsed: " << bytes << " bytes" << std::endl;
-
-    // Example: impose a limit like 10 GB
+    // Enforce upper limit (example: 10 GB)
     long long maxAllowed = 10LL * 1024LL * 1024LL * 1024LL;
     if (bytes > maxAllowed)
     {
         throw std::runtime_error("'client_max_body_size' exceeds allowed limit at line " + toString(peek().line));
     }
+
+    std::cout << "[ClientMaxBodySize] Parsed: " << bytes << " bytes" << std::endl;
+}
+
+void Parser::parseErrorPageDirective() {
+    advance(); // Skip 'error_page' keyword
+
+    std::vector<int> errorCodes;
+
+    // Collect all NUMBER tokens as error codes
+    while (!isAtEnd() && peek().type == NUMBER) {
+        int code = std::atoi(peek().value.c_str());
+        errorCodes.push_back(code);
+        advance();
+    }
+
+    // Ensure at least one error code was given
+    if (errorCodes.empty()) {
+        throw std::runtime_error("Expected at least one error code for error_page directive at line " + toString(peek().line));
+    }
+
+    // Now expect the URI (as STRING)
+    if (peek().type != STRING) {
+        throw std::runtime_error("Expected URI after error codes at line " + toString(peek().line));
+    }
+
+    std::string uri = peek().value;
+    advance(); // Consume URI
+
+    expect(SEMICOLON, "Expected ';' after error_page directive");
+
+    // Output to console for now
+    std::cout << "Parsed error_page: ";
+    for (size_t i = 0; i < errorCodes.size(); ++i)
+        std::cout << errorCodes[i] << " ";
+    std::cout << "-> " << uri << std::endl;
+}
+
+
+void Parser::parseAutoindexDirective() {
+    advance(); // Skip 'autoindex' keyword
+
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected 'on' or 'off' after 'autoindex' at line " + toString(peek().line));
+
+    std::string value = peek().value;
+    if (value != "on" && value != "off")
+        throw std::runtime_error("Invalid value for 'autoindex': expected 'on' or 'off' at line " + toString(peek().line));
+
+    advance(); // Consume the value
+
+    expect(SEMICOLON, "Expected ';' after 'autoindex' directive");
+
+    // Output for now
+    std::cout << "Parsed autoindex: " << value << std::endl;
+}
+
+void Parser::parseLocationBlock()
+{
+    expect(LOCATION_KEYWORD, "Expected 'location' keyword");
+
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected location path after 'location' at line " + toString(peek().line));
+
+    std::string path = advance().value;
+
+    expect(LEFT_BRACE, "Expected '{' after location path at line " + toString(peek().line));
+
+    std::cout << "Parsing location block at path: " << path << std::endl;
+
+    // Minimal viable logic: skip all until closing '}'
+    while (!isAtEnd() && peek().type != RIGHT_BRACE)
+    {
+        // You can expand this later with switch-case for inner directives
+        advance();
+    }
+
+    expect(RIGHT_BRACE, "Expected '}' to close location block at line " + toString(peek().line));
 }

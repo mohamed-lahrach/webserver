@@ -19,15 +19,18 @@ public:
     bool isAtEnd();
     bool match(TokenType type);
     void parse();
-    void parseServerBlock();
     void expect(TokenType type, const std::string &errorMessage);
-
+    
+    // Blocks 
+    void parseLocationBlock();
+    void parseServerBlock();
     // Directive-specific parsing functions
     void parseListenDirective();
     void parseRootDirective();
     void parseIndexDirective();
-    void parseServerNameDirective();
     void parseClientMaxBodySizeDirective();
+    void parseErrorPageDirective();
+    void parseAutoindexDirective();
 };
 
 #endif
