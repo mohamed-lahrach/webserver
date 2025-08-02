@@ -19,7 +19,8 @@ class Request
 
   std::string incoming_data;      
   bool got_all_headers;          
-  size_t expected_body_size;     
+  size_t expected_body_size;
+  size_t body_bytes_we_have;
   std::string request_body;       
   
   
@@ -45,7 +46,7 @@ class Request
 	RequestStatus figure_out_http_method();
 	
 
-	bool read_http_headers(const std::string& header_text);
+	bool parse_http_headers(const std::string& header_text);
 	
 	bool handle_request(int client_fd, const char *request_data);
 };

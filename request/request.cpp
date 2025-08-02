@@ -72,7 +72,7 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 
 		std::string just_the_headers = incoming_data.substr(0, headers_end_position);
 
-		if (!read_http_headers(just_the_headers))
+		if (!parse_http_headers(just_the_headers))
 		{
 			std::cout << "Something went wrong reading the headers!" << std::endl;
 			return SOMETHING_WENT_WRONG;
@@ -97,19 +97,11 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 
 		return HEADERS_ARE_READY;
 	}
-	
-	if (expected_body_size > 0)
-	{
-		size_t body_bytes_we_have = incoming_data.size();
-		std::cout << "Body progress: " << body_bytes_we_have << "/" << expected_body_size << " bytes" << std::endl;
 
-		return HEADERS_ARE_READY;
-	}
-	
 	return HEADERS_ARE_READY;
 }
 
-bool Request::read_http_headers(const std::string &header_text)
+bool Request::parse_http_headers(const std::string &header_text)
 {
 	std::istringstream header_stream(header_text);
 	std::string current_line;
