@@ -64,53 +64,58 @@ void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cl
 	active_clients[client.client_fd] = client;
 	std::cout << "✓ Client " << client.client_fd << " added to map" << std::endl;
 	std::cout << "✓ Total active clients: " << active_clients.size() << std::endl;
-}
+}  
 
 void Client::handle_client_data_input(int epoll_fd, std::map<int,
 															 Client> &active_clients)
 {
 	char buffer[1024] = {0};
 	ssize_t bytes_received;
-	Request request;
 	struct epoll_event ev;
 
 	bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 	if (bytes_received > 0)
 	{
-		// ========== REQUEST HANDLING ==========
 		buffer[bytes_received] = '\0';
 		std::cout << "=== CLIENT " << client_fd << ": PROCESSING REQUEST ===" << std::endl;
 		std::cout << "Message from client " << client_fd << ": " << buffer << std::endl;
-		// Increment request count
 		increment_request_count();
-		std::cout << "✓ Client " << client_fd << " request count: " << get_request_count() << std::endl;
 		
-		// ========== NEW STATEFUL PARSING TEST ==========
-		std::cout << "=== TESTING NEW STATEFUL PARSER ===" << std::endl;
-		
-		// Give the new data to our HTTP request parser
 		RequestStatus result = current_request.add_new_data(buffer, bytes_received);
 		
-		std::cout << "What happened: ";
 		switch (result) {
 			case NEED_MORE_DATA:
 				std::cout << "We need more data from the client" << std::endl;
 				return;
 				
 			case HEADERS_ARE_READY:
+			case BODY_BEING_READ:
 			{
-				std::cout << "Headers are ready - now we can handle the request" << std::endl;
+				std::cout << "Processing request data - checking handler..." << std::endl;
 				
 				RequestStatus handler_result = current_request.figure_out_http_method();
 				
-				if (handler_result == SOMETHING_WENT_WRONG) {
-					std::cout << "✗ Something went wrong handling the request" << std::endl;
-					throw std::runtime_error("Unsupported HTTP method");
+				if(handler_result == BODY_BEING_READ)
+				{
+					std::cout << "Need more body data - waiting for more..." << std::endl;
+					return;  
 				}
-				
-				std::cout << " Request handled successfully" << std::endl;
-				std::cout << "Final request - Method: " << current_request.get_http_method()
-						  << " Path: " << current_request.get_requested_path() << std::endl;
+				else if (handler_result == EVERYTHING_IS_READY)
+				{
+					std::cout << "Request fully processed and ready!" << std::endl;
+					std::cout << "Final request - Method: " << current_request.get_http_method()
+							  << " Path: " << current_request.get_requested_path() << std::endl;
+				}
+				else if (handler_result == SOMETHING_WENT_WRONG) 
+				{
+					std::cout << "✗ Something went wrong handling the request" << std::endl;
+					throw std::runtime_error("Error processing HTTP request");
+				}
+				else
+				{
+					std::cout << "Unexpected handler result" << std::endl;
+					throw std::runtime_error("Unexpected handler response");
+				}
 				break;
 			}
 				
