@@ -32,7 +32,9 @@ RequestStatus PostHandler::handle_post_request(
         std::cout << "Missing: " << (expected_body_size - incoming_data.size()) << " bytes" << std::endl;
         return BODY_BEING_READ;
     }
+
     // We have complete body - process it
+    std::cout <<"-----------------------" <<std::endl;
     std::cout << "✅ COMPLETE POST BODY RECEIVED!" << std::endl;
     std::cout << "Final POST data: [" << incoming_data << "]" << std::endl;
 
@@ -45,6 +47,7 @@ RequestStatus PostHandler::handle_post_request(
    {
     std::cout << "Header: " << it->first << "= [" << it->second << "]" << std::endl;
    }
+    std::cout <<"-----------------------" <<std::endl;
     
     return EVERYTHING_IS_READY;  // Now we can process
 }
