@@ -69,7 +69,7 @@ void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cl
 void Client::handle_client_data_input(int epoll_fd, std::map<int,
 															 Client> &active_clients)
 {
-	char buffer[1024] = {0};
+	char buffer[5] = {0};
 	ssize_t bytes_received;
 	struct epoll_event ev;
 
