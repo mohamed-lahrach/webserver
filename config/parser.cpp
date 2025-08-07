@@ -63,11 +63,17 @@ void Parser::parse()
         }
     }
 }
-
+const std::vector<ServerContext> &Parser::getServers() const
+{
+    return servers;
+}
 void Parser::parseServerBlock()
 {
     expect(SERVER_KEYWORD, "Expected 'server' keyword");
     expect(LEFT_BRACE, "Expected '{' after 'server'");
+
+    // Initialize a new ServerContext
+    currentServer = ServerContext();
 
     bool seenClientMaxBodySize = false;
 
@@ -105,6 +111,7 @@ void Parser::parseServerBlock()
     }
 
     expect(RIGHT_BRACE, "Expected '}' to close server block");
+    servers.push_back(currentServer); // Store the completed server context
 }
 
 void Parser::expect(TokenType type, const std::string &errorMessage)
@@ -135,11 +142,8 @@ void Parser::parseIndexDirective()
 
     expect(SEMICOLON, "Expected ';' after index directive");
 
-    // Just print for now
-    std::cout << "Parsed index directive with files:";
-    for (size_t i = 0; i < indexFiles.size(); ++i)
-        std::cout << " " << indexFiles[i];
-    std::cout << std::endl;
+    // Store in currentServer
+    currentServer.indexes = indexFiles;
 }
 
 void Parser::parseListenDirective()
@@ -181,12 +185,9 @@ void Parser::parseListenDirective()
 
     expect(SEMICOLON, "Expected ';' after listen directive");
 
-    std::cout << "[Listen] Host: " << host;
-    if (!port.empty())
-    {
-        std::cout << ", Port: " << port;
-    }
-    std::cout << std::endl;
+    // Store in currentServer instead of printing
+    currentServer.listenHost = host.empty() ? "0.0.0.0" : host;
+    currentServer.listenPort = port.empty() ? "80" : port;
 }
 
 void Parser::parseRootDirective()
@@ -203,10 +204,11 @@ void Parser::parseRootDirective()
 
     expect(SEMICOLON, "Expected ';' after root directive");
 
-    std::cout << "[Root] " << path << std::endl;
+    // Store in currentServer instead of printing
+    currentServer.root = path;
 }
 
-static bool isValidSizeWithUnit(const std::string& value)
+static bool isValidSizeWithUnit(const std::string &value)
 {
     if (value.empty())
         return false;
@@ -251,9 +253,12 @@ void Parser::parseClientMaxBodySizeDirective()
     long long number = std::atoll(value.substr(0, value.length() - 1).c_str());
 
     long long bytes = number;
-    if (unit == 'K') bytes *= 1024LL;
-    else if (unit == 'M') bytes *= 1024LL * 1024LL;
-    else if (unit == 'G') bytes *= 1024LL * 1024LL * 1024LL;
+    if (unit == 'K')
+        bytes *= 1024LL;
+    else if (unit == 'M')
+        bytes *= 1024LL * 1024LL;
+    else if (unit == 'G')
+        bytes *= 1024LL * 1024LL * 1024LL;
 
     expect(SEMICOLON, "Expected ';' after 'client_max_body_size' directive");
 
@@ -264,28 +269,33 @@ void Parser::parseClientMaxBodySizeDirective()
         throw std::runtime_error("'client_max_body_size' exceeds allowed limit at line " + toString(peek().line));
     }
 
-    std::cout << "[ClientMaxBodySize] Parsed: " << bytes << " bytes" << std::endl;
+    // Store in currentServer instead of printing
+    currentServer.clientMaxBodySize = value;
 }
 
-void Parser::parseErrorPageDirective() {
+void Parser::parseErrorPageDirective()
+{
     advance(); // Skip 'error_page' keyword
 
     std::vector<int> errorCodes;
 
     // Collect all NUMBER tokens as error codes
-    while (!isAtEnd() && peek().type == NUMBER) {
+    while (!isAtEnd() && peek().type == NUMBER)
+    {
         int code = std::atoi(peek().value.c_str());
         errorCodes.push_back(code);
         advance();
     }
 
     // Ensure at least one error code was given
-    if (errorCodes.empty()) {
+    if (errorCodes.empty())
+    {
         throw std::runtime_error("Expected at least one error code for error_page directive at line " + toString(peek().line));
     }
 
     // Now expect the URI (as STRING)
-    if (peek().type != STRING) {
+    if (peek().type != STRING)
+    {
         throw std::runtime_error("Expected URI after error codes at line " + toString(peek().line));
     }
 
@@ -295,14 +305,11 @@ void Parser::parseErrorPageDirective() {
     expect(SEMICOLON, "Expected ';' after error_page directive");
 
     // Output to console for now
-    std::cout << "Parsed error_page: ";
-    for (size_t i = 0; i < errorCodes.size(); ++i)
-        std::cout << errorCodes[i] << " ";
-    std::cout << "-> " << uri << std::endl;
+    currentServer.errorPages.push_back(std::make_pair(errorCodes, uri));
 }
 
-
-void Parser::parseAutoindexDirective() {
+void Parser::parseAutoindexDirective()
+{
     advance(); // Skip 'autoindex' keyword
 
     if (peek().type != STRING)
@@ -316,8 +323,7 @@ void Parser::parseAutoindexDirective() {
 
     expect(SEMICOLON, "Expected ';' after 'autoindex' directive");
 
-    // Output for now
-    std::cout << "Parsed autoindex: " << value << std::endl;
+    currentServer.autoindex = value; // Store in currentServer
 }
 
 void Parser::parseLocationBlock()
@@ -328,17 +334,63 @@ void Parser::parseLocationBlock()
         throw std::runtime_error("Expected location path after 'location' at line " + toString(peek().line));
 
     std::string path = advance().value;
-
     expect(LEFT_BRACE, "Expected '{' after location path at line " + toString(peek().line));
 
-    std::cout << "Parsing location block at path: " << path << std::endl;
+    // Create new location context
+    LocationContext location;
+    location.path = path;
 
-    // Minimal viable logic: skip all until closing '}'
     while (!isAtEnd() && peek().type != RIGHT_BRACE)
     {
-        // You can expand this later with switch-case for inner directives
-        advance();
+        Token token = advance();
+
+        switch (token.type)
+        {
+        case ALLOWED_METHODS_KEYWORD:
+        {
+            while (peek().type == HTTP_METHOD_KEYWORD)
+            {
+                location.allowedMethods.push_back(advance().value);
+            }
+            expect(SEMICOLON, "Expected ';' after allowed_methods");
+            break;
+        }
+
+        case ROOT_KEYWORD:
+        {
+            if (peek().type != STRING)
+                throw std::runtime_error("Expected path after 'root' at line " + toString(peek().line));
+            location.root = advance().value;
+            expect(SEMICOLON, "Expected ';' after root");
+            break;
+        }
+
+        case INDEX_KEYWORD:
+        {
+            while (peek().type == STRING)
+            {
+                location.indexes.push_back(advance().value);
+            }
+            expect(SEMICOLON, "Expected ';' after index");
+            break;
+        }
+
+        case AUTOINDEX_KEYWORD:
+        {
+            if (peek().type != STRING || (peek().value != "on" && peek().value != "off"))
+                throw std::runtime_error("Expected 'on' or 'off' after autoindex at line " + toString(peek().line));
+            location.autoindex = advance().value;
+            expect(SEMICOLON, "Expected ';' after autoindex");
+            break;
+        }
+
+        default:
+            throw std::runtime_error("Unknown directive '" + token.value + "' in location block at line " + toString(token.line));
+        }
     }
 
     expect(RIGHT_BRACE, "Expected '}' to close location block at line " + toString(peek().line));
+
+    // Store location in current server
+    currentServer.locations.push_back(location);
 }

@@ -5,32 +5,61 @@
 #include "Lexer.hpp"
 #include <sstream> // Add at top of your parser.cpp
 
+struct LocationContext
+{
+    std::string path;
+    std::string root;
+    std::vector<std::string> indexes;
+    std::string autoindex;
+    std::vector<std::string> allowedMethods;
+};
+
+typedef std::pair<std::vector<int>, std::string> ErrorPagePair;
+
+struct ServerContext
+{
+    std::string listenHost;
+    std::string listenPort;
+    std::string root;
+    std::vector<std::string> indexes;
+    std::vector<ErrorPagePair> errorPages; // Much cleaner
+    std::string clientMaxBodySize;
+    std::string autoindex;
+    std::vector<LocationContext> locations;
+};
+
 class Parser
 {
 private:
     size_t current;
     std::vector<Token> tokens;
+    ServerContext currentServer;
+    std::vector<ServerContext> servers;
 
-public:
-    Parser(const std::vector<Token> &tokenStream);
+    // Private helper methods
     const Token &peek();
     const Token &advance();
     const Token &previous();
     bool isAtEnd();
     bool match(TokenType type);
-    void parse();
     void expect(TokenType type, const std::string &errorMessage);
-    
-    // Blocks 
+
+    // Private parsing methods - Blocks
     void parseLocationBlock();
     void parseServerBlock();
-    // Directive-specific parsing functions
+
+    // Private parsing methods - Directive-specific parsing functions
     void parseListenDirective();
     void parseRootDirective();
     void parseIndexDirective();
     void parseClientMaxBodySizeDirective();
     void parseErrorPageDirective();
     void parseAutoindexDirective();
+
+public:
+    Parser(const std::vector<Token> &tokenStream);
+    void parse();
+    const std::vector<ServerContext> &getServers() const;
 };
 
 #endif
