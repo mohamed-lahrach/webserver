@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MIME Type Test - My Web Server</title>
+    <link rel="stylesheet" type="text/css" href="/style.css">
+</head>
+<body>
+    <h1>MIME Type Detection Test</h1>
+    
+    <div class="test-box">
+        <h2>CSS Test</h2>
+        <p>If you see styled content with colors and formatting, CSS MIME type (text/css) is working!</p>
+        <div class="success">This text should be green and bold if CSS loaded correctly.</div>
+    </div>
+    
+    <div class="test-box">
+        <h2>JavaScript Test</h2>
+        <p>JavaScript MIME type test:</p>
+        <div id="mime-test"> JavaScript not loaded yet...</div>
+        <button class="test-button">Click me to test JavaScript!</button>
+    </div>
+    
+    <div class="test-box">
+        <h2>Image Test</h2>
+        <p>Test different image MIME types:</p>
+        <ul>
+            <li><a href="/test.jpg">JPEG Image (image/jpeg)</a></li>
+            <li><a href="/test.png">PNG Image (image/png)</a></li>
+            <li><a href="/test.gif">GIF Image (image/gif)</a></li>
+        </ul>
+    </div>
+    
+    <div class="test-box">
+        <h2>Document Test</h2>
+        <p>Test document MIME types:</p>
+        <ul>
+            <li><a href="/test.json">JSON File (application/json)</a></li>
+            <li><a href="/test.xml">XML File (application/xml)</a></li>
+            <li><a href="/test.txt">Text File (text/plain)</a></li>
+        </ul>
+    </div>
+    
+    <div class="test-box">
+        <h2>Unknown Extension Test</h2>
+        <p>Test default MIME type:</p>
+        <ul>
+            <li><a href="/unknown.xyz">Unknown Extension (should be application/octet-stream)</a></li>
+        </ul>
+    </div>
+    
+    <p><a href="/">← Back to Home</a></p>
+    
+    <script src="/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+Project Phase,"        
+Task",Assigned To,Status,Dependencies,
+0: Initialization & Core Build System,Task 0.1: Initialize project structure and Git repository.,Developer A,Not started,None,Low
+0: Initialization & Core Build System,"Task 0.2: Create the initial Makefile with essential rules ($(NAME), all, clean, fclean, re) and C++98 compilation flags (-Wall -Wextra -Werror).",Developer A,Not started,Task 0.1,Low
+1: Basic Network Layer & Connection Handling,Task 1.1: Implement basic socket creation (socket()).,Developer C,Not started,Task 0.1,Low
+1: Basic Network Layer & Connection Handling,Task 1.2: Implement socket binding (bind()) to a preliminary hardcoded port/host.,Developer C,Not started,Task 1.1,Low
+1: Basic Network Layer & Connection Handling,Task 1.3: Implement socket listening (listen()).,Developer C,Not started,Task 1.2,Low
+1: Basic Network Layer & Connection Handling,Task 1.4: Set listening sockets to non-blocking mode.,Developer C,Not started,Task 1.3,Medium
+1: Basic Network Layer & Connection Handling,"Task 1.5: Implement the core I/O event loop using poll() (or select()/kqueue()/epoll()). Initially, this loop will only monitor listening sockets.",Developer C,Not started,Task 1.4,Medium
+1: Basic Network Layer & Connection Handling,Task 1.6: Implement client connection acceptance (accept()) within the event loop.,Developer C,Not started,Task 1.5,Medium
+1: Basic Network Layer & Connection Handling,Task 1.7: Set newly accepted client sockets to non-blocking mode.,Developer C,Not started,Task 1.6,Medium
+1: Basic Network Layer & Connection Handling,Task 1.8: Add accepted client sockets to the poll() set for monitoring read events.,Developer C,Not started,Task 1.7,Medium
+1: Basic Network Layer & Connection Handling,"Task 1.9: If on MacOS, ensure fcntl(fd, F_SETFL, O_NONBLOCK, FD_CLOEXEC) is correctly used for non-blocking operations.",Developer C,Not started,Task 1.4; Task 1.7,Low
+2: Core Configuration Parsing,Task 2.1: Design the structure for storing parsed configuration data.,Developer A,Not started,Task 0.1,Medium
+2: Core Configuration Parsing,Task 2.2: Implement a parser for basic server block structure.,Developer A,Not started,Task 2.1,Medium
+2: Core Configuration Parsing,"Task 2.3: Implement parsing for listen, server_name, error_page (basic paths), client_max_body_size, root directives.",Developer A,Not started,Task 2.2,Medium
+2: Core Configuration Parsing,Task 2.4: Implement logic for identifying the default server.,Developer A,Not started,Task 2.3,Medium
+2: Core Configuration Parsing,Task 2.5: Create basic default configuration files.,Developer A,Not started,Task 2.3,Low
+2: Core Configuration Parsing,Task 2.6: Integrate with Developer C to get listening port/host details from the parsed configuration and update bind() accordingly.,Developer A & Developer C,Not started,Task 1.2; Task 2.3,Medium
+3: HTTP Request Parsing & Basic Routing,Task 3.1: Implement logic to read raw data from client sockets when poll() indicates readability.,Developer C,Not started,Task 1.8,Medium
+3: HTTP Request Parsing & Basic Routing,Task 3.2: Define and implement an interface for Developer C to pass raw request data to Developer B.,Developer B & Developer C,Not started,Task 3.1,Medium
+3: HTTP Request Parsing & Basic Routing,"Task 3.3: Implement parsing for the HTTP request line (Method, URI, Version) and essential headers.",Developer B,Not started,Task 3.2,Very High
+3: HTTP Request Parsing & Basic Routing,Task 3.4: Implement basic request routing (matching request to server block and a simple location) based on config.,Developer B,Not started,Task 2.4; Task 3.3,Very High
+3: HTTP Request Parsing & Basic Routing,"Task 3.5: Create a ""request context"" object with parsed request and applicable configuration.",Developer B,Not started,Task 3.4,Medium
+3: HTTP Request Parsing & Basic Routing,"Task 3.6: Define and implement an interface for Developer B to pass the ""request context"" to Developer A.",Developer A & Developer B,Not started,Task 3.5,Medium
+4: Static Content Delivery (GET) & Basic Response,"Task 4.1: Implement basic HTTP response generation (status line, essential headers).",Developer B,Not started,Task 3.6,Very High
+4: Static Content Delivery (GET) & Basic Response,Task 4.2: Implement GET method for serving static files based on the root directive in the request context.,Developer A,Not started,Task 3.6,Medium
+4: Static Content Delivery (GET) & Basic Response,Task 4.3: Define and implement an interface for Developer A to pass response data (e.g. file path or error code) to Developer B for serialization.,Developer A & Developer B,Not started,Task 4.1; Task 4.2,Medium
+4: Static Content Delivery (GET) & Basic Response,Task 4.4: Implement logic to write response data to client sockets when poll() indicates writability.,Developer C,Not started,Task 4.3,Medium
+5: Advanced Configuration & HTTP Features,"Task 5.1.1: Implement parsing for location blocks with complex matching, allowed_methods, index, autoindex, HTTP redirection, upload paths.",Developer A,Not started,Task 2.3,High
+5: Advanced Configuration & HTTP Features,"Task 5.1.2: Implement parsing for configuring multiple CGI handlers (e.g., based on file extension or path, specifying different CGI executables).BONUS",Developer A,Not started,Task 5.1.1,Medium
+5: Advanced Configuration & HTTP Features,"Task 5.1.3: Implement parsing for any session-related configurations if needed (e.g., cookie name, timeout, though simplicity is key). BONUS",Developer C,Not started,Task 5.1.1,Very High
+5: Advanced Configuration & HTTP Features,Task 5.1.4: Refine request routing logic to use all advanced options.,Developer A,Not started,Task 3.4; Task 5.1.1,Very High
+5: Advanced Configuration & HTTP Features,Task 5.2.1: Implement full HTTP header parsing.,Developer B,Not started,Task 3.3,Very High
+5: Advanced Configuration & HTTP Features,Task 5.2.2: Implement HTTP request body extraction and parsing (respecting Content-Length).,Developer B,Not started,Task 5.2.1,Very High
+5: Advanced Configuration & HTTP Features,Task 5.2.3: Implement client body size validation against config from Developer A.,Developer B,Not started,Task 2.3; Task 5.2.2,Medium
+5: Advanced Configuration & HTTP Features,Task 5.2.4: Implement POST method for file uploads.,Developer A,Not started,Task 3.6; Task 5.1.1,Very High
+5: Advanced Configuration & HTTP Features,Task 5.2.5: Implement DELETE method.,Developer A,Not started,Task 3.6; Task 5.1.1,Very High
+5: Advanced Configuration & HTTP Features,Task 5.2.6: Implement serving of index files and autoindex directory listing.,Developer A,Not started,Task 4.2; Task 5.1.1,Medium
+5: Advanced Configuration & HTTP Features,Task 5.2.7: Implement HTTP redirections.,Developer C,Not started,Task 3.6; Task 5.1.1,High
+5: Advanced Configuration & HTTP Features,Task 5.2.8: Refine HTTP response generation with all necessary headers and accurate status codes.,Developer B,Not started,Task 4.1; Task 5.2.1,Very High
+5: Advanced Configuration & HTTP Features,Task 5.2.9: Implement serving of configured/default error pages.,Developer C,Not started,Task 4.2,Medium
+6: CGI Handling (Mandatory & Bonus),"Task 6.1: Implement logic to identify if a request should be handled by CGI, and which CGI handler to use. BONUS",Developer A,Not started,Task 5.1.2; Task 5.1.4,Medium
+6: CGI Handling (Mandatory & Bonus),Task 6.2: Implement fork() and execve() to execute the correctly chosen CGI script. Set up environment variables.,Developer A,Not started,Task 6.1,Low
+6: CGI Handling (Mandatory & Bonus),Task 6.3: Set up pipes for communication with the CGI script.,Developer A,Not started,Task 6.2,Low
+6: CGI Handling (Mandatory & Bonus),Task 6.4: Define and implement an interface for Developer A to register CGI pipe file descriptors with Developer C's event loop.,Developer A & Developer C,Not started,Task 1.8; Task 6.3,Low
+6: CGI Handling (Mandatory & Bonus),Task 6.5: Implement passing the request body to CGI's stdin.,Developer A,Not started,Task 5.2.2; Task 6.3,Medium
+6: CGI Handling (Mandatory & Bonus),Task 6.6: Implement reading the response from CGI's stdout (handling headers and body). This will be event-driven via Developer C's poll().,Developer A,Not started,Task 6.4,Medium
+7: Cookies & Session Management (BONUS),Task 7.1: Implement HTTP Cookie header parsing. BONUS,Developer B,Not started,Task 5.2.1,Very High
+7: Cookies & Session Management (BONUS),Task 7.2: Implement session ID generation and validation logic. BONUS,Developer B,Not started,Task 7.1,Very High
+7: Cookies & Session Management (BONUS),"Task 7.3: Implement server-side session data storage (e.g., simple in-memory map: session ID -> data). BONUS",Developer B,Not started,Task 7.2,Very High
+7: Cookies & Session Management (BONUS),Task 7.4: Implement logic to create new sessions for new users and send Set-Cookie headers. BONUS,Developer B,Not started,Task 7.3,High
+7: Cookies & Session Management (BONUS),Task 7.5: Implement logic to load existing session data for users with valid session cookies. BONUS,Developer C,Not started,Task 7.3,High
+7: Cookies & Session Management (BONUS),"Task 7.6: Provide a simple way for responses/CGIs to interact with session data (e.g., read/write). BONUS",Developer C,Not started,Task 7.3,High
+7: Cookies & Session Management (BONUS),Task 7.7: Prepare quick examples demonstrating cookie and session usage. BONUS,Developer B,Not started,Task 7.6,Medium
+8: Core Integration,Task 8.1: Handle client disconnection events robustly and remove FDs from poll().,Developer C,Not started,Task 1.8,Medium
