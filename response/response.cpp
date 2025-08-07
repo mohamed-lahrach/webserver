@@ -99,7 +99,7 @@ std::string Response::what_reason(int code)
 	}
 }
 
-std::string Response::list_dir(const std::string& path)
+std::string Response::list_dir(const std::string& path, const std::string& request_path)
 {
 	std::stringstream html;
 	
@@ -120,10 +120,12 @@ std::string Response::list_dir(const std::string& path)
 			struct stat fileStat;
 
 			if (stat(fullPath.c_str(), &fileStat) == 0) {
+
+				std::string url = request_path + "/" + entry->d_name;
 				if (S_ISREG(fileStat.st_mode)) {
-					html << "<li><a href=\"" << entry->d_name << "\">" << entry->d_name << "</a> (File)</li>";
+					html << "<li><a href=\"" << url << "\">" << entry->d_name << "</a> (File)</li>";
 				} else if (S_ISDIR(fileStat.st_mode)) {
-					html << "<li><a href=\"" << entry->d_name << "/\">" << entry->d_name << "/</a> (Directory)</li>";
+					html << "<li><a href=\"" << url << "/\">" << entry->d_name << "/</a> (Directory)</li>";
 				}
 			}
 		}
@@ -185,7 +187,7 @@ void Response::analyze_request_and_set_response(const std::string& path)
 			else
 			{
 				std::cout << "No index.html found, generating directory listing" << std::endl;
-				std::string dir_listing = list_dir(file_path);
+				std::string dir_listing = list_dir(file_path, path);
 				
 				
 				set_content(dir_listing);

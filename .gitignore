@@ -1,0 +1,6 @@
+webserv
+*.o
+*.log
+*.txt
+.vscode/
+uploads/*

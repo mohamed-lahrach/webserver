@@ -33,7 +33,7 @@ class Response
 	
 	void analyze_request_and_set_response(const std::string& path);
 	void check_upload_file(const std::string& file_path);
-	std::string list_dir(const std::string& path);
+	std::string list_dir(const std::string& path, const std::string& request_path);
 	
 
 	std::string what_reason(int code);
