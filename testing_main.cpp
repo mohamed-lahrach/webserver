@@ -69,21 +69,12 @@ int main()
 {
     Lexer lexer("./test_configs/default.conf");
     std::vector<Token> tokens = lexer.tokenizeAll();
-
-    // for (size_t i = 0; i < tokens.size(); ++i)
-    // {
-    //     const Token &token = tokens[i];
-    //     std::cout << "Token: '" << token.value << "'"
-    //               << " | Type: " << tokenTypeToString(token.type)
-    //               << " | Line: " << token.line
-    //               << " | Column: " << token.column << std::endl;
-    //     std::cout << "-------------------------" << std::endl;
-    // }
     std::cout << "-------------------------" << std::endl;
     Parser parser(tokens);
     try
     {
         parser.parse();
+         parser.getServers();
         std::cout << "Parsing completed successfully!" << std::endl;
     }
     catch (const std::runtime_error &e)

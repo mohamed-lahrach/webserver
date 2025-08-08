@@ -1,8 +1,26 @@
 #include "Server_setup/server.hpp"
 
-int	main(void)
+int main(void)
 {
-	int	PORT;
+
+	// parser phase
+	Lexer lexer("./test_configs/default.conf");
+	std::vector
+	std::vector<Token> tokens = lexer.tokenizeAll();
+	std::cout << "-------------------------" << std::endl;
+	Parser parser(tokens);
+	try
+	{
+		parser.parse();
+		parser.getServers();
+		std::cout << "Parsing completed successfully!" << std::endl;
+	}
+	catch (const std::runtime_error &e)
+	{
+		std::cerr << e.what() << std::endl;
+	}
+
+	int PORT;
 	Server server;
 
 	PORT = 8080;
