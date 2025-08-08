@@ -1,0 +1,51 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build config debug",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-g",
+                "-O0",
+                "-Wall",
+                "-Wextra",
+                "-std=c++98",
+                "-DDEBUG",
+                "config/Lexer.cpp",
+                "config/parser.cpp",
+                "testing_main.cpp",
+                "-o",
+                "config_debug"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": ["relative", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
+            "label": "clean config",
+            "type": "shell",
+            "command": "rm",
+            "args": ["-f", "config_debug"],
+            "group": "build"
+        }
+    ]
+}
