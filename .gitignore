@@ -2,5 +2,9 @@ webserv
 *.o
 *.log
 *.txt
+*.mp4
+*.pdf
+*.log
+*.jpg
 .vscode/
 uploads/*

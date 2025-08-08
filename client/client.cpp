@@ -108,7 +108,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int,
 						  << " Path: " << current_request.get_requested_path() << std::endl;
 				request_status = EVERYTHING_IS_READY;
 			}
-			else 
+			else
 			{
 				if (handler_result == SOMETHING_WENT_WRONG)
 				{
@@ -117,32 +117,32 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int,
 				}
 				else
 				{
-					
+
 					request_status = handler_result;
-	
+
 					switch (handler_result)
 					{
-						case BAD_REQUEST:
-							std::cout << "✗ BAD REQUEST (400) - Malformed request" << std::endl;
-							break;
-						case FORBIDDEN:
-							std::cout << "✗ FORBIDDEN (403) - Security violation or access denied" << std::endl;
-							break;
-						case NOT_FOUND:
-							std::cout << "✗ NOT FOUND (404) - Resource not found" << std::endl;
-							break;
-						case METHOD_NOT_ALLOWED:
-							std::cout << "✗ METHOD NOT ALLOWED (405) - Method not supported" << std::endl;
-							break;
-						case PAYLOAD_TOO_LARGE:
-							std::cout << "✗ PAYLOAD TOO LARGE (413) - Request too large" << std::endl;
-							break;
-						case INTERNAL_ERROR:
-							std::cout << "✗ INTERNAL ERROR (500) - Server error" << std::endl;
-							break;
-						default:
-							std::cout << "✗ Unexpected error occurred" << std::endl;
-							break;
+					case BAD_REQUEST:
+						std::cout << "✗ BAD REQUEST (400) - Malformed request" << std::endl;
+						break;
+					case FORBIDDEN:
+						std::cout << "✗ FORBIDDEN (403) - Security violation or access denied" << std::endl;
+						break;
+					case NOT_FOUND:
+						std::cout << "✗ NOT FOUND (404) - Resource not found" << std::endl;
+						break;
+					case METHOD_NOT_ALLOWED:
+						std::cout << "✗ METHOD NOT ALLOWED (405) - Method not supported" << std::endl;
+						break;
+					case PAYLOAD_TOO_LARGE:
+						std::cout << "✗ PAYLOAD TOO LARGE (413) - Request too large" << std::endl;
+						break;
+					case INTERNAL_ERROR:
+						std::cout << "✗ INTERNAL ERROR (500) - Server error" << std::endl;
+						break;
+					default:
+						std::cout << "✗ Unexpected error occurred" << std::endl;
+						break;
 					}
 				}
 			}
@@ -188,21 +188,39 @@ void Client::handle_client_data_output(int client_fd, int epoll_fd,
 									   std::map<int, Client> &active_clients)
 {
 	std::cout << "=== GENERATING RESPONSE FOR CLIENT " << client_fd << " ===" << std::endl;
-	
-	if (request_status != EVERYTHING_IS_READY)
+
+	if (current_response.is_still_streaming())
 	{
-		std::cout << "Setting error response for status: " << request_status << std::endl;
-		current_response.set_error_response(request_status);
+		std::cout << "Continuing file streaming..." << std::endl;
+		current_response.handle_response(client_fd);
 	}
 	else
 	{
-		std::string request_path = current_request.get_requested_path();
-		std::cout << "Creating normal response for path: " << request_path << std::endl;
-		current_response.analyze_request_and_set_response(request_path);
+
+		if (request_status != EVERYTHING_IS_READY)
+		{
+			std::cout << "Setting error response for status: " << request_status << std::endl;
+			current_response.set_error_response(request_status);
+		}
+		else
+		{
+			std::string request_path = current_request.get_requested_path();
+			std::cout << "Creating normal response for path: " << request_path << std::endl;
+			current_response.analyze_request_and_set_response(request_path);
+		}
+
+		current_response.handle_response(client_fd);
 	}
 
-	current_response.handle_response(client_fd);
-	cleanup_connection(epoll_fd, active_clients);
+	if (!current_response.is_still_streaming())
+	{
+		std::cout << "Response complete - cleaning up connection" << std::endl;
+		cleanup_connection(epoll_fd, active_clients);
+	}
+	else
+	{
+		std::cout << "File streaming in progress - keeping connection alive" << std::endl;
+	}
 }
 
 void Client::cleanup_connection(int epoll_fd, std::map<int,

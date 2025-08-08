@@ -1,6 +1,6 @@
 NAME = webserv
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g
 
 SRC = main.cpp Server_setup/server.cpp Server_setup/util_server.cpp  \
       Server_setup/socket.cpp Server_setup/non_blocking.cpp client/client.cpp \
