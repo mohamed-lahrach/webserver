@@ -1,0 +1,396 @@
+#include "parser.hpp"
+#include "Lexer.hpp"
+#include <sstream>
+#include <cstdlib>
+
+static std::string toString(int number)
+{
+    std::ostringstream oss;
+    oss << number;
+    return oss.str();
+}
+
+Parser::Parser(const std::vector<Token> &tokenStream)
+{
+    current = 0;
+    tokens = tokenStream;
+}
+
+const Token &Parser::peek()
+{
+    return tokens[current];
+}
+const Token &Parser::advance()
+{
+    if (current < tokens.size())
+        current++;
+    return previous();
+}
+
+const Token &Parser::previous()
+{
+    return tokens[current - 1];
+}
+
+bool Parser::isAtEnd()
+{
+    return current >= tokens.size();
+}
+
+bool Parser::match(TokenType type)
+{
+    if (isAtEnd())
+        return false;
+    if (tokens[current].type != type)
+        return false;
+    advance(); // Consume the token if it matches
+    return true;
+}
+
+void Parser::parse()
+{
+    while (!isAtEnd())
+    {
+        if (peek().type == EOF_TOKEN)
+            break;
+        if (peek().type == SERVER_KEYWORD)
+            parseServerBlock();
+        else
+        {
+            std::ostringstream oss;
+            oss << "Expected 'server' keyword at line " << peek().line;
+            throw std::runtime_error(oss.str());
+        }
+    }
+}
+const std::vector<ServerContext> &Parser::getServers() const
+{
+    return servers;
+}
+void Parser::parseServerBlock()
+{
+    expect(SERVER_KEYWORD, "Expected 'server' keyword");
+    expect(LEFT_BRACE, "Expected '{' after 'server'");
+
+    // Initialize a new ServerContext
+    currentServer = ServerContext();
+
+    bool seenClientMaxBodySize = false;
+
+    while (!isAtEnd() && peek().type != RIGHT_BRACE)
+    {
+        switch (peek().type)
+        {
+        case LISTEN_KEYWORD:
+            parseListenDirective();
+            break;
+        case ROOT_KEYWORD:
+            parseRootDirective();
+            break;
+        case CLIENT_MAX_BODY_SIZE_KEYWORD:
+            if (seenClientMaxBodySize)
+                throw std::runtime_error("Duplicate 'client_max_body_size' directive at line " + toString(peek().line));
+            seenClientMaxBodySize = true;
+            parseClientMaxBodySizeDirective();
+            break;
+        case INDEX_KEYWORD:
+            parseIndexDirective();
+            break;
+        case ERROR_PAGE_KEYWORD:
+            parseErrorPageDirective();
+            break;
+        case AUTOINDEX_KEYWORD:
+            parseAutoindexDirective();
+            break;
+        case LOCATION_KEYWORD:
+            parseLocationBlock();
+            break;
+        default:
+            throw std::runtime_error("Unexpected directive at line " + toString(peek().line));
+        }
+    }
+
+    expect(RIGHT_BRACE, "Expected '}' to close server block");
+    servers.push_back(currentServer); // Store the completed server context
+}
+
+void Parser::expect(TokenType type, const std::string &errorMessage)
+{
+    if (!match(type))
+    {
+        std::ostringstream oss;
+        oss << "Parser Error: " << errorMessage << " at line " << peek().line;
+        throw std::runtime_error(oss.str());
+    }
+}
+
+// Directive-specific parsing
+void Parser::parseIndexDirective()
+{
+    advance(); // consume 'index'
+
+    std::vector<std::string> indexFiles;
+
+    while (!isAtEnd() && peek().type == STRING)
+    {
+        indexFiles.push_back(peek().value);
+        advance(); // consume the identifier
+    }
+
+    if (indexFiles.empty())
+        throw std::runtime_error("Expected at least one file after 'index' at line " + toString(peek().line));
+
+    expect(SEMICOLON, "Expected ';' after index directive");
+
+    // Store in currentServer
+    currentServer.indexes = indexFiles;
+}
+
+void Parser::parseListenDirective()
+{
+    expect(LISTEN_KEYWORD, "Expected 'listen' directive");
+
+    std::string host;
+    std::string port;
+    bool foundColon = false;
+
+    while (!isAtEnd())
+    {
+        Token token = peek();
+        if (token.type == SEMICOLON)
+            break;
+
+        if (token.type == DOT || token.type == COLON || token.type == NUMBER)
+        {
+            if (token.type == COLON)
+            {
+                foundColon = true;
+            }
+            else if (!foundColon)
+            {
+                host += token.value;
+            }
+            else
+            {
+                port += token.value;
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Unexpected token in listen directive at line " + toString(token.line));
+        }
+
+        advance();
+    }
+
+    expect(SEMICOLON, "Expected ';' after listen directive");
+
+    // Store in currentServer instead of printing
+    currentServer.listenHost = host.empty() ? "0.0.0.0" : host;
+    currentServer.listenPort = port.empty() ? "80" : port;
+}
+
+void Parser::parseRootDirective()
+{
+    expect(ROOT_KEYWORD, "Expected 'root' directive");
+
+    if (peek().type != STRING)
+    {
+        throw std::runtime_error("Expected path after 'root' at line " + toString(peek().line));
+    }
+
+    std::string path = peek().value;
+    advance();
+
+    expect(SEMICOLON, "Expected ';' after root directive");
+
+    // Store in currentServer instead of printing
+    currentServer.root = path;
+}
+
+static bool isValidSizeWithUnit(const std::string &value)
+{
+    if (value.empty())
+        return false;
+
+    size_t len = value.length();
+    if (len < 2)
+        return false; // at least one digit + 1 unit
+
+    char unit = value[len - 1];
+    if (unit != 'M' && unit != 'K' && unit != 'G')
+        return false;
+
+    for (size_t i = 0; i < len - 1; ++i)
+    {
+        if (!std::isdigit(value[i]))
+            return false;
+    }
+
+    return true;
+}
+
+void Parser::parseClientMaxBodySizeDirective()
+{
+    expect(CLIENT_MAX_BODY_SIZE_KEYWORD, "Expected 'client_max_body_size' directive");
+
+    // Accept string token like "1000000M"
+    if (peek().type != STRING)
+    {
+        throw std::runtime_error("Expected value like '1000M', '200K', or '1G' after 'client_max_body_size' at line " + toString(peek().line));
+    }
+
+    std::string value = peek().value;
+    advance();
+
+    // Validate format: digits + [M|K|G]
+    if (!isValidSizeWithUnit(value))
+    {
+        throw std::runtime_error("Invalid format for 'client_max_body_size' at line " + toString(peek().line));
+    }
+
+    char unit = value[value.length() - 1];
+    long long number = std::atoll(value.substr(0, value.length() - 1).c_str());
+
+    long long bytes = number;
+    if (unit == 'K')
+        bytes *= 1024LL;
+    else if (unit == 'M')
+        bytes *= 1024LL * 1024LL;
+    else if (unit == 'G')
+        bytes *= 1024LL * 1024LL * 1024LL;
+
+    expect(SEMICOLON, "Expected ';' after 'client_max_body_size' directive");
+
+    // Enforce upper limit (example: 10 GB)
+    long long maxAllowed = 10LL * 1024LL * 1024LL * 1024LL;
+    if (bytes > maxAllowed)
+    {
+        throw std::runtime_error("'client_max_body_size' exceeds allowed limit at line " + toString(peek().line));
+    }
+
+    // Store in currentServer instead of printing
+    currentServer.clientMaxBodySize = value;
+}
+
+void Parser::parseErrorPageDirective()
+{
+    advance(); // Skip 'error_page' keyword
+
+    std::vector<int> errorCodes;
+
+    // Collect all NUMBER tokens as error codes
+    while (!isAtEnd() && peek().type == NUMBER)
+    {
+        int code = std::atoi(peek().value.c_str());
+        errorCodes.push_back(code);
+        advance();
+    }
+
+    // Ensure at least one error code was given
+    if (errorCodes.empty())
+    {
+        throw std::runtime_error("Expected at least one error code for error_page directive at line " + toString(peek().line));
+    }
+
+    // Now expect the URI (as STRING)
+    if (peek().type != STRING)
+    {
+        throw std::runtime_error("Expected URI after error codes at line " + toString(peek().line));
+    }
+
+    std::string uri = peek().value;
+    advance(); // Consume URI
+
+    expect(SEMICOLON, "Expected ';' after error_page directive");
+
+    // Output to console for now
+    currentServer.errorPages.push_back(std::make_pair(errorCodes, uri));
+}
+
+void Parser::parseAutoindexDirective()
+{
+    advance(); // Skip 'autoindex' keyword
+
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected 'on' or 'off' after 'autoindex' at line " + toString(peek().line));
+
+    std::string value = peek().value;
+    if (value != "on" && value != "off")
+        throw std::runtime_error("Invalid value for 'autoindex': expected 'on' or 'off' at line " + toString(peek().line));
+
+    advance(); // Consume the value
+
+    expect(SEMICOLON, "Expected ';' after 'autoindex' directive");
+
+    currentServer.autoindex = value; // Store in currentServer
+}
+
+void Parser::parseLocationBlock()
+{
+    expect(LOCATION_KEYWORD, "Expected 'location' keyword");
+
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected location path after 'location' at line " + toString(peek().line));
+
+    std::string path = advance().value;
+    expect(LEFT_BRACE, "Expected '{' after location path at line " + toString(peek().line));
+
+    // Create new location context
+    LocationContext location;
+    location.path = path;
+
+    while (!isAtEnd() && peek().type != RIGHT_BRACE)
+    {
+        Token token = advance();
+
+        switch (token.type)
+        {
+        case ALLOWED_METHODS_KEYWORD:
+        {
+            while (peek().type == HTTP_METHOD_KEYWORD)
+            {
+                location.allowedMethods.push_back(advance().value);
+            }
+            expect(SEMICOLON, "Expected ';' after allowed_methods");
+            break;
+        }
+
+        case ROOT_KEYWORD:
+        {
+            if (peek().type != STRING)
+                throw std::runtime_error("Expected path after 'root' at line " + toString(peek().line));
+            location.root = advance().value;
+            expect(SEMICOLON, "Expected ';' after root");
+            break;
+        }
+
+        case INDEX_KEYWORD:
+        {
+            while (peek().type == STRING)
+            {
+                location.indexes.push_back(advance().value);
+            }
+            expect(SEMICOLON, "Expected ';' after index");
+            break;
+        }
+
+        case AUTOINDEX_KEYWORD:
+        {
+            if (peek().type != STRING || (peek().value != "on" && peek().value != "off"))
+                throw std::runtime_error("Expected 'on' or 'off' after autoindex at line " + toString(peek().line));
+            location.autoindex = advance().value;
+            expect(SEMICOLON, "Expected ';' after autoindex");
+            break;
+        }
+
+        default:
+            throw std::runtime_error("Unknown directive '" + token.value + "' in location block at line " + toString(token.line));
+        }
+    }
+
+    expect(RIGHT_BRACE, "Expected '}' to close location block at line " + toString(peek().line));
+
+    // Store location in current server
+    currentServer.locations.push_back(location);
+}
