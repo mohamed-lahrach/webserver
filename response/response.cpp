@@ -1,27 +1,25 @@
 #include "response.hpp"
-#include <iostream>     // For std::cout
-#include <cstring>      // For strlen()
-#include <sys/socket.h> // For send()
-#include <sys/epoll.h>  // For epoll_ctl(), EPOLL_CTL_DEL
-#include <unistd.h>     // For close()
-#include <map>
 #include <sstream>
+#include <iostream>   
+#include <cstring>    
+#include <sys/socket.h>
+#include <sys/epoll.h>  
+#include <unistd.h>    
+#include <map>
 
-// Constructor
 Response::Response() : status_code(200), content("Welcome to My Web Server!")
 {
-	// Set default headers
+
 	set_header("Content-Type", "text/html");
 	set_header("Connection", "close");
 }
 
-// Destructor
+
 Response::~Response()
 {
 
 }
 
-// Setter methods
 void Response::set_code(int code)
 {
 	status_code = code;
@@ -37,6 +35,42 @@ void Response::set_header(const std::string& key, const std::string& value)
 	headers[key] = value;
 }
 
+void Response::analyze_request_and_set_response(const std::string& path)
+{
+	std::cout << "=== ANALYZING REQUEST PATH: " << path << " ===" << std::endl;
+	
+	if (path == "/" || path == "/index.html" || path == "/home")
+	{
+		set_code(200);
+		set_content("Welcome to My Web Server!");
+		std::cout << "✓ Valid path - returning 200 OK" << std::endl;
+	}
+	else
+	{
+		set_code(404);
+		set_content("404 Not Found\n");
+		set_header("Content-Type", "text");
+		std::cout << "✗ Unknown path - returning 404 Not Found" << std::endl;
+	}
+}
+
+std::string Response::what_reason(int code)
+{
+	switch (code)
+	{
+	case 200:
+		return "OK";
+	case 404:
+		return "Not Found";
+	case 405:
+		return "Method Not Allowed";
+	case 500:
+		return "Internal Server Error";
+	default:
+		return "Unknown";
+	}
+}
+
 void Response::handle_response(int client_fd)
 {
 	std::cout << "=== RESPONSE: Building and sending response ===" << std::endl;
@@ -44,7 +78,7 @@ void Response::handle_response(int client_fd)
 	std::ostringstream status_stream;
 	status_stream << status_code;
 	std::string code_str = status_stream.str();
-	std::string reason_phrase = "OK";  
+	std::string reason_phrase = what_reason(status_code);  
 	std::string status_line = "HTTP/1.0 " + code_str + " " + reason_phrase + "\r\n";
 	std::string headers_line;
 	std::map<std::string ,std::string>::iterator ite=headers.begin();

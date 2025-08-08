@@ -34,17 +34,16 @@ void Client::increment_request_count()
 	request_count++;
 }
 
-void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int,
-	Client> &active_clients)
+void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Client> &active_clients)
 {
-	Client				client;
-	struct sockaddr_in	client_addr;
-	socklen_t			client_len;
-	struct epoll_event	client_event;
+	Client client;
+	struct sockaddr_in client_addr;
+	socklen_t client_len;
+	struct epoll_event client_event;
 
 	client_len = sizeof(client_addr);
 	client.client_fd = accept(server_fd, (struct sockaddr *)&client_addr,
-			&client_len);
+							  &client_len);
 	if (client.client_fd == -1)
 	{
 		throw std::runtime_error("Error accepting connection: ");
@@ -65,35 +64,74 @@ void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int,
 	active_clients[client.client_fd] = client;
 	std::cout << "✓ Client " << client.client_fd << " added to map" << std::endl;
 	std::cout << "✓ Total active clients: " << active_clients.size() << std::endl;
-}
+}  
 
 void Client::handle_client_data_input(int epoll_fd, std::map<int,
-	Client> &active_clients)
+															 Client> &active_clients)
 {
-	char				buffer[1024] = {0};
-	ssize_t				bytes_received;
-	Request				request;
-	struct epoll_event	ev;
+	char buffer[5] = {0};
+	ssize_t bytes_received;
+	struct epoll_event ev;
 
 	bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 	if (bytes_received > 0)
 	{
-		// ========== REQUEST HANDLING ==========
 		buffer[bytes_received] = '\0';
 		std::cout << "=== CLIENT " << client_fd << ": PROCESSING REQUEST ===" << std::endl;
 		std::cout << "Message from client " << client_fd << ": " << buffer << std::endl;
-		// Increment request count
 		increment_request_count();
-		std::cout << "✓ Client " << client_fd << " request count: " << get_request_count() << std::endl;
-		// Parse and validate the request
-		if (request.handle_request(client_fd, buffer))
-		{
-			std::cout << "✓ Request processed successfully" << std::endl;
+		
+		RequestStatus result = current_request.add_new_data(buffer, bytes_received);
+		
+		switch (result) {
+			case NEED_MORE_DATA:
+				std::cout << "We need more data from the client" << std::endl;
+				return;
+				
+			case HEADERS_ARE_READY:
+			case BODY_BEING_READ:
+			{
+				std::cout << "Processing request data - checking handler..." << std::endl;
+				
+				RequestStatus handler_result = current_request.figure_out_http_method();
+				
+				if(handler_result == BODY_BEING_READ)
+				{
+					std::cout << "Need more body data - waiting for more..." << std::endl;
+					return;  
+				}
+				else if (handler_result == EVERYTHING_IS_READY)
+				{
+					std::cout << "Request fully processed and ready!" << std::endl;
+					std::cout << "Final request - Method: " << current_request.get_http_method()
+							  << " Path: " << current_request.get_requested_path() << std::endl;
+				}
+				else if (handler_result == SOMETHING_WENT_WRONG) 
+				{
+					std::cout << "✗ Something went wrong handling the request" << std::endl;
+					throw std::runtime_error("Error processing HTTP request");
+				}
+				else
+				{
+					std::cout << "Unexpected handler result" << std::endl;
+					throw std::runtime_error("Unexpected handler response");
+				}
+				break;
+			}
+				
+			case EVERYTHING_IS_READY:
+				std::cout << "Everything is ready - request fully processed" << std::endl;
+				break;
+				
+			case SOMETHING_WENT_WRONG:
+				std::cout << "ERROR - something went wrong with the request" << std::endl;
+				throw std::runtime_error("Failed to parse HTTP request");
+				
+			default:
+				std::cout << "UNKNOWN" << std::endl;
+				break;
 		}
-		else
-		{
-			throw std::runtime_error("Failed to process HTTP request from client ");
-		}
+		
 		ev.events = EPOLLOUT;
 		ev.data.fd = client_fd;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &ev) == -1)
@@ -115,23 +153,28 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int,
 }
 
 void Client::handle_client_data_output(int client_fd, int epoll_fd,
-	std::map<int, Client> &active_clients)
+									   std::map<int, Client> &active_clients)
 {
+	Response response;
 
-	Response	response;
+	// Use the stored request data to create dynamic response
+	std::string request_path = current_request.get_requested_path();
+	std::cout << "=== CREATING RESPONSE FOR PATH: " << request_path << " ===" << std::endl;
+
+	// Analyze the request and set appropriate status code and content
+	response.analyze_request_and_set_response(request_path);
 
 	response.handle_response(client_fd);
 	cleanup_connection(epoll_fd, active_clients);
 }
 
 void Client::cleanup_connection(int epoll_fd, std::map<int,
-	Client> &active_clients)
+													   Client> &active_clients)
 {
 	std::cout << "=== CLEANING UP CLIENT " << client_fd << " ===" << std::endl;
 
 	// Display connection statistics
-	std::cout << "✓ Client " << client_fd << " was connected for " << (time(NULL)
-		- get_connect_time()) << " seconds" << std::endl;
+	std::cout << "✓ Client " << client_fd << " was connected for " << (time(NULL) - get_connect_time()) << " seconds" << std::endl;
 	std::cout << "✓ Client " << client_fd << " made " << get_request_count() << " requests" << std::endl;
 
 	// Remove from epoll monitoring

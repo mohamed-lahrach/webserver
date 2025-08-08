@@ -1,14 +1,37 @@
 #include "Server_setup/server.hpp"
-int	main(void)
-{
-	int	PORT;
-	Server server;
+#include "config/Lexer.hpp"
+#include "config/parser.hpp"
+#include <vector>
 
-	PORT = 2440;
-	std::string hostname = "127.0.0.1";
+int	main(int argc, char **argv)
+{
+	// Check if config file is provided as argument
+	if (argc != 2)
+	{
+		std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
+		std::cerr << "Example: " << argv[0] << " ./test_configs/default.conf" << std::endl;
+		return (1);
+	}
+	
+	Lexer lexer(argv[1]);
+	std::vector<ServerContext> servers_config;
+    std::vector<Token> tokens = lexer.tokenizeAll();
+    std::cout << "-------------------------" << std::endl;
+    Parser parser(tokens);
+    try
+    {
+        parser.parse();
+		servers_config = parser.getServers();
+        std::cout << "Parsing completed successfully!" << std::endl;
+    }
+    catch (const std::runtime_error &e)
+    {
+        std::cerr << e.what() << std::endl;
+    }
+	Server server;
 	try
 	{
-		server.init_data(PORT, hostname);
+		server.init_data(servers_config[0]);
 		server.run();
 	}
 	catch (const std::exception &e)

@@ -16,7 +16,9 @@
 # include <sys/epoll.h>
 # include <sys/socket.h>
 # include <unistd.h>
-
+#include <cstdlib>  // For atoi()
+#include "../config/Lexer.hpp"
+#include "../config/parser.hpp"
 class	Client;
 class Server
 {
@@ -33,7 +35,7 @@ class Server
     Server();
     ~Server();
 
-    void init_data(int PORT, std::string hostname);
+    void init_data(ServerContext &server_config);
     void run();
 
     int setup_Socket(int port);
