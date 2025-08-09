@@ -1,60 +1,23 @@
 #include "request.hpp"
 #include "get_handler.hpp"
-#include "post_handler.hpp" 
+#include "post_handler.hpp"
 #include "delete_handler.hpp"
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
 
-
-Request::Request() : http_method(""), requested_path(""), http_version(""), got_all_headers(false), expected_body_size(0), request_body(""), get_handler(), post_handler(), delete_handler()
+Request::Request() : http_method(""), requested_path(""), http_version(""), got_all_headers(false), expected_body_size(0), request_body(""), cfg_(0), loc_(0), get_handler(), post_handler(), delete_handler()
 {
 	std::cout << "Creating a new HTTP request parser with modular handlers" << std::endl;
 }
-
 
 Request::~Request()
 {
 }
 
-// bool Request::handle_request(int client_fd, const char *request_data)
-// {
-// 	(void)client_fd;
-
-// 	std::string request_str = request_data;
-// 	std::istringstream iss(request_str);
-// 	iss >> http_method >> requested_path >> http_version;
-// 	std::string header;
-// 	while (std::getline(iss, header) && header != "")
-// 	{
-// 		std::string key, value;
-// 		size_t pos = header.find(":");
-// 		if (pos != std::string::npos)
-// 		{
-// 			key = header.substr(0, pos);
-// 			value = header.substr(pos + 1);
-// 			http_headers[key] = value;
-// 		}
-// 	}
-
-// 	std::cout << "Method: " << http_method << std::endl;
-// 	std::cout << "Path: " << requested_path << std::endl;
-// 	std::cout << "Version: " << http_version << std::endl;
-// 	std::cout << "Headers:" << std::endl;
-// 	std::map<std::string, std::string>::iterator it = http_headers.begin();
-// 	while (it != http_headers.end())
-// 	{
-// 		std::cout << it->first << ": " << it->second << std::endl;
-// 		++it;
-// 	}
-
-// 	return (true);
-// }
-
 RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 {
 	std::cout << "=== GOT " << data_size << " NEW BYTES FROM CLIENT ===" << std::endl;
-
 
 	incoming_data.append(new_data, data_size);
 	std::cout << "Total data we have now: " << incoming_data.size() << " bytes" << std::endl;
@@ -75,16 +38,16 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 		if (!parse_http_headers(just_the_headers))
 		{
 			std::cout << "Something went wrong reading the headers!" << std::endl;
-			return SOMETHING_WENT_WRONG;
+			return BAD_REQUEST;
 		}
 
 		got_all_headers = true;
 
-		incoming_data = incoming_data.substr(headers_end_position + 4); 
+		incoming_data = incoming_data.substr(headers_end_position + 4);
 
 		std::cout << "Successfully read all headers!" << std::endl;
-		std::cout << "HTTP Method: " << http_method << ", Requested Path: " 
-		<< requested_path << ", Version: " << http_version << std::endl;
+		std::cout << "HTTP Method: " << http_method << ", Requested Path: "
+				  << requested_path << ", Version: " << http_version << std::endl;
 
 		if (http_method == "POST" || http_method == "PUT")
 		{
@@ -139,8 +102,52 @@ bool Request::parse_http_headers(const std::string &header_text)
 	return true;
 }
 
+void Request::set_config(const ServerContext &cfg)
+{
+	cfg_ = &cfg;
+	if (!requested_path.empty())
+		loc_ = match_location(requested_path);
+}
+
+const LocationContext *Request::match_location(const std::string &path) const
+{
+	if (!cfg_)
+		return 0;
+	const LocationContext *best = 0;
+	size_t bestLen = 0;
+	for (std::vector<LocationContext>::const_iterator it = cfg_->locations.begin(); it != cfg_->locations.end(); ++it)
+	{
+		const std::string &p = it->path;
+		if (p.empty())
+			continue;
+		if (path.compare(0, p.size(), p) == 0)
+		{
+			if (p.size() > bestLen)
+			{
+				best = &(*it);
+				bestLen = p.size();
+			}
+		}
+	}
+	return best;
+}
+
 RequestStatus Request::figure_out_http_method()
 {
+	if (!loc_->allowedMethods.empty())
+	{
+		bool ok = false;
+		for (std::vector<std::string>::const_iterator it = loc_->allowedMethods.begin(); it != loc_->allowedMethods.end(); ++it)
+		{
+			if (*it == http_method)
+			{
+				ok = true;
+				break;
+			}
+		}
+		if (!ok)
+			return METHOD_NOT_ALLOWED;
+	}
 
 	if (http_method == "GET")
 	{
@@ -157,6 +164,6 @@ RequestStatus Request::figure_out_http_method()
 	else
 	{
 		std::cout << "Don't know how to handle method: " << http_method << std::endl;
-		return SOMETHING_WENT_WRONG; 
+		return METHOD_NOT_ALLOWED;
 	}
 }

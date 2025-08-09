@@ -3,7 +3,6 @@
 
 # include "../request/request.hpp"
 # include "../response/response.hpp"
-# include "../request/request_status.hpp"
 # include <arpa/inet.h>
 # include <cstring>
 # include <ctime>
@@ -17,6 +16,7 @@
 # include <sys/epoll.h>
 # include <sys/socket.h>
 # include <unistd.h>
+#include "../config/parser.hpp"
 
 class	Response;
 class	Request;
@@ -49,9 +49,9 @@ class Client
 
 	static void handle_new_connection(int server_fd, int epoll_fd, std::map<int,
 		Client> &active_clients);
-	void handle_client_data_input(int epoll_fd,std::map<int, Client> &active_clients);
+	void handle_client_data_input(int epoll_fd,std::map<int, Client> &active_clients,ServerContext& server_config);
 	void handle_client_data_output(int client_fd, int epoll_fd, std::map<int,
-		Client> &active_clients);
+		Client> &active_clients,ServerContext& server_config);
 	void cleanup_connection(int epoll_fd, std::map<int, Client> &active_clients);
 };
 

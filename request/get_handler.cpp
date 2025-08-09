@@ -41,5 +41,5 @@ RequestStatus GetHandler::handle_get_request(const std::string &requested_path)
         return BAD_REQUEST;
     }
 
-    return EVERYTHING_IS_READY;
+    return EVERYTHING_IS_OK;
 }

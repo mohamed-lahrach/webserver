@@ -1,6 +1,6 @@
 #include "server.hpp"
 
-void Server::run()
+void Server::run(ServerContext& server_config)
 {
 	const int			MAX_EVENTS = 10;
 	struct epoll_event	events[MAX_EVENTS];
@@ -41,8 +41,7 @@ void Server::run()
 			fd = events[i].data.fd;
 			if (fd == server_fd)
 			{
-				Client::handle_new_connection(server_fd, epoll_fd,
-					active_clients);
+				Client::handle_new_connection(server_fd, epoll_fd, active_clients);
 			}
 			else
 			{
@@ -50,9 +49,9 @@ void Server::run()
 				if (it != active_clients.end())
 				{
 					if (events[i].events & EPOLLIN)
-						it->second.handle_client_data_input(epoll_fd, active_clients);
+						it->second.handle_client_data_input(epoll_fd, active_clients,server_config);
 				  	else if (events[i].events & EPOLLOUT)
-						it->second.handle_client_data_output(fd,epoll_fd,active_clients);
+						it->second.handle_client_data_output(fd, epoll_fd, active_clients, server_config);
 				}
 				else
 				{

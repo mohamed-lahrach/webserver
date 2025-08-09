@@ -66,10 +66,9 @@ void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cl
 	std::cout << "✓ Total active clients: " << active_clients.size() << std::endl;
 }
 
-void Client::handle_client_data_input(int epoll_fd, std::map<int,
-															 Client> &active_clients)
+void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &active_clients, ServerContext &server_config)
 {
-	char buffer[1024] = {0};
+	char buffer[8024] = {0};
 	ssize_t bytes_received;
 	struct epoll_event ev;
 
@@ -90,10 +89,9 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int,
 			return;
 
 		case HEADERS_ARE_READY:
-		case BODY_BEING_READ:
 		{
 			std::cout << "Processing request data - checking handler..." << std::endl;
-
+			current_request.set_config(server_config);
 			RequestStatus handler_result = current_request.figure_out_http_method();
 
 			if (handler_result == BODY_BEING_READ)
@@ -101,64 +99,50 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int,
 				std::cout << "Need more body data - waiting for more..." << std::endl;
 				return;
 			}
-			else if (handler_result == EVERYTHING_IS_READY)
+			else if (handler_result == EVERYTHING_IS_OK)
 			{
 				std::cout << "Request fully processed and ready!" << std::endl;
 				std::cout << "Final request - Method: " << current_request.get_http_method()
 						  << " Path: " << current_request.get_requested_path() << std::endl;
-				request_status = EVERYTHING_IS_READY;
+				request_status = EVERYTHING_IS_OK;
 			}
 			else
 			{
-				if (handler_result == SOMETHING_WENT_WRONG)
-				{
-					std::cout << " Something went wrong handling the request" << std::endl;
-					throw std::runtime_error("Error processing HTTP request");
-				}
-				else
-				{
 
-					request_status = handler_result;
+				request_status = handler_result;
 
-					switch (handler_result)
-					{
-					case BAD_REQUEST:
-						std::cout << "✗ BAD REQUEST (400) - Malformed request" << std::endl;
-						break;
-					case FORBIDDEN:
-						std::cout << "✗ FORBIDDEN (403) - Security violation or access denied" << std::endl;
-						break;
-					case NOT_FOUND:
-						std::cout << "✗ NOT FOUND (404) - Resource not found" << std::endl;
-						break;
-					case METHOD_NOT_ALLOWED:
-						std::cout << "✗ METHOD NOT ALLOWED (405) - Method not supported" << std::endl;
-						break;
-					case PAYLOAD_TOO_LARGE:
-						std::cout << "✗ PAYLOAD TOO LARGE (413) - Request too large" << std::endl;
-						break;
-					case INTERNAL_ERROR:
-						std::cout << "✗ INTERNAL ERROR (500) - Server error" << std::endl;
-						break;
-					default:
-						std::cout << "✗ Unexpected error occurred" << std::endl;
-						break;
-					}
+				switch (handler_result)
+				{
+				case BAD_REQUEST:
+					std::cout << "BAD REQUEST (400) - Malformed request" << std::endl;
+					break;
+				case FORBIDDEN:
+					std::cout << "FORBIDDEN (403) - Security violation or access denied" << std::endl;
+					break;
+				case NOT_FOUND:
+					std::cout << "NOT FOUND (404) - Resource not found" << std::endl;
+					break;
+				case METHOD_NOT_ALLOWED:
+					std::cout << "METHOD NOT ALLOWED (405) - Method not supported" << std::endl;
+					break;
+				case PAYLOAD_TOO_LARGE:
+					std::cout << "PAYLOAD TOO LARGE (413) - Request too large" << std::endl;
+					break;
+				case INTERNAL_ERROR:
+					std::cout << "INTERNAL ERROR (500) - Server error" << std::endl;
+					break;
+				default:
+					std::cout << "Unexpected error occurred" << std::endl;
+					break;
 				}
 			}
 			break;
 		}
 
-		case EVERYTHING_IS_READY:
-			std::cout << "Everything is ready - request fully processed" << std::endl;
-			request_status = EVERYTHING_IS_READY;
-			break;
-
-		case SOMETHING_WENT_WRONG:
+		case BAD_REQUEST:
 			std::cout << "ERROR - something went wrong with the request" << std::endl;
-			request_status = INTERNAL_ERROR;
+			request_status = BAD_REQUEST;
 			break;
-
 		default:
 			std::cout << "UNKNOWN" << std::endl;
 			break;
@@ -185,8 +169,9 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int,
 }
 
 void Client::handle_client_data_output(int client_fd, int epoll_fd,
-									   std::map<int, Client> &active_clients)
+									   std::map<int, Client> &active_clients, ServerContext &server_config)
 {
+	(void)server_config;
 	std::cout << "=== GENERATING RESPONSE FOR CLIENT " << client_fd << " ===" << std::endl;
 
 	if (current_response.is_still_streaming())
@@ -197,7 +182,7 @@ void Client::handle_client_data_output(int client_fd, int epoll_fd,
 	else
 	{
 
-		if (request_status != EVERYTHING_IS_READY)
+		if (request_status != EVERYTHING_IS_OK)
 		{
 			std::cout << "Setting error response for status: " << request_status << std::endl;
 			current_response.set_error_response(request_status);

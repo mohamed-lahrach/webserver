@@ -16,7 +16,9 @@
 # include <sys/epoll.h>
 # include <sys/socket.h>
 # include <unistd.h>
+#include <cstdlib>  // For atoi()
 
+#include "../config/parser.hpp"
 class	Client;
 class Server
 {
@@ -33,8 +35,8 @@ class Server
     Server();
     ~Server();
 
-    void init_data(int PORT, std::string hostname);
-    void run();
+    void init_data(ServerContext &server_config);
+  void run(ServerContext &server_config);
 
     int setup_Socket(int port);
     int setup_epoll(int serverSocket);

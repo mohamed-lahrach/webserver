@@ -2,6 +2,7 @@
 # define REQUEST_HPP
 
 # include <string>
+#include "../config/parser.hpp"
 # include <map>
 # include "request_status.hpp"
 # include "get_handler.hpp"
@@ -23,12 +24,18 @@ class Request
   size_t expected_body_size;
   size_t body_bytes_we_have;
   std::string request_body;       
+  // Bound server configuration and matched location (set after headers parsed)
+  const ServerContext* cfg_;
+  const LocationContext* loc_;
   
   
   GetHandler get_handler;
   PostHandler post_handler;
   DeleteHandler delete_handler;       
   
+  // Helper to select the best-matching location by longest prefix
+  const LocationContext* match_location(const std::string& path) const;
+
   public:
 
 	Request();
@@ -42,6 +49,8 @@ class Request
 	const std::map<std::string, std::string>& get_all_headers() const { return http_headers; }
 	const std::string& get_request_body() const { return request_body; }
 
+    // Bind the parsed server config so Request can consult locations/methods
+    void set_config(const ServerContext& cfg);
 
 	RequestStatus add_new_data(const char *new_data, size_t data_size);
 	RequestStatus figure_out_http_method();

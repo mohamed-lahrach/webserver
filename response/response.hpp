@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sys/socket.h>
 #include <map>
+#include "../config/parser.hpp"
 #include "../request/request_status.hpp"
 #include "../utils/mime_types.hpp"
 

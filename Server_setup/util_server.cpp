@@ -2,12 +2,7 @@
 
 Server::Server(): server_fd(-1), epoll_fd(-1)
 {
-    std::cout << "=== CREATING SERVER ===" << std::endl;    
-    // Initialize the address structure
-    address.sin_family = AF_INET;
-    address.sin_port = htons(port);
-    address.sin_addr.s_addr = INADDR_ANY;
-    
+    std::cout << "=== CREATING SERVER ===" << std::endl;
     std::cout << "✓ Server object created" << std::endl;
 }
 
@@ -30,8 +25,14 @@ Server::~Server()
     
     std::cout << "✓ Server object destroyed" << std::endl;
 }
-void Server::init_data(int PORT, std::string hostname)
+void Server::init_data(ServerContext &server_config)
 {
-    this->port = PORT;
-    this->hostname = hostname;
+	this->port = atoi((server_config.listenPort).c_str());
+	this->hostname = server_config.listenHost;
+        // NOW initialize the address with the correct port
+    ///aficher data 
+    std::cout << "=== INITIALIZING SERVER DATA ===" << std::endl;
+    std::cout << "Port: " << port << std::endl;
+    std::cout << "Hostname: " << hostname << std::endl;
+    std::cout << "✓ Server data initialized" << std::endl;
 }
