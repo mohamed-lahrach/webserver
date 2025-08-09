@@ -24,7 +24,6 @@ class Request
   size_t expected_body_size;
   size_t body_bytes_we_have;
   std::string request_body;       
-  // Bound server configuration and matched location (set after headers parsed)
   const ServerContext* cfg_;
   const LocationContext* loc_;
   
