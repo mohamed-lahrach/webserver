@@ -1,67 +1,63 @@
 #include "server.hpp"
 
-int Server::setup_Socket(int port)
+int Server::setup_Socket_with_host(int port, const std::string& host)
 {
-	std::cout << "=== SETTING UP SERVER ===" << std::endl;
-	int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-	if (serverSocket == -1)
-	{
-		std::cout << "Failed to create socket" << std::endl;
-		return (-1);
-	}
-	std::cout << "✓ Socket created" << std::endl;
+    std::cout << "=== SETTING UP SERVER ON " << host << ":" << port << " ===" << std::endl;
+    
+    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket == -1)
+    {
+        std::cout << "Failed to create socket for " << host << ":" << port << std::endl;
+        return (-1);
+    }
+    std::cout << "✓ Socket created for " << host << ":" << port << std::endl;
 
-	// Set socket option to reuse address
-	int opt = 1;
-	setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-	std::cout << "✓ Socket options set" << std::endl;
+    // Set socket option to reuse address
+    int opt = 1;
+    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
+    {
+        std::cout << "Warning: Failed to set SO_REUSEADDR" << std::endl;
+    }
+    std::cout << "✓ Socket options set" << std::endl;
 
-	// Specifying the address
-	sockaddr_in serverAddress;
-	serverAddress.sin_family = AF_INET;
-	serverAddress.sin_port = htons(port);
+    // Specifying the address
+    sockaddr_in serverAddress;
+    memset(&serverAddress, 0, sizeof(serverAddress));
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_port = htons(port);
 
-	// use getaddrinfo for address resolution
-	if (!hostname.empty())
-	{
-		struct addrinfo hints, *result;
-		memset(&hints, 0, sizeof(hints));
-		hints.ai_family = AF_INET;       // IPv4 only
-		hints.ai_socktype = SOCK_STREAM; // TCP socket
-		hints.ai_flags = AI_PASSIVE;     // For server socket
-	
-		int status = getaddrinfo(hostname.c_str(), NULL, &hints, &result);
-		if (status != 0)
-		{
-			std::cerr << "Failed to resolve hostname/IP: " << hostname << "- Error: " << gai_strerror(status) << std::endl;
-			close(serverSocket);
-			return (-1);
-		}
+    // Convert IP string to binary format
+    if (host == "0.0.0.0" || host.empty())
+    {
+        serverAddress.sin_addr.s_addr = INADDR_ANY;
+        std::cout << "✓ Using all interfaces (0.0.0.0)" << std::endl;
+    }
+    else
+    {
+        if (inet_pton(AF_INET, host.c_str(), &serverAddress.sin_addr) <= 0)
+        {
+            std::cout << "Invalid IP address: " << host << std::endl;
+            close(serverSocket);
+            return (-1);
+        }
+        std::cout << "✓ Using specific address: " << host << std::endl;
+    }
 
-		// Extract the IP address from result
-		struct sockaddr_in *addr_in = (struct sockaddr_in *)result->ai_addr;
-		serverAddress.sin_addr = addr_in->sin_addr;
-		freeaddrinfo(result);
-	}
-	else
-	{
-		// Empty hostname - bind to all interfaces for localhost 
-		serverAddress.sin_addr.s_addr = INADDR_ANY;
-		std::cout << "✓ Using all interfaces (0.0.0.0)" << std::endl;
-	}
-	if (bind(serverSocket, (struct sockaddr *)&serverAddress,
-			sizeof(serverAddress)) == -1)
-	{
-		std::cout << "Failed to bind socket to port " << port << std::endl;
-		close(serverSocket);
-		return (-1);
-	}
-	if (listen(serverSocket, 5) == -1)
-	{
-		std::cout << "Failed to listen" << std::endl;
-		close(serverSocket);
-		return (-1);
-	}
-	std::cout << "✓ " << hostname << " server setup complete!" << std::endl;
-	return (serverSocket);
+    if (bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)
+    {
+        std::cout << "Failed to bind to " << host << ":" << port << std::endl;
+        close(serverSocket);
+        return (-1);
+    }
+    std::cout << "✓ Socket bound to " << host << ":" << port << std::endl;
+
+    if (listen(serverSocket, 5) == -1)
+    {
+        std::cout << "Failed to listen on " << host << ":" << port << std::endl;
+        close(serverSocket);
+        return (-1);
+    }
+
+    std::cout << "✅ Server listening on " << host << ":" << port << "!" << std::endl;
+    return (serverSocket);
 }

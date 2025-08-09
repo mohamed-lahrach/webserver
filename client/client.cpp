@@ -34,7 +34,7 @@ void Client::increment_request_count()
 	request_count++;
 }
 
-void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Client> &active_clients)
+int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Client> &active_clients)
 {
 	Client client;
 	struct sockaddr_in client_addr;
@@ -64,6 +64,7 @@ void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cl
 	active_clients[client.client_fd] = client;
 	std::cout << "✓ Client " << client.client_fd << " added to map" << std::endl;
 	std::cout << "✓ Total active clients: " << active_clients.size() << std::endl;
+	return client.client_fd; // Return the new client fd
 }
 
 void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &active_clients, ServerContext &server_config)

@@ -1,7 +1,6 @@
-
 NAME = webserv
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 #-fsanitize=address -g3
 
 SRC = main.cpp Server_setup/server.cpp Server_setup/util_server.cpp  \
 	Server_setup/socket.cpp Server_setup/non_blocking.cpp client/client.cpp \
@@ -28,4 +27,7 @@ run: all clean
 	clear
 	./$(NAME) ./test_configs/default.conf
 
-.PHONY: all clean fclean re run
+leaks: all clean
+	clear
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(NAME) ./test_configs/default.conf
+.PHONY: all clean fclean re

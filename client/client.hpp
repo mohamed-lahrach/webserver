@@ -47,7 +47,7 @@ class Client
 	void increment_request_count();
 	/// 
 
-	static void handle_new_connection(int server_fd, int epoll_fd, std::map<int,
+	static int handle_new_connection(int server_fd, int epoll_fd, std::map<int,
 		Client> &active_clients);
 	void handle_client_data_input(int epoll_fd,std::map<int, Client> &active_clients,ServerContext& server_config);
 	void handle_client_data_output(int client_fd, int epoll_fd, std::map<int,
