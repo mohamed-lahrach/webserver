@@ -1,13 +1,27 @@
 #include "post_handler.hpp"
 #include "request_status.hpp"
 #include <iostream>
-
+#include <fstream>
+#include <string>
+#include <stdexcept>
 PostHandler::PostHandler()
 {
 }
 
 PostHandler::~PostHandler()
 {
+}
+
+void PostHandler::save_request_body(const std::string &filename, const std::string &body)
+
+{
+	std::ofstream file(filename.c_str(), std::ios::binary); // binary mode for any data
+	if (!file)
+	{
+		throw std::runtime_error("Could not open file for writing");
+	}
+	file.write(body.data(), body.size());
+	file.close();
 }
 
 RequestStatus PostHandler::handle_post_request(const std::string &requested_path,
@@ -28,20 +42,11 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 			- incoming_data.size()) << " bytes" << std::endl;
 		return (BODY_BEING_READ);
 	}
-	// We have complete body - process it
+    // afiche rewquest path
+    std::cout<<"path: "<<requested_path<<std::endl;
+	save_request_body("post_body.txt", incoming_data);
 	std::cout << "-----------------------" << std::endl;
-    std::cout << "-----------------------" << std::endl;
-	std::cout << "✅ COMPLETE POST BODY RECEIVED!" << std::endl;
-	std::cout << "Final POST data: [" << incoming_data << "]" << std::endl;
-	// Print all HTTP headers
-	std::cout << "=== HTTP HEADERS ===" << std::endl;
-	std::cout << "Total headers: " << http_headers.size() << std::endl;
-	for (std::map<std::string,
-		std::string>::const_iterator it = http_headers.begin(); it != http_headers.end(); ++it)
-	{
-		std::cout << "Header: " << it->first << "= [" << it->second << "]" << std::endl;
-	}
 	std::cout << "-----------------------" << std::endl;
-    std::cout << "-----------------------" << std::endl;
+    (void)http_headers; // Unused in this example, but can be used for further processing
 	return (EVERYTHING_IS_OK); // Now we can process
 }

@@ -7,7 +7,7 @@
 
 class PostHandler
 {
-
+    
 public:
 
     PostHandler();
@@ -19,6 +19,9 @@ public:
         std::string& incoming_data,
         size_t expected_body_size
     );
+    void parse_request_body(const std::string &body);
+    void save_request_body(const std::string &filename, const std::string &body);
+
 
 };
 
