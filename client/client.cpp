@@ -148,7 +148,6 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 			std::cout << "UNKNOWN" << std::endl;
 			break;
 		}
-
 		ev.events = EPOLLOUT;
 		ev.data.fd = client_fd;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &ev) == -1)
