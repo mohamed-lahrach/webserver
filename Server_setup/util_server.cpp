@@ -6,22 +6,37 @@ Server::Server() : server_fd(-1), epoll_fd(-1)
 	std::cout << "✓ Server object created" << std::endl;
 }
 
-// Destructor
 Server::~Server()
 {
 	std::cout << "=== DESTROYING SERVER ===" << std::endl;
-	// // Close epoll file descriptor if open
-	// if (epoll_fd != -1) {
-	//     close(epoll_fd);
-	//     std::cout << "✓ Epoll closed" << std::endl;
-	// }
-	// // Close server socket if open
-	// if (server_fd != -1) {
-	//     close(server_fd);
-	//     std::cout << "✓ Server socket closed" << std::endl;
-	// }
+	// Close epoll first to stop monitoring
+	if (epoll_fd != -1)
+	{
+		close(epoll_fd);
+		std::cout << "✓ Epoll closed" << std::endl;
+	}
+	// Close all server sockets
+	for (size_t i = 0; i < server_fds.size(); i++)
+	{
+		if (server_fds[i] != -1)
+		{
+			close(server_fds[i]);
+			std::cout << "✓ Server socket " << server_fds[i] << " closed" << std::endl;
+		}
+	}
+	// DON'T close client sockets - they're already closed by cleanup_connection
+	// Just clear the maps
+	if (!active_clients.empty())
+	{
+		std::cout << "✓ Cleaning up " << active_clients.size() << " remaining clients" << std::endl;
+		active_clients.clear(); // Just clear the map, don't close sockets
+	}
+	client_to_server.clear(); // Clear the mapping
+	fd_to_port.clear();       // Clear other mappings
+	fd_to_config.clear();
 	std::cout << "✓ Server object destroyed" << std::endl;
 }
+
 bool Server::is_server_socket(int fd)
 {
 	for (size_t i = 0; i < server_fds.size(); i++)

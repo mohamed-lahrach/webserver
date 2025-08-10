@@ -240,6 +240,5 @@ void Client::cleanup_connection(int epoll_fd, std::map<int,
 
 	// Remove from active clients map
 	active_clients.erase(client_fd);
-	std::cout << "✓ Client " << client_fd << " removed from active clients map" << std::endl;
-	std::cout << "✓ Remaining active clients: " << active_clients.size() << std::endl;
+	std::cout << "✓ Client removed from active clients map" << std::endl;
 }

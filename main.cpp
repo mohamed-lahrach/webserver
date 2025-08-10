@@ -5,6 +5,7 @@
 
 int	main(int argc, char **argv)
 {
+    /// for parsing config files
     if (argc != 2)
     {
         std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
@@ -29,6 +30,7 @@ int	main(int argc, char **argv)
         std::cerr << e.what() << std::endl;
         return 1;
     }
+    // Initialize the server with the parsed configurations
     Server server;
     try
     {
