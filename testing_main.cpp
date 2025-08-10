@@ -84,6 +84,8 @@ int main()
     try
     {
         parser.parse();
+        std::vector<ServerContext> servers = parser.getServers();
+        std::cout << "Parsed " << servers.size() << " server blocks." << std::endl;
         std::cout << "Parsing completed successfully!" << std::endl;
     }
     catch (const std::runtime_error &e)
