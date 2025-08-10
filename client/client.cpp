@@ -1,0 +1,244 @@
+#include "client.hpp"
+
+// Constructor
+Client::Client() : connect_time(0), request_count(0), request_status(NEED_MORE_DATA)
+{
+	std::cout << "Client constructor called" << std::endl;
+}
+
+// Destructor
+Client::~Client()
+{
+	std::cout << "Client destructor called" << std::endl;
+}
+
+time_t Client::get_connect_time() const
+{
+	return (connect_time);
+}
+
+int Client::get_request_count() const
+{
+	return (request_count);
+}
+
+// Setter methods
+
+void Client::set_connect_time(time_t time)
+{
+	connect_time = time;
+}
+
+void Client::increment_request_count()
+{
+	request_count++;
+}
+
+void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Client> &active_clients)
+{
+	Client client;
+	struct sockaddr_in client_addr;
+	socklen_t client_len;
+	struct epoll_event client_event;
+
+	client_len = sizeof(client_addr);
+	client.client_fd = accept(server_fd, (struct sockaddr *)&client_addr,
+							  &client_len);
+	if (client.client_fd == -1)
+	{
+		throw std::runtime_error("Error accepting connection: ");
+	}
+	std::cout << "✓ New client connected: " << client.client_fd << std::endl;
+	// Set connection time
+	client.set_connect_time(time(NULL));
+	// Add client to epoll
+	client_event.events = EPOLLIN;
+	client_event.data.fd = client.client_fd;
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client.client_fd, &client_event) ==
+		-1)
+	{
+		close(client.client_fd);
+		throw std::runtime_error("Failed to add client to epoll");
+	}
+	// Add to active clients map
+	active_clients[client.client_fd] = client;
+	std::cout << "✓ Client " << client.client_fd << " added to map" << std::endl;
+	std::cout << "✓ Total active clients: " << active_clients.size() << std::endl;
+}
+
+void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &active_clients, ServerContext &server_config)
+{
+	char buffer[8024] = {0};
+	ssize_t bytes_received;
+	struct epoll_event ev;
+
+	bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+	if (bytes_received > 0)
+	{
+		buffer[bytes_received] = '\0';
+		std::cout << "=== CLIENT " << client_fd << ": PROCESSING REQUEST ===" << std::endl;
+		std::cout << "Message from client " << client_fd << ": " << buffer << std::endl;
+		increment_request_count();
+
+		RequestStatus result = current_request.add_new_data(buffer, bytes_received);
+
+		switch (result)
+		{
+		case NEED_MORE_DATA:
+			std::cout << "We need more data from the client" << std::endl;
+			return;
+
+		case HEADERS_ARE_READY:
+		{
+			std::cout << "Processing request data - checking handler..." << std::endl;
+			current_request.set_config(server_config);
+			RequestStatus handler_result = current_request.figure_out_http_method();
+
+			if (handler_result == BODY_BEING_READ)
+			{
+				std::cout << "Need more body data - waiting for more..." << std::endl;
+				return;
+			}
+			else if (handler_result == EVERYTHING_IS_OK)
+			{
+				std::cout << "Request fully processed and ready!" << std::endl;
+				std::cout << "Final request - Method: " << current_request.get_http_method()
+						  << " Path: " << current_request.get_requested_path() << std::endl;
+				request_status = EVERYTHING_IS_OK;
+			}
+			else
+			{
+
+				request_status = handler_result;
+
+				switch (handler_result)
+				{
+				case BAD_REQUEST:
+					std::cout << "BAD REQUEST (400) - Malformed request" << std::endl;
+					break;
+				case FORBIDDEN:
+					std::cout << "FORBIDDEN (403) - Security violation or access denied" << std::endl;
+					break;
+				case NOT_FOUND:
+					std::cout << "NOT FOUND (404) - Resource not found" << std::endl;
+					break;
+				case METHOD_NOT_ALLOWED:
+					std::cout << "METHOD NOT ALLOWED (405) - Method not supported" << std::endl;
+					break;
+				case PAYLOAD_TOO_LARGE:
+					std::cout << "PAYLOAD TOO LARGE (413) - Request too large" << std::endl;
+					break;
+				case INTERNAL_ERROR:
+					std::cout << "INTERNAL ERROR (500) - Server error" << std::endl;
+					break;
+				default:
+					std::cout << "Unexpected error occurred" << std::endl;
+					break;
+				}
+			}
+			break;
+		}
+
+		case BAD_REQUEST:
+			std::cout << "ERROR - something went wrong with the request" << std::endl;
+			request_status = BAD_REQUEST;
+			break;
+		default:
+			std::cout << "UNKNOWN" << std::endl;
+			break;
+		}
+
+		ev.events = EPOLLOUT;
+		ev.data.fd = client_fd;
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &ev) == -1)
+		{
+			cleanup_connection(epoll_fd, active_clients); // ← Better cleanup
+			throw std::runtime_error("Failed to modify client socket to EPOLLOUT mode");
+		}
+	}
+	else if (bytes_received == 0)
+	{
+		std::cout << "Client " << client_fd << " disconnected" << std::endl;
+		cleanup_connection(epoll_fd, active_clients);
+	}
+	else
+	{
+		cleanup_connection(epoll_fd, active_clients);
+		throw std::runtime_error("Error receiving data:");
+	}
+}
+
+void Client::handle_client_data_output(int client_fd, int epoll_fd,
+									   std::map<int, Client> &active_clients, ServerContext &server_config)
+{
+	(void)server_config;
+	std::cout << "=== GENERATING RESPONSE FOR CLIENT " << client_fd << " ===" << std::endl;
+
+	if (current_response.is_still_streaming())
+	{
+		std::cout << "Continuing file streaming..." << std::endl;
+		current_response.handle_response(client_fd);
+	}
+	else
+	{
+
+		if (request_status != EVERYTHING_IS_OK)
+		{
+			std::cout << "Setting error response for status: " << request_status << std::endl;
+			current_response.set_error_response(request_status);
+		}
+		else
+		{
+			std::string request_path = current_request.get_requested_path();
+			std::cout << "Creating normal response for path: " << request_path << std::endl;
+			current_response.analyze_request_and_set_response(request_path);
+		}
+
+		current_response.handle_response(client_fd);
+	}
+
+	if (!current_response.is_still_streaming())
+	{
+		std::cout << "Response complete - cleaning up connection" << std::endl;
+		cleanup_connection(epoll_fd, active_clients);
+	}
+	else
+	{
+		std::cout << "File streaming in progress - keeping connection alive" << std::endl;
+	}
+}
+
+void Client::cleanup_connection(int epoll_fd, std::map<int,
+													   Client> &active_clients)
+{
+	std::cout << "=== CLEANING UP CLIENT " << client_fd << " ===" << std::endl;
+
+	// Display connection statistics
+	std::cout << "✓ Client " << client_fd << " was connected for " << (time(NULL) - get_connect_time()) << " seconds" << std::endl;
+	std::cout << "✓ Client " << client_fd << " made " << get_request_count() << " requests" << std::endl;
+
+	// Remove from epoll monitoring
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1)
+	{
+		std::cout << "Warning: Failed to remove client " << client_fd << " from epoll" << std::endl;
+	}
+	else
+	{
+		std::cout << "✓ Client " << client_fd << " removed from epoll" << std::endl;
+	}
+
+	// Close the socket
+	if (close(client_fd) == -1)
+	{
+		std::cout << "Warning: Failed to close client " << client_fd << " socket" << std::endl;
+	}
+	else
+	{
+		std::cout << "✓ Client " << client_fd << " socket closed" << std::endl;
+	}
+
+	// Remove from active clients map
+	active_clients.erase(client_fd);
+	std::cout << "✓ Client " << client_fd << " removed from active clients map" << std::endl;
+	std::cout << "✓ Remaining active clients: " << active_clients.size() << std::endl;
+}

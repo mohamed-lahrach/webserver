@@ -1,0 +1,10 @@
+{
+    "message": "This is a JSON test file",
+    "mime_type": "application/json",
+    "test": "successful",
+    "data": {
+        "server": "C++98 WebServer",
+        "feature": "MIME Type Detection",
+        "status": "working"
+    }
+}

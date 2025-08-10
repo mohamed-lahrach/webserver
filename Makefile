@@ -1,28 +1,31 @@
 
-CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++98 -g -O0 -DDEBUG
+NAME = webserv
+CXX = c++
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g
 
-# Source files
-LEXER_SRC = config/Lexer.cpp config/parser.cpp
-TEST_SRC = testing_main.cpp
-TARGET = debug
+SRC = main.cpp Server_setup/server.cpp Server_setup/util_server.cpp  \
+	Server_setup/socket.cpp Server_setup/non_blocking.cpp client/client.cpp \
+	request/request.cpp request/get_handler.cpp request/post_handler.cpp \
+	request/delete_handler.cpp response/response.cpp config/Lexer.cpp config/parser.cpp \
+	utils/mime_types.cpp
 
-# Default target
-all: $(TARGET)
+OBJ = $(SRC:.cpp=.o)
 
-# Build target
-$(TARGET): $(LEXER_SRC) $(TEST_SRC)
-	$(CXX) $(CXXFLAGS) -o $@ $^
-# Clean
+all: $(NAME)
+
+$(NAME): $(OBJ)
+	$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJ)
+
 clean:
-	rm -f $(TARGET)
+	rm -f $(OBJ)
 
-# Run
-run: $(TARGET)
-	./$(TARGET)
+fclean: clean
+	rm -f $(NAME)
 
-# Debug with GDB
-gdb: $(TARGET)
-	gdb ./$(TARGET)
+re: fclean all
 
-.PHONY: all clean run gdb
+run: all clean
+	clear
+	./$(NAME) ./test_configs/default.conf
+
+.PHONY: all clean fclean re run
