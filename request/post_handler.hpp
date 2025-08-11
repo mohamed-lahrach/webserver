@@ -23,6 +23,7 @@ public:
     void save_request_body(const std::string &filename, const std::string &body);
     void parse_multipart_data(const std::string &body, const std::string &content_type);
     std::string extract_boundary(const std::string &content_type);
+    std::string extract_filename(const std::string &body);
 };
 
 #endif 

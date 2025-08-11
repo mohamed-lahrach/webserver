@@ -31,14 +31,31 @@ std::string PostHandler::extract_boundary(const std::string &content_type)
 	}
 	return content_type.substr(pos + 9); // 9 is the length of "boundary="
 }
+std::string PostHandler::extract_filename(const std::string &body)
+{
+	size_t pos = body.find("filename=\"");
+	if (pos == std::string::npos)
+	{
+		throw std::runtime_error("Filename not found in body");
+	}
+	pos += 10;
+	size_t end_pos = body.find("\"", pos);
+	if (end_pos == std::string::npos)
+	{
+		throw std::runtime_error("End quote for filename not found");
+	}
+	return body.substr(pos, end_pos - pos);
+}
 void PostHandler::parse_multipart_data(const std::string &body, const std::string &content_type)
 {
 	(void)content_type;
 	std::cout << "Parsing multipart data..." << std::endl;
 
 	std::string boundary = extract_boundary(content_type);
+	std::string file_name = extract_filename(body);
 	std::cout << "Extracted boundary: " << boundary << std::endl;
-	save_request_body("post_body_form_data.png", body);
+	std::cout << "Extracted filename: " << file_name << std::endl;
+	save_request_body(file_name, body);
 }
 
 void PostHandler::parse_body_for_each_type(const std::string &body, const std::map<std::string, std::string> &http_headers)
