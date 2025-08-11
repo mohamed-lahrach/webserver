@@ -78,7 +78,6 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 	{
 		buffer[bytes_received] = '\0';
 		std::cout << "=== CLIENT " << client_fd << ": PROCESSING REQUEST ===" << std::endl;
-		std::cout << "Message from client " << client_fd << ": " << buffer << std::endl;
 		increment_request_count();
 
 		RequestStatus result = current_request.add_new_data(buffer, bytes_received);

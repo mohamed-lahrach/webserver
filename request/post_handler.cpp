@@ -51,11 +51,40 @@ void PostHandler::parse_multipart_data(const std::string &body, const std::strin
 	(void)content_type;
 	std::cout << "Parsing multipart data..." << std::endl;
 
+	
 	std::string boundary = extract_boundary(content_type);
 	std::string file_name = extract_filename(body);
 	std::cout << "Extracted boundary: " << boundary << std::endl;
 	std::cout << "Extracted filename: " << file_name << std::endl;
-	save_request_body(file_name, body);
+	std::cout<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
+
+	// Find where file data starts (after headers)
+    size_t start_position = body.find("\r\n\r\n");
+    if (start_position == std::string::npos)
+    {
+        // Try \n\n if \r\n\r\n not found
+        start_position = body.find("\n\n");
+        if (start_position == std::string::npos)
+        {
+            std::cout << "ERROR: Cannot find data start!" << std::endl;
+            save_request_body("debug_error.txt", body);
+            return;
+        }
+        start_position += 2; // Skip \n\n
+    }
+    else
+    {
+        start_position += 4; // Skip \r\n\r\n
+    }
+	size_t end_position = body.find("--" + boundary);
+	if (end_position == std::string::npos)
+	{
+		std::cout << "ERROR: Cannot find data end!" << std::endl;
+		save_request_body("debug_error.txt", body);
+		return;
+	}
+	std::string file_data = body.substr(start_position, end_position - start_position);
+	save_request_body(file_name, file_data);
 }
 
 void PostHandler::parse_body_for_each_type(const std::string &body, const std::map<std::string, std::string> &http_headers)
@@ -84,11 +113,7 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 	const std::map<std::string, std::string> &http_headers,
 	std::string &incoming_data, size_t expected_body_size)
 {
-	std::cout << "=== POST HANDLER ===" << std::endl;
-	std::cout << "Processing POST to: " << requested_path << std::endl;
-	std::cout << "Received body: " << incoming_data.size() << " bytes" << std::endl;
-	std::cout << "Expected total: " << expected_body_size << " bytes" << std::endl;
-	std::cout << "POST data content: [" << incoming_data << "]" << std::endl;
+	(void)requested_path; // Unused in this context
 	if (incoming_data.size() < expected_body_size)
 	{
 		std::cout << "⏳ WAITING FOR MORE POST BODY DATA..." << std::endl;
