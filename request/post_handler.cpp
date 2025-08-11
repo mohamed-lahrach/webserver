@@ -113,7 +113,15 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 	const std::map<std::string, std::string> &http_headers,
 	std::string &incoming_data, size_t expected_body_size)
 {
+	// check if a have chunked transfer encoding
 	(void)requested_path; // Unused in this context
+	if (http_headers.find("Transfer-Encoding") != http_headers.end() &&
+		http_headers.at("Transfer-Encoding") == "chunked")
+	{
+		std::cout << "Received chunked transfer encoding POST request." << std::endl;
+		// Handle chunked transfer encoding here if needed
+		// For now, we will just treat it as a regular POST request
+	}		
 	if (incoming_data.size() < expected_body_size)
 	{
 		std::cout << "⏳ WAITING FOR MORE POST BODY DATA..." << std::endl;
