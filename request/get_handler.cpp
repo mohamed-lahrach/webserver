@@ -26,10 +26,6 @@ RequestStatus GetHandler::handle_get_request(const std::string &requested_path)
         return BAD_REQUEST;
     }
 
-    if (requested_path.find("../") != std::string::npos)
-    {
-        return FORBIDDEN;
-    }
     if (requested_path.find("//") != std::string::npos)
     {
         return BAD_REQUEST;

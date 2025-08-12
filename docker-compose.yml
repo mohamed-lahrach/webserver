@@ -1,0 +1,12 @@
+services:
+  nginx:
+    image: nginx:stable
+    container_name: webserv-nginx-compare
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./nginx.docker.conf:/etc/nginx/nginx.conf:ro
+      - ./mime.types:/etc/nginx/mime.types:ro
+      - ./www:/var/www:ro
+    command: ["nginx", "-g", "daemon off;"]
+    restart: unless-stopped

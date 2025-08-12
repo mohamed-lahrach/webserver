@@ -5,14 +5,38 @@
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
+#include <cctype>
 
-Request::Request() : http_method(""), requested_path(""), http_version(""), got_all_headers(false), expected_body_size(0), request_body(""), cfg_(0), loc_(0), get_handler(), post_handler(), delete_handler()
+Request::Request() : http_method(""), requested_path(""), http_version(""), got_all_headers(false), expected_body_size(0), request_body(""), config(0), location(0), get_handler(), post_handler(), delete_handler()
 {
 	std::cout << "Creating a new HTTP request parser with modular handlers" << std::endl;
 }
 
 Request::~Request()
 {
+}
+
+void Request::set_config(ServerContext &cfg)
+{
+	config = &cfg;
+	if (!requested_path.empty())
+		location = match_location(requested_path);
+}
+
+static std::string remove_spaces_and_lower(const std::string &str)
+{
+
+	size_t start = 0;
+	size_t end = str.size();
+	while (start < end && (str[start] == ' ' || str[start] == '\t' || str[start] == '\r'))
+		++start;
+	while (end > start && (str[end - 1] == ' ' || str[end - 1] == '\t' || str[end - 1] == '\r'))
+		--end;
+
+	std::string lower_str = str.substr(start, end - start);
+	for (size_t i = 0; i < lower_str.length(); ++i)
+		lower_str[i] = tolower(lower_str[i]);
+	return lower_str;
 }
 
 RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
@@ -27,6 +51,11 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 		size_t headers_end_position = incoming_data.find("\r\n\r\n");
 		if (headers_end_position == std::string::npos)
 		{
+			if (!check_for_valid_http_start())
+			{
+				std::cout << "Invalid HTTP request format detected" << std::endl;
+				return BAD_REQUEST;
+			}
 			std::cout << "Headers are not complete yet - waiting for more data" << std::endl;
 			return NEED_MORE_DATA;
 		}
@@ -51,9 +80,10 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 
 		if (http_method == "POST" || http_method == "PUT")
 		{
-			if (http_headers.find("Content-Length") != http_headers.end())
+			std::map<std::string, std::string>::const_iterator it_content_len = http_headers.find("content-length");
+			if (it_content_len != http_headers.end())
 			{
-				expected_body_size = std::atoi(http_headers["Content-Length"].c_str());
+				expected_body_size = std::atoi(it_content_len->second.c_str());
 				std::cout << "This request should have a body with " << expected_body_size << " bytes" << std::endl;
 			}
 		}
@@ -63,6 +93,29 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 
 	return HEADERS_ARE_READY;
 }
+bool Request::check_for_valid_http_start()
+{
+	size_t first_line_end = incoming_data.find("\r\n");
+
+	std::string first_line = incoming_data.substr(0, first_line_end);
+	std::istringstream line_stream(first_line);
+	std::string method, path, version;
+
+	if (!(line_stream >> method >> path >> version))
+	{
+		std::cout<<"error from stream \n";
+		return false;
+
+	}
+	if (version != "HTTP/1.1" && version != "HTTP/1.0")
+		return false;
+	if(path[0]!='/')
+		return false;
+	if (method != "GET" && method != "POST" && method != "DELETE")
+		return false;
+
+	return true;
+}
 
 bool Request::parse_http_headers(const std::string &header_text)
 {
@@ -71,75 +124,77 @@ bool Request::parse_http_headers(const std::string &header_text)
 
 	if (!std::getline(header_stream, current_line))
 		return false;
-
-	std::istringstream first_line_parts(current_line);
-	if (!(first_line_parts >> http_method >> requested_path >> http_version))
-	{
+	std::istringstream first_line_stream(current_line);
+	if (!(first_line_stream >> http_method >> requested_path >> http_version))
 		return false;
-	}
+
+	bool host_found = false;
+
 	while (std::getline(header_stream, current_line))
 	{
 
-		if (current_line.empty())
-			continue;
 		size_t colon_position = current_line.find(':');
+		if (colon_position == std::string::npos)
+		{
+			std::cout << "now key value in header: '" << current_line << "'" << std::endl;
+			return false;
+		}
 		std::string header_name = current_line.substr(0, colon_position);
 		std::string header_value = current_line.substr(colon_position + 1);
 
-		while (!header_value.empty() && (header_value[0] == ' ' || header_value[0] == '\t'))
-		{
-			header_value = header_value.substr(1);
-		}
-		while (!header_value.empty() && (header_value[header_value.length() - 1] == ' ' || header_value[header_value.length() - 1] == '\t'))
-		{
-			header_value = header_value.substr(0, header_value.length() - 1);
-		}
-
-		http_headers[header_name] = header_value;
+		std::string lower_name = remove_spaces_and_lower(header_name);
+		http_headers[lower_name] = header_value;
+		if (lower_name == "host")
+			host_found = true;
 		std::cout << "Found header: " << header_name << " = " << header_value << std::endl;
 	}
+	if (!host_found)
+		return false;
 
 	return true;
 }
 
-void Request::set_config(const ServerContext &cfg)
+LocationContext *Request::match_location(const std::string &resquested_path)
 {
-	cfg_ = &cfg;
-	if (!requested_path.empty())
-		loc_ = match_location(requested_path);
-}
-
-const LocationContext *Request::match_location(const std::string &path) const
-{
-	if (!cfg_)
+	if (!config)
 		return 0;
-	const LocationContext *best = 0;
-	size_t bestLen = 0;
-	for (std::vector<LocationContext>::const_iterator it = cfg_->locations.begin(); it != cfg_->locations.end(); ++it)
+	LocationContext *matched_location = 0;
+	size_t longest_len = 0;
+
+	std::vector<LocationContext>::iterator it_location = config->locations.begin();
+	while (it_location != config->locations.end())
 	{
-		const std::string &p = it->path;
-		if (p.empty())
-			continue;
-		if (path.compare(0, p.size(), p) == 0)
+		if (it_location->path.empty())
 		{
-			if (p.size() > bestLen)
+			++it_location;
+			continue;
+		}
+		if (resquested_path.compare(0, it_location->path.size(), it_location->path) == 0)
+		{
+			if (resquested_path.length() == it_location->path.length() || resquested_path[it_location->path.length()] == '/')
 			{
-				best = &(*it);
-				bestLen = p.size();
+				if (it_location->path.size() > longest_len)
+				{
+					matched_location = &(*it_location);
+					longest_len = it_location->path.size();
+				}
 			}
 		}
+		++it_location;
 	}
-	return best;
+	return matched_location;
 }
 
 RequestStatus Request::figure_out_http_method()
 {
-	if (!loc_->allowedMethods.empty())
+	if (!location || location->root.empty())
+		return FORBIDDEN;
+	else if (!location->allowedMethods.empty())
 	{
 		bool ok = false;
-		for (std::vector<std::string>::const_iterator it = loc_->allowedMethods.begin(); it != loc_->allowedMethods.end(); ++it)
+		for (std::vector<std::string>::const_iterator it_method = location->allowedMethods.begin(); it_method != location->allowedMethods.end(); ++it_method)
 		{
-			if (*it == http_method)
+			if (*it_method == http_method)
 			{
 				ok = true;
 				break;
@@ -150,20 +205,11 @@ RequestStatus Request::figure_out_http_method()
 	}
 
 	if (http_method == "GET")
-	{
 		return get_handler.handle_get_request(requested_path);
-	}
 	else if (http_method == "POST")
-	{
 		return post_handler.handle_post_request(requested_path, http_headers, incoming_data, expected_body_size);
-	}
 	else if (http_method == "DELETE")
-	{
 		return delete_handler.handle_delete_request(requested_path, http_headers);
-	}
 	else
-	{
-		std::cout << "Don't know how to handle method: " << http_method << std::endl;
 		return METHOD_NOT_ALLOWED;
-	}
 }

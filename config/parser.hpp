@@ -22,7 +22,7 @@ struct ServerContext
     std::string listenPort;
     std::string root;
     std::vector<std::string> indexes;
-    std::vector<ErrorPagePair> errorPages; // Much cleaner
+    std::vector<ErrorPagePair> errorPages; 
     std::string clientMaxBodySize;
     std::string autoindex;
     std::vector<LocationContext> locations;

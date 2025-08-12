@@ -114,7 +114,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 				switch (handler_result)
 				{
 				case BAD_REQUEST:
-					std::cout << "BAD REQUEST (400) - Malformed request" << std::endl;
+					std::cout << "BAD REQUEST (400)" << std::endl;
 					break;
 				case FORBIDDEN:
 					std::cout << "FORBIDDEN (403) - Security violation or access denied" << std::endl;
@@ -172,7 +172,7 @@ void Client::handle_client_data_output(int client_fd, int epoll_fd,
 									   std::map<int, Client> &active_clients, ServerContext &server_config)
 {
 	(void)server_config;
-	std::cout << "=== GENERATING RESPONSE FOR CLIENT " << client_fd << " ===" << std::endl;
+	std::cout << "=== GENERATING RESPONSE FOR CLIENT ===========>" << client_fd << " ===" << std::endl;
 
 	if (current_response.is_still_streaming())
 	{
@@ -190,8 +190,9 @@ void Client::handle_client_data_output(int client_fd, int epoll_fd,
 		else
 		{
 			std::string request_path = current_request.get_requested_path();
+			LocationContext* location = current_request.get_location();
 			std::cout << "Creating normal response for path: " << request_path << std::endl;
-			current_response.analyze_request_and_set_response(request_path);
+			current_response.analyze_request_and_set_response(request_path, location);
 		}
 
 		current_response.handle_response(client_fd);

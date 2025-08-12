@@ -34,7 +34,7 @@ public:
 	void set_header(const std::string &key, const std::string &value);
 	void set_error_response(RequestStatus status);
 
-	void analyze_request_and_set_response(const std::string &path);
+	void analyze_request_and_set_response(const std::string &path,LocationContext *location_config);
 	void check_file(const std::string &file_path);
 	void start_file_streaming(int client_fd);
 	void finish_file_streaming();
