@@ -31,6 +31,8 @@ class PostHandler
 		const std::string &body);
 	void parse_data_body(const std::string &body,
 		const std::string &content_type);
+	RequestStatus handle_post_request_with_chunked(const std::map<std::string, std::string> &http_headers,
+		std::string &incoming_data, size_t expected_body_size, const ServerContext *cfg, const LocationContext *loc);
 	std::string extract_boundary(const std::string &content_type);
 	std::string extract_filename(const std::string &body);
 	size_t parse_max_body_size(const std::string &size_str);

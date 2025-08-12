@@ -77,7 +77,43 @@ void PostHandler::parse_type_body(const std::string &body, const std::map<std::s
         save_request_body("post_body.txt", body);
     }
 }
+RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::string, std::string> &http_headers,
+	std::string &incoming_data, size_t expected_body_size , const ServerContext *cfg, const LocationContext *loc)
+{
+		// size_t pos = incoming_data.find("\r\n");
 
+		// std::string size_str = incoming_data.substr(0, pos);
+		// int chunk_size = std::strtol(size_str.c_str(), NULL, 16); // Hex -> int
+		// if (chunk_size == 0)
+		// {
+		// 	std::cout << "End of chunked transfer detected." << std::endl;
+		// 	is_chunked = false;
+		// 	return EVERYTHING_IS_OK; // End of chunked transfer
+		// }
+		// else
+		// {
+		// 	std::cout << "Chunk size: " << chunk_size << std::endl;
+		// 	if (chunk_size > 0)
+		// 	{
+		// 		chunk_buffer += incoming_data.substr(pos + 2, chunk_size); // +2 for \r\n
+		// 		is_chunked = true;
+		// 	}
+		// 	else
+		// 	{
+		// 		std::cout << "ERROR: Invalid chunk size!" << std::endl;
+		// 		return (BAD_REQUEST);
+		// 	}
+		// 	return (BODY_BEING_READ);
+		// }
+		(void)http_headers;
+		(void)incoming_data;
+		(void)expected_body_size;
+		(void)cfg;
+		(void)loc;
+		// save the data to file 
+		save_request_body("chunked_data.txt", incoming_data);
+		return(EVERYTHING_IS_OK);
+}
 RequestStatus PostHandler::handle_post_request(const std::string &requested_path,
 	const std::map<std::string, std::string> &http_headers,
 	std::string &incoming_data, size_t expected_body_size , const ServerContext *cfg, const LocationContext *loc)
@@ -85,19 +121,13 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 	(void)requested_path;
 	(void)loc;
 	std::cout << "Handling POST request for path: " << requested_path << std::endl;
-	if (http_headers.find("Transfer-Encoding") != http_headers.end() &&
-		http_headers.at("Transfer-Encoding") == "chunked")
-	{
-		size_t pos = incoming_data.find("\r\n");
+    // afficher transfer encoding
+    std::cout << "Transfer-Encoding: " << http_headers.at("Transfer-Encoding") << std::endl;
 
-		std::string size_str = incoming_data.substr(0, pos);
-		int chunk_size = std::strtol(size_str.c_str(), NULL, 16); // Hex -> int
-		if (chunk_size == 0)
-		{
-			std::cout << "End of chunked transfer detected." << std::endl;
-			is_chunked = false;
-		}
-		return (BODY_BEING_READ);
+	if (http_headers.find("Transfer-Encoding") != http_headers.end() &&
+	http_headers.at("Transfer-Encoding") == "chunked\r")
+	{
+		return handle_post_request_with_chunked(http_headers, incoming_data, expected_body_size, cfg, loc);
 	}
 	else if (incoming_data.size() < expected_body_size)
 	{
