@@ -65,9 +65,11 @@ std::string PostHandler::extract_filename(const std::string &body)
 	size_t	end_pos;
 
 	pos = body.find("filename=\"");
+	//default filename if not found
 	if (pos == std::string::npos)
 	{
-		throw std::runtime_error("Filename not found in body");
+		std::cout << "Filename not found in body, using default." << std::endl;
+		return "post_body.txt";
 	}
 	pos += 10;
 	end_pos = body.find("\"", pos);
