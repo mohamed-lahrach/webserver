@@ -155,7 +155,7 @@ RequestStatus Request::figure_out_http_method()
 	}
 	else if (http_method == "POST")
 	{
-		return post_handler.handle_post_request(requested_path, http_headers, incoming_data, expected_body_size);
+		return post_handler.handle_post_request(requested_path, http_headers, incoming_data, expected_body_size, cfg_, loc_);
 	}
 	else if (http_method == "DELETE")
 	{

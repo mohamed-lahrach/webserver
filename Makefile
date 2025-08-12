@@ -6,7 +6,7 @@ SRC = main.cpp Server_setup/server.cpp Server_setup/util_server.cpp  \
 	Server_setup/socket.cpp Server_setup/non_blocking.cpp client/client.cpp \
 	request/request.cpp request/get_handler.cpp request/post_handler.cpp \
 	request/delete_handler.cpp response/response.cpp config/Lexer.cpp config/parser.cpp \
-	utils/mime_types.cpp
+	utils/mime_types.cpp request/post_handler_utils.cpp \
 
 OBJ = $(SRC:.cpp=.o)
 

@@ -1,55 +1,6 @@
 #include "post_handler.hpp"
-#include "request_status.hpp"
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <stdexcept>
-PostHandler::PostHandler()
-{
-	is_chunked = false; // Initialize chunked transfer encoding flag
-	std::cout << "PostHandler initialized." << std::endl;
-}
 
-PostHandler::~PostHandler()
-{
-	std::cout << "PostHandler destroyed." << std::endl;
-}
-void PostHandler::save_request_body(const std::string &filename, const std::string &body)
-
-{
-	std::ofstream file(filename.c_str(), std::ios::binary); // binary mode for any data
-	if (!file)
-	{
-		throw std::runtime_error("Could not open file for writing");
-	}
-	file.write(body.data(), body.size());
-	file.close();
-}
-std::string PostHandler::extract_boundary(const std::string &content_type)
-{
-	size_t pos = content_type.find("boundary=");
-	if (pos == std::string::npos)
-	{
-		throw std::runtime_error("Boundary not found in Content-Type header");
-	}
-	return content_type.substr(pos + 9); // 9 is the length of "boundary="
-}
-std::string PostHandler::extract_filename(const std::string &body)
-{
-	size_t pos = body.find("filename=\"");
-	if (pos == std::string::npos)
-	{
-		throw std::runtime_error("Filename not found in body");
-	}
-	pos += 10;
-	size_t end_pos = body.find("\"", pos);
-	if (end_pos == std::string::npos)
-	{
-		throw std::runtime_error("End quote for filename not found");
-	}
-	return body.substr(pos, end_pos - pos);
-}
-void PostHandler::parse_multipart_data(const std::string &body, const std::string &content_type)
+void PostHandler::parse_data_body(const std::string &body, const std::string &content_type)
 {
 	(void)content_type;
 	std::cout << "Parsing multipart data..." << std::endl;
@@ -90,22 +41,30 @@ void PostHandler::parse_multipart_data(const std::string &body, const std::strin
 	save_request_body(file_name, file_data);
 }
 
-void PostHandler::parse_body_for_each_type(const std::string &body, const std::map<std::string, std::string> &http_headers)
+void parse_data_body_with_chuked()
 {
-	if(is_chunked)
-	{
-		std::cout << "Handling chunked transfer encoding..." << std::endl;
-		//save_request_body("chunked_post_body.txt", body);
-		std::cout << "Chunked data saved to chunked_post_body.txt" << std::endl;
-		is_chunked = false; // Reset after handling
-	}
-    else if (http_headers.find("Content-Type") != http_headers.end())
+
+}
+
+void PostHandler::parse_type_body(const std::string &body, const std::map<std::string, std::string> &http_headers)
+{
+    if (http_headers.find("Content-Type") != http_headers.end())
     {
         std::string content_type = http_headers.at("Content-Type");
         if (content_type.find("multipart/form-data") != std::string::npos)
         {
-            std::cout << "Parsing as multipart/form-data" << std::endl;
-            parse_multipart_data(body, content_type);
+			if(is_chunked)
+			{
+				std::cout << "Parsing as multipart/form-data + chunked" << std::endl;
+				parse_data_body(chunk_buffer + body, content_type);
+				chunk_buffer.clear(); // Clear the buffer after processing
+				is_chunked = false; // Reset chunked state
+			}
+			else
+			{
+				std::cout << "Parsing as multipart/form-data" << std::endl;
+				parse_data_body(body, content_type);
+			}
         }
         else 
         {
@@ -121,30 +80,32 @@ void PostHandler::parse_body_for_each_type(const std::string &body, const std::m
 
 RequestStatus PostHandler::handle_post_request(const std::string &requested_path,
 	const std::map<std::string, std::string> &http_headers,
-	std::string &incoming_data, size_t expected_body_size)
+	std::string &incoming_data, size_t expected_body_size , const ServerContext *cfg, const LocationContext *loc)
 {
-	// check if a have chunked transfer encoding
-	(void)requested_path; // Unused in this context
+	(void)requested_path;
+	(void)loc;
+	std::cout << "Handling POST request for path: " << requested_path << std::endl;
 	if (http_headers.find("Transfer-Encoding") != http_headers.end() &&
 		http_headers.at("Transfer-Encoding") == "chunked")
 	{
 		is_chunked = true;
-		std::cout << "Received chunked transfer encoding POST request." << std::endl;
-
-		// Handle chunked transfer encoding here if needed
-		// For now, we will just treat it as a regular POST request
 	}		
 	else if (incoming_data.size() < expected_body_size)
 	{
 		std::cout << "⏳ WAITING FOR MORE POST BODY DATA..." << std::endl;
-		std::cout << "Progress: " << incoming_data.size() << "/" << expected_body_size << " bytes" << std::endl;
-		std::cout << "Missing: " << (expected_body_size
-			- incoming_data.size()) << " bytes" << std::endl;
 		return (BODY_BEING_READ);
 	}
 	std::cout << "Received full POST body data!" << std::endl;
-	parse_body_for_each_type(incoming_data, http_headers);
-	std::cout << "Request body parsed successfully." << std::endl;
+	if (cfg->clientMaxBodySize != "0" && incoming_data.size() > parse_max_body_size(cfg->clientMaxBodySize))
+	{
+		std::cout << "ERROR: POST body size is too large!" << std::endl;
+		// print the size of the body
+		std::cout << "Received body size: " << incoming_data.size() << std::endl;
+		std::cout << "Max allowed body size: " << parse_max_body_size(cfg->clientMaxBodySize) << std::endl;
+		return (PAYLOAD_TOO_LARGE);
+	}
+
+	parse_type_body(incoming_data, http_headers);
 	std::cout << "-----------------------" << std::endl;
 	std::cout << "-----------------------" << std::endl;
 	return (EVERYTHING_IS_OK); // Now we can process
