@@ -88,8 +88,17 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 	if (http_headers.find("Transfer-Encoding") != http_headers.end() &&
 		http_headers.at("Transfer-Encoding") == "chunked")
 	{
-		is_chunked = true;
-	}		
+		size_t pos = incoming_data.find("\r\n");
+
+		std::string size_str = incoming_data.substr(0, pos);
+		int chunk_size = std::strtol(size_str.c_str(), NULL, 16); // Hex -> int
+		if (chunk_size == 0)
+		{
+			std::cout << "End of chunked transfer detected." << std::endl;
+			is_chunked = false;
+		}
+		return (BODY_BEING_READ);
+	}
 	else if (incoming_data.size() < expected_body_size)
 	{
 		std::cout << "⏳ WAITING FOR MORE POST BODY DATA..." << std::endl;
