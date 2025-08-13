@@ -185,7 +185,7 @@ void Client::handle_client_data_output(int client_fd, int epoll_fd,
 		if (request_status != EVERYTHING_IS_OK)
 		{
 			std::cout << "Setting error response for status: " << request_status << std::endl;
-			current_response.set_error_response(request_status);
+			current_response.set_error_response(request_status, &server_config);
 		}
 		else
 		{

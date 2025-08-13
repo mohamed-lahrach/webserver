@@ -2,9 +2,11 @@
 #define RESPONSE_HPP
 
 #include <cstring>
+#include <cstddef>
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <ios>
 #include <sys/socket.h>
 #include <map>
 #include "../config/parser.hpp"
@@ -32,9 +34,10 @@ public:
 	void set_code(int code);
 	void set_content(const std::string &body_content);
 	void set_header(const std::string &key, const std::string &value);
-	void set_error_response(RequestStatus status);
+	void set_error_response(RequestStatus status, ServerContext* server_config);
+	std::string get_custom_error_page(int status_code, ServerContext* server_config);
 
-	void analyze_request_and_set_response(const std::string &path,LocationContext *location_config);
+	void analyze_request_and_set_response(const std::string &path, LocationContext *location_config);
 	void check_file(const std::string &file_path);
 	void start_file_streaming(int client_fd);
 	void finish_file_streaming();

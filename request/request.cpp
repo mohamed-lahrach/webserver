@@ -19,8 +19,11 @@ Request::~Request()
 void Request::set_config(ServerContext &cfg)
 {
 	config = &cfg;
+	std::cout << " config is up \n";
 	if (!requested_path.empty())
 		location = match_location(requested_path);
+std::cout << " location is " <<location->path << "\n";
+
 }
 
 static std::string remove_spaces_and_lower(const std::string &str)
@@ -80,7 +83,7 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 
 		if (http_method == "POST" || http_method == "PUT")
 		{
-			std::map<std::string, std::string>::const_iterator it_content_len = http_headers.find("content-length");
+			std::map<std::string, std::string>::iterator it_content_len = http_headers.find("content-length");
 			if (it_content_len != http_headers.end())
 			{
 				expected_body_size = std::atoi(it_content_len->second.c_str());
@@ -133,10 +136,17 @@ bool Request::parse_http_headers(const std::string &header_text)
 	while (std::getline(header_stream, current_line))
 	{
 
+
 		size_t colon_position = current_line.find(':');
 		if (colon_position == std::string::npos)
 		{
 			std::cout << "now key value in header: '" << current_line << "'" << std::endl;
+			return false;
+		}
+
+		if (colon_position > 0 && (current_line[colon_position - 1] == ' ' || current_line[colon_position - 1] == '\t'))
+		{
+			std::cout << "Invalid header (whitespace before colon): '" << std::endl;
 			return false;
 		}
 		std::string header_name = current_line.substr(0, colon_position);
@@ -188,11 +198,15 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 RequestStatus Request::figure_out_http_method()
 {
 	if (!location || location->root.empty())
-		return FORBIDDEN;
+	{
+		std::cout << " location not found \n";
+		return NOT_FOUND;
+	}
+		
 	else if (!location->allowedMethods.empty())
 	{
 		bool ok = false;
-		for (std::vector<std::string>::const_iterator it_method = location->allowedMethods.begin(); it_method != location->allowedMethods.end(); ++it_method)
+		for (std::vector<std::string>::iterator it_method = location->allowedMethods.begin(); it_method != location->allowedMethods.end(); ++it_method)
 		{
 			if (*it_method == http_method)
 			{

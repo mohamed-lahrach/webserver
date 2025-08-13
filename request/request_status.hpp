@@ -9,12 +9,16 @@ enum RequestStatus {
 	EVERYTHING_IS_OK,   
 	
 
-	BAD_REQUEST,          // 400 
-	FORBIDDEN,            // 403 
-	NOT_FOUND,            // 404
-	METHOD_NOT_ALLOWED,   // 405
-	PAYLOAD_TOO_LARGE,    // 413 
-	INTERNAL_ERROR        // 500 
+	BAD_REQUEST = 400,          // 400 
+	FORBIDDEN = 403,            // 403 
+	NOT_FOUND = 404,            // 404
+	METHOD_NOT_ALLOWED = 405,   // 405
+	LENGTH_REQUIRED = 411,      // 411 - Missing Content-Length
+	PAYLOAD_TOO_LARGE = 413,    // 413 - Request body too large
+	URI_TOO_LONG = 414,         // 414 - Request-URI too long
+	HEADER_TOO_LARGE = 431,     // 431 - Request header fields too large
+	INTERNAL_ERROR = 500,       // 500 
+	NOT_IMPLEMENTED = 501       // 501 - Method not supported
 };
 
 #endif 

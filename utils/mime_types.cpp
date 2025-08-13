@@ -52,7 +52,7 @@ std::string MimeTypes::get_mime_type(const std::string &file_path)
 {
     std::string extension = get_file_extension(file_path);
 
-    std::map<std::string, std::string>::const_iterator it = mime_map.find(extension);
+    std::map<std::string, std::string>::iterator it = mime_map.find(extension);
     if (it != mime_map.end())
         return it->second;
 
