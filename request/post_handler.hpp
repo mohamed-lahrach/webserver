@@ -15,8 +15,10 @@
 class PostHandler
 {
   private:
-	bool is_chunked;
     std::string chunk_buffer;
+	size_t chunk_size;
+	std::string buffer_not_parser; 
+	std::string chunk_body_parser;
 
   public:
 	PostHandler();

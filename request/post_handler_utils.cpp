@@ -27,7 +27,7 @@ size_t PostHandler::parse_max_body_size(const std::string &size_str)
 }
 PostHandler::PostHandler()
 {
-	is_chunked = false; // Initialize chunked transfer encoding flag
+	chunk_size = 0;
 	std::cout << "PostHandler initialized." << std::endl;
 }
 
