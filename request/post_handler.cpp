@@ -108,7 +108,6 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 			processed_pos = crlf_pos + 2;
 			if (chunk_size == 0)
 			{
-				// End of chunks
 				parse_type_body(chunk_body_parser, http_headers);
 				buffer_not_parser.clear();
 				chunk_body_parser.clear();
@@ -129,6 +128,7 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 	return (BODY_BEING_READ);
 }
 
+
 RequestStatus PostHandler::handle_post_request(const std::string &requested_path,
 	const std::map<std::string, std::string> &http_headers,
 	std::string &incoming_data, size_t expected_body_size,
@@ -148,12 +148,9 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 		return (BODY_BEING_READ);
 	}
 	std::cout << "Received full POST body data!" << std::endl;
-	if (cfg->clientMaxBodySize != "0"
-		&& incoming_data.size() > parse_max_body_size(cfg->clientMaxBodySize))
+	if(parse_size(cfg, incoming_data) == 0)
 	{
 		std::cout << "ERROR: POST body size is too large!" << std::endl;
-		std::cout << "Received body size: " << incoming_data.size() << std::endl;
-		std::cout << "Max allowed body size: " << parse_max_body_size(cfg->clientMaxBodySize) << std::endl;
 		return (PAYLOAD_TOO_LARGE);
 	}
 	parse_type_body(incoming_data, http_headers);

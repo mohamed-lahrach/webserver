@@ -38,6 +38,7 @@ class PostHandler
 	std::string extract_boundary(const std::string &content_type);
 	std::string extract_filename(const std::string &body);
 	size_t parse_max_body_size(const std::string &size_str);
+	int parse_size(const ServerContext *cfg, std::string &incoming_data);
 };
 
 #endif

@@ -79,3 +79,15 @@ std::string PostHandler::extract_filename(const std::string &body)
 	}
 	return (body.substr(pos, end_pos - pos));
 }
+int PostHandler::parse_size(const ServerContext *cfg, std::string &incoming_data)
+{
+		if (cfg->clientMaxBodySize != "0"
+		&& incoming_data.size() > parse_max_body_size(cfg->clientMaxBodySize))
+	{
+		std::cout << "ERROR: POST body size is too large!" << std::endl;
+		std::cout << "Received body size: " << incoming_data.size() << std::endl;
+		std::cout << "Max allowed body size: " << parse_max_body_size(cfg->clientMaxBodySize) << std::endl;
+		return  0;
+	}
+	return 1;;
+}
