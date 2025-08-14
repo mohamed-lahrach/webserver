@@ -1,6 +1,6 @@
 #include "post_handler.hpp"
 
-void PostHandler::parse_data_body(const std::string &body, const std::string &content_type)
+void PostHandler::parse_form_data(const std::string &body, const std::string &content_type)
 {
     std::cout << "Parsing multipart data..." << std::endl;
     
@@ -52,10 +52,7 @@ void PostHandler::parse_data_body(const std::string &body, const std::string &co
     {
         data_end -= 1;
     }
-    
     std::string clean_data = body.substr(start_position, data_end - start_position);
-    
-    std::cout << "Extracted clean data (" << clean_data.length() << " bytes): '" << clean_data << "'" << std::endl;
     save_request_body(file_name, clean_data);
 }
 
@@ -68,17 +65,17 @@ void PostHandler::parse_type_body(const std::string &body,
 		if (content_type.find("multipart/form-data") != std::string::npos)
 		{
             std::cout << "Parsing as multipart/form-data" << std::endl;
-			parse_data_body(body, content_type);
+			parse_form_data(body, content_type);
 		}
 		else
 		{
-			save_request_body("post_body.txt", body);
+			save_request_body("post_body_default.txt", body);
 		}
 	}
 	else
 	{
 		std::cout << "No Content-Type header found- saving to file" << std::endl;
-		save_request_body("post_body.txt", body);
+		save_request_body("post_body_default.txt", body);
 	}
 }
 
@@ -138,7 +135,6 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 	const ServerContext *cfg, const LocationContext *loc)
 {
 	(void)requested_path;
-	std::cout << "Handling POST request for path: " << requested_path << std::endl;
 	(void)loc;
 	if (http_headers.find("Transfer-Encoding") != http_headers.end()
 		&& http_headers.at("Transfer-Encoding") == "chunked\r")
@@ -156,7 +152,6 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 		&& incoming_data.size() > parse_max_body_size(cfg->clientMaxBodySize))
 	{
 		std::cout << "ERROR: POST body size is too large!" << std::endl;
-		// print the size of the body
 		std::cout << "Received body size: " << incoming_data.size() << std::endl;
 		std::cout << "Max allowed body size: " << parse_max_body_size(cfg->clientMaxBodySize) << std::endl;
 		return (PAYLOAD_TOO_LARGE);
