@@ -11,6 +11,9 @@ struct LocationContext
     std::vector<std::string> indexes;
     std::string autoindex;
     std::vector<std::string> allowedMethods;
+    std::string returnDirective; // For return directive (could be just a file or "code file")
+    std::string cgiExtension;
+    std::string cgiPath;
 };
 
 typedef std::pair<std::vector<int>, std::string> ErrorPagePair;
@@ -54,6 +57,10 @@ private:
     void parseClientMaxBodySizeDirective();
     void parseErrorPageDirective();
     void parseAutoindexDirective();
+    void parseReturnDirective();
+    void parseReturnDirectiveInLocation(LocationContext& location);
+    void parseCgiExtensionDirective(LocationContext& location);
+    void parseCgiPathDirective(LocationContext& location);
 
 public:
     Parser(const std::vector<Token> &tokenStream);

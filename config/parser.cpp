@@ -3,6 +3,7 @@
 #include "helper_functions.hpp"
 #include <sstream>
 #include <cstdlib>
+#include <iostream>
 
 static std::string toString(int number)
 {
@@ -383,6 +384,24 @@ void Parser::parseLocationBlock()
             break;
         }
 
+        case RETURN_KEYWORD:
+        {
+            parseReturnDirectiveInLocation(location);
+            break;
+        }
+
+        case CGI_EXTENSION_KEYWORD:
+        {
+            parseCgiExtensionDirective(location);
+            break;
+        }
+
+        case CGI_PATH_KEYWORD:
+        {
+            parseCgiPathDirective(location);
+            break;
+        }
+
         default:
             throw std::runtime_error("Unknown directive '" + token.value + "' in location block at line " + toString(token.line));
         }
@@ -392,4 +411,58 @@ void Parser::parseLocationBlock()
 
     // Store location in current server
     currentServer.locations.push_back(location);
+}
+
+void Parser::parseReturnDirectiveInLocation(LocationContext& location)
+{
+    std::string returnValue;
+    
+    // Check if first token is a number (HTTP status code)
+    if (peek().type == NUMBER) {
+        returnValue += advance().value; // HTTP status code
+        
+        // Handle case where filename starts with numbers like "404.html"
+        // This might be tokenized as NUMBER + DOT + STRING
+        if (peek().type == DOT) {
+            returnValue += advance().value; // Add the dot
+            if (peek().type == STRING) {
+                returnValue += advance().value; // Add the extension
+            }
+        }
+        // Or if there's additional content (URL, text, or filename)
+        else if (peek().type == STRING) {
+            returnValue += " ";
+            returnValue += advance().value; // URL, text, or filename
+        }
+    }
+    // Check if it's just a filename/string
+    else if (peek().type == STRING) {
+        returnValue = advance().value; // Just the filename
+    }
+    else {
+        throw std::runtime_error("Expected status code or filename after 'return' at line " + toString(peek().line) + 
+                                 ". Got token type: " + toString(peek().type) + ", value: '" + peek().value + "'");
+    }
+    
+    expect(SEMICOLON, "Expected ';' after return directive");
+    
+    location.returnDirective = returnValue;
+}
+
+void Parser::parseCgiExtensionDirective(LocationContext& location)
+{
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected file extension after 'cgi_extension' at line " + toString(peek().line));
+    
+    location.cgiExtension = advance().value;
+    expect(SEMICOLON, "Expected ';' after cgi_extension");
+}
+
+void Parser::parseCgiPathDirective(LocationContext& location)
+{
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected interpreter path after 'cgi_path' at line " + toString(peek().line));
+    
+    location.cgiPath = advance().value;
+    expect(SEMICOLON, "Expected ';' after cgi_path");
 }

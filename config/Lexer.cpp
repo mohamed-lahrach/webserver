@@ -27,6 +27,12 @@ static TokenType keywordLookup(const std::string &word)
         return AUTOINDEX_KEYWORD;
     if (word == "client_max_body_size")
         return CLIENT_MAX_BODY_SIZE_KEYWORD;
+    if (word == "return")
+        return RETURN_KEYWORD;
+    if (word == "cgi_extension")
+        return CGI_EXTENSION_KEYWORD;
+    if (word == "cgi_path")
+        return CGI_PATH_KEYWORD;
 
     // HTTP methods as their own token (handy for allowed_methods)
     if (word == "GET" || word == "POST" || word == "PUT" ||
@@ -287,7 +293,7 @@ Token Lexer::getNextToken()
         // Words/paths/quoted strings
         if (std::isalpha(static_cast<unsigned char>(currentChar())) ||
             currentChar() == '_' || currentChar() == '-' ||
-            currentChar() == '/' || currentChar() == '"' || currentChar() == '\'')
+            currentChar() == '/' || currentChar() == '"' || currentChar() == '\'' || currentChar() == '.')
         {
             return readWordOrPath();
         }
