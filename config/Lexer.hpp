@@ -1,100 +1,89 @@
-#ifndef LEXER_HPP        // 1. Include guard – prevents double inclusion
-#define LEXER_HPP        //    of this header file in multiple translation units.
+#ifndef LEXER_HPP
+#define LEXER_HPP
 
-#include <string>        // 2. You need std::string for token text.
-#include <cstddef>       //    Gives you size_t (unsigned integer type).
-#include <fstream>   // std::ifstream
-#include <sstream>   // std::ostringstream
-#include <stdexcept> // std::runtime_error
-#include <iostream>
-#include <vector>  // Add this line
+#include <string>
+#include <vector>
+#include <cstddef> // size_t
+#include <fstream>
+#include <sstream>
+#include <stdexcept>
 
-// ──────────────────────────────────────────────────────────────
-// 3. Token kinds (enum class is safer, but a plain enum works fine)
-enum TokenType {
-    SERVER_KEYWORD,        // “server”
-    LOCATION_KEYWORD,      // “location”
-    LISTEN_KEYWORD,        // “listen”
-    SERVER_NAME_KEYWORD,   // “server_name”
-    ROOT_KEYWORD,          // “root”
-    INDEX_KEYWORD,         // “index”
-    ERROR_PAGE_KEYWORD,    // “error_page”
-    ALLOWED_METHODS_KEYWORD, // “allowed_methods”
-    AUTOINDEX_KEYWORD,     // “autoindex”
-    CLIENT_MAX_BODY_SIZE_KEYWORD, // “client_max_body_size”
+// Token kinds
+enum TokenType
+{
+    // Keywords
+    SERVER_KEYWORD,
+    LOCATION_KEYWORD,
+    LISTEN_KEYWORD,
+    SERVER_NAME_KEYWORD,
+    ROOT_KEYWORD,
+    INDEX_KEYWORD,
+    ERROR_PAGE_KEYWORD,
+    ALLOWED_METHODS_KEYWORD,
+    AUTOINDEX_KEYWORD,
+    CLIENT_MAX_BODY_SIZE_KEYWORD,
+    HTTP_METHOD_KEYWORD, // GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH
 
-    HTTP_METHOD_KEYWORD, // GET, POST, etc. (optional helper)
+    // Symbols
+    LEFT_BRACE,
+    RIGHT_BRACE, // { }
+    SEMICOLON,   // ;
+    COLON,       // :
+    COMMA,       // ,
+    DOT,         // . (rarely used now; dotted words parsed as STRING)
 
-    LEFT_BRACE, RIGHT_BRACE, // { }
-    SEMICOLON,               // ;
-    COLON,                   // :   (you’ll likely add this)
-    COMMA,                   // ,   (optional, for lists)
-    SLASH,                   // /
-    DOT,                     // .   (optional, for file paths)
+    // Literals
+    STRING,          // paths, filenames, domains, "quoted"
+    NUMBER,          // pure digits (no dot/letters)
+    IDENTIFIER,      // (unused in this version – we classify non-keywords as STRING)
+    BOOLEAN_LITERAL, // (if you decide to use it later)
+    SIZE,            // (if you decide to use a distinct type later; not used here)
 
-    STRING,                  // “/var/www”, “example.com” all none keywords
-    NUMBER,                  // 80, 404
-    IDENTIFIER,              // GET, POST, on, off
-    BOOLEAN_LITERAL,         // on, off    (optional helper)
-    SIZE,
-    PATH,                    // /var/www/html (optional helper)
-
-    EOF_TOKEN,               // End‑of‑file sentinel
-    UNKNOWN                  // Anything unrecognised
+    EOF_TOKEN, // end-of-file
+    UNKNOWN    // anything unrecognised
 };
 
-// ──────────────────────────────────────────────────────────────
-// 4. One concrete token with where it came from, for error messages.
-struct Token {
-    TokenType   type;   // the kind (from the enum)
-    std::string value;  // exact text of the token
-    int         line;   // 1‑based line number in the source file
-    int         column; // 1‑based column where the token starts
+struct Token
+{
+    TokenType type;
+    std::string value;
+    int line;
+    int column;
 };
 
-// ──────────────────────────────────────────────────────────────
-// 5. Lexer class – turns raw text into Token objects.
-class Lexer {
-private:
-    std::string input;   // the whole config file in memory
-    std::size_t position; // index of current char in ‘input’
-    int line;            // current line (for diagnostics)
-    int column;          // current column
-
+class Lexer
+{
 public:
-    // 5.1 Constructor – feed the entire file content
-    explicit Lexer(const std::string& filePath);
-    explicit Lexer(std::istream& in);              // optional helper
+    // Construct from a file path
+    explicit Lexer(const std::string &filePath);
+    // Construct from a stream (optional, handy for tests)
+    explicit Lexer(std::istream &in);
     ~Lexer();
 
-
-    // 5.2 Primary API – get tokens
-    
+    Token getNextToken();
+    bool hasMoreTokens();
     std::vector<Token> tokenizeAll();
 
-
 private:
-    // main tokenization function 
-    Token getNextToken(); // returns one Token and advances
-
-    // 5.3 Helpers – make the top method readable
-    bool  hasMoreTokens(); // true until we emit EOF_TOKEN
-    char currentChar() const;   // char at ‘position’ or '\0' if EoF
-    char peekChar() const;      // look‑ahead one char
-    void advance();             // move position++, update line/column
+    // Core helpers
+    char currentChar() const;
+    char peekChar() const;
+    void advance();
     bool isAtEnd() const;
 
+    void skipWhitespace();
+    void skipComment();
 
-    void skipWhitespace();      // spaces, tabs, newlines
-    void skipComment();         // ‘# … \n’
+    // Scanners
+    Token readNumber();     // pure digits
+    Token readWordOrPath(); // quoted strings, /paths, dotted words, keywords
+    Token readSizeValue();  // e.g., 1000000M / 512K (digits then letters, no dot)
 
-    Token readString();         // handles quoted or bare strings
-    Token readNumber();         // handles integers
-    Token readIdentifier();     // keywords / identifiers
-    Token readSizeValue();      // handles size values like 100M, 1G, etc.
-
-    TokenType getKeywordType(const std::string& word); // map to enum
-    Token readWordOrPath();
+    // Buffer/state
+    std::string input;
+    std::size_t position;
+    int line;
+    int column;
 };
 
-#endif // LEXER_HPP        // 6. End of include guard
+#endif // LEXER_HPP

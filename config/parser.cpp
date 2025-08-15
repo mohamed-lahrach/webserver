@@ -1,5 +1,6 @@
 #include "parser.hpp"
 #include "Lexer.hpp"
+#include "helper_functions.hpp"
 #include <sstream>
 #include <cstdlib>
 
@@ -152,43 +153,41 @@ void Parser::parseListenDirective()
 
     std::string host;
     std::string port;
-    bool foundColon = false;
+    if (!isAtEnd() && peek().type == STRING) {
+        host = advance().value;                // e.g. "127.0.0.1"
+        if (!isValidIPv4(host))
+            throw std::runtime_error("Invalid IPv4 address in listen: '" + host +
+                                     "' at line " + toString(peek().line));
 
-    while (!isAtEnd())
-    {
-        Token token = peek();
-        if (token.type == SEMICOLON)
-            break;
-
-        if (token.type == DOT || token.type == COLON || token.type == NUMBER)
-        {
-            if (token.type == COLON)
-            {
-                foundColon = true;
-            }
-            else if (!foundColon)
-            {
-                host += token.value;
-            }
-            else
-            {
-                port += token.value;
-            }
+        if (!isAtEnd() && peek().type == COLON) {
+            advance();                          // ':'
+            if (isAtEnd() || peek().type != NUMBER)
+                throw std::runtime_error("Expected numeric port after ':' at line " + toString(peek().line));
+            port = advance().value;
+            if (!isValidPortNumber(port))
+                throw std::runtime_error("Invalid port number '" + port +
+                                         "' in listen at line " + toString(peek().line));
         }
-        else
-        {
-            throw std::runtime_error("Unexpected token in listen directive at line " + toString(token.line));
-        }
-
-        advance();
+    }
+    else if (!isAtEnd() && peek().type == NUMBER) {
+        // Port-only form: listen 8080;
+        port = advance().value;
+        if (!isValidPortNumber(port))
+            throw std::runtime_error("Invalid port number '" + port +
+                                     "' in listen at line " + toString(peek().line));
+    }
+    else {
+        throw std::runtime_error("Expected IP or port after 'listen' at line " + toString(peek().line));
     }
 
     expect(SEMICOLON, "Expected ';' after listen directive");
 
-    // Store in currentServer instead of printing
+    // Store with defaults
     currentServer.listenHost = host.empty() ? "0.0.0.0" : host;
-    currentServer.listenPort = port.empty() ? "80" : port;
+    currentServer.listenPort = port.empty() ? "80"      : port;
 }
+
+
 
 void Parser::parseRootDirective()
 {

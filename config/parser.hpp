@@ -2,9 +2,8 @@
 #define PARSER_HPP
 
 #include <vector>
-#include "Lexer.hpp"
 #include <sstream> // Add at top of your parser.cpp
-
+#include "Lexer.hpp"
 struct LocationContext
 {
     std::string path;
