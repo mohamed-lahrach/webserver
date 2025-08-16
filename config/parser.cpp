@@ -83,8 +83,11 @@ void Parser::parseServerBlock()
     {
         switch (peek().type)
         {
-        case LISTEN_KEYWORD:
-            parseListenDirective();
+        case HOST_KEYWORD:
+            parseHostDirective();
+            break;
+        case PORT_KEYWORD:
+            parsePortDirective();
             break;
         case ROOT_KEYWORD:
             parseRootDirective();
@@ -148,47 +151,45 @@ void Parser::parseIndexDirective()
     currentServer.indexes = indexFiles;
 }
 
-void Parser::parseListenDirective()
+void Parser::parseHostDirective()
 {
-    expect(LISTEN_KEYWORD, "Expected 'listen' directive");
+    expect(HOST_KEYWORD, "Expected 'host' directive");
 
-    std::string host;
-    std::string port;
-    if (!isAtEnd() && peek().type == STRING) {
-        host = advance().value;                // e.g. "127.0.0.1"
-        if (!isValidIPv4(host))
-            throw std::runtime_error("Invalid IPv4 address in listen: '" + host +
-                                     "' at line " + toString(peek().line));
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected IP address after 'host' at line " + toString(peek().line));
 
-        if (!isAtEnd() && peek().type == COLON) {
-            advance();                          // ':'
-            if (isAtEnd() || peek().type != NUMBER)
-                throw std::runtime_error("Expected numeric port after ':' at line " + toString(peek().line));
-            port = advance().value;
-            if (!isValidPortNumber(port))
-                throw std::runtime_error("Invalid port number '" + port +
-                                         "' in listen at line " + toString(peek().line));
-        }
-    }
-    else if (!isAtEnd() && peek().type == NUMBER) {
-        // Port-only form: listen 8080;
-        port = advance().value;
-        if (!isValidPortNumber(port))
-            throw std::runtime_error("Invalid port number '" + port +
-                                     "' in listen at line " + toString(peek().line));
-    }
-    else {
-        throw std::runtime_error("Expected IP or port after 'listen' at line " + toString(peek().line));
-    }
+    std::string host = advance().value;
+    if (!isValidIPv4(host))
+        throw std::runtime_error("Invalid IPv4 address in host: '" + host +
+                                 "' at line " + toString(peek().line));
 
-    expect(SEMICOLON, "Expected ';' after listen directive");
+    expect(SEMICOLON, "Expected ';' after host directive");
 
-    // Store with defaults
-    currentServer.listenHost = host.empty() ? "0.0.0.0" : host;
-    currentServer.listenPort = port.empty() ? "80"      : port;
+    // Store the host (keep existing port or default)
+    currentServer.host = host;
+    if (currentServer.port.empty())
+        currentServer.port = "80";
 }
 
+void Parser::parsePortDirective()
+{
+    expect(PORT_KEYWORD, "Expected 'port' directive");
 
+    if (peek().type != NUMBER)
+        throw std::runtime_error("Expected port number after 'port' at line " + toString(peek().line));
+
+    std::string port = advance().value;
+    if (!isValidPortNumber(port))
+        throw std::runtime_error("Invalid port number '" + port +
+                                 "' in port directive at line " + toString(peek().line));
+
+    expect(SEMICOLON, "Expected ';' after port directive");
+
+    // Store the port (keep existing host or default)
+    if (currentServer.host.empty())
+        currentServer.host = "0.0.0.0";
+    currentServer.port = port;
+}
 
 void Parser::parseRootDirective()
 {
@@ -402,6 +403,12 @@ void Parser::parseLocationBlock()
             break;
         }
 
+        case UPLOAD_STORE_KEYWORD:
+        {
+            parseUploadStoreDirective(location);
+            break;
+        }
+
         default:
             throw std::runtime_error("Unknown directive '" + token.value + "' in location block at line " + toString(token.line));
         }
@@ -465,4 +472,13 @@ void Parser::parseCgiPathDirective(LocationContext& location)
     
     location.cgiPath = advance().value;
     expect(SEMICOLON, "Expected ';' after cgi_path");
+}
+
+void Parser::parseUploadStoreDirective(LocationContext& location)
+{
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected upload directory path after 'upload_store' at line " + toString(peek().line));
+    
+    location.uploadStore = advance().value;
+    expect(SEMICOLON, "Expected ';' after upload_store");
 }

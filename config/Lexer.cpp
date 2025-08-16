@@ -11,8 +11,10 @@ static TokenType keywordLookup(const std::string &word)
         return SERVER_KEYWORD;
     if (word == "location")
         return LOCATION_KEYWORD;
-    if (word == "listen")
-        return LISTEN_KEYWORD;
+    if (word == "host")
+        return HOST_KEYWORD;
+    if (word == "port")
+        return PORT_KEYWORD;
     if (word == "server_name")
         return SERVER_NAME_KEYWORD;
     if (word == "root")
@@ -33,6 +35,8 @@ static TokenType keywordLookup(const std::string &word)
         return CGI_EXTENSION_KEYWORD;
     if (word == "cgi_path")
         return CGI_PATH_KEYWORD;
+    if (word == "upload_store")
+        return UPLOAD_STORE_KEYWORD;
 
     // HTTP methods as their own token (handy for allowed_methods)
     if (word == "GET" || word == "POST" || word == "PUT" ||
@@ -191,11 +195,11 @@ Token Lexer::readWordOrPath()
         return t;
     }
 
-    // Bare word (allow '.', '_', '-' so that 'index.html', '404.html', 'www.example.com' stay whole)
+    // Bare word (allow '.', '_', '-', ':' so that 'index.html', '404.html', 'www.example.com', 'http://example.com' stay whole)
     bool hasDot = false;
     while (!isAtEnd() &&
            (std::isalnum(static_cast<unsigned char>(currentChar())) ||
-            currentChar() == '_' || currentChar() == '-' || currentChar() == '.'))
+            currentChar() == '_' || currentChar() == '-' || currentChar() == '.' || currentChar() == ':' || currentChar() == '/'))
     {
         if (currentChar() == '.')
             hasDot = true;
@@ -313,9 +317,6 @@ Token Lexer::getNextToken()
             break;
         case ';':
             tok.type = SEMICOLON;
-            break;
-        case ':':
-            tok.type = COLON;
             break;
         case ',':
             tok.type = COMMA;
