@@ -7,19 +7,11 @@
 
 class DeleteHandler
 {
-
-    
 public:
-
     DeleteHandler();
     ~DeleteHandler();
     
-    RequestStatus handle_delete_request(
-        const std::string& requested_path,
-        const std::map<std::string, std::string>& http_headers
-    );
-    
-
+    RequestStatus handle_delete_request(const std::string& file_path);
 };
 
 #endif 

@@ -99,12 +99,12 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 				std::cout << "Need more body data - waiting for more..." << std::endl;
 				return;
 			}
-			else if (handler_result == EVERYTHING_IS_OK)
+			else if (handler_result == EVERYTHING_IS_OK || handler_result == DELETED)
 			{
 				std::cout << "Request fully processed and ready!" << std::endl;
 				std::cout << "Final request - Method: " << current_request.get_http_method()
 						  << " Path: " << current_request.get_requested_path() << std::endl;
-				request_status = EVERYTHING_IS_OK;
+				request_status = handler_result;
 			}
 			else
 			{
@@ -117,10 +117,10 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 					std::cout << "BAD REQUEST (400)" << std::endl;
 					break;
 				case FORBIDDEN:
-					std::cout << "FORBIDDEN (403) - Security violation or access denied" << std::endl;
+					std::cout << "FORBIDDEN (403) " << std::endl;
 					break;
 				case NOT_FOUND:
-					std::cout << "NOT FOUND (404) - Resource not found" << std::endl;
+					std::cout << "NOT FOUND (404) " << std::endl;
 					break;
 				case METHOD_NOT_ALLOWED:
 					std::cout << "METHOD NOT ALLOWED (405) - Method not supported" << std::endl;
@@ -182,10 +182,17 @@ void Client::handle_client_data_output(int client_fd, int epoll_fd,
 	else
 	{
 
-		if (request_status != EVERYTHING_IS_OK)
+		if (request_status == DELETED )
+		{
+			current_response.set_code(200);
+			current_response.set_content("<html><body><h1>200 OK</h1><p>File deleted successfully.</p></body></html>");
+			current_response.set_header("Content-Type", "text/html");
+			current_response.set_header("Connection", "close");
+		}
+		else if (request_status != EVERYTHING_IS_OK)
 		{
 			std::cout << "Setting error response for status: " << request_status << std::endl;
-			current_response.set_error_response(request_status, &server_config);
+			current_response.set_error_response(request_status);
 		}
 		else
 		{

@@ -43,69 +43,41 @@ void Response::set_header(const std::string &key, const std::string &value)
 	headers[key] = value;
 }
 
-void Response::set_error_response(RequestStatus status, ServerContext *server_config)
+void Response::set_error_response(RequestStatus status)
 {
-	int code = static_cast<int>(status);
-	std::cout << "DEBUG: set_error_response called with status code: " << code << std::endl;
-
-	set_code(code);
-	std::string custom_content = get_custom_error_page(code, server_config);
-	std::cout << "DEBUG: Custom content length: " << custom_content.length() << std::endl;
-	
-	if (!custom_content.empty())
+	switch (status)
 	{
-		std::cout << "DEBUG: Using custom error page" << std::endl;
-		set_content(custom_content);
+	case BAD_REQUEST:
+		set_code(400);
+		set_content("<html><body><h1>400 Bad Request</h1><p>The request could not be understood by the server.</p></body></html>");
+		break;
+	case FORBIDDEN:
+		set_code(403);
+		set_content("<html><body><h1>403 Forbidden</h1><p>Access to this resource is forbidden.</p></body></html>");
+		break;
+	case NOT_FOUND:
+		set_code(404);
+		set_content("<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p></body></html>");
+		break;
+	case METHOD_NOT_ALLOWED:
+		set_code(405);
+		set_content("<html><body><h1>405 Method Not Allowed</h1><p>The request method is not supported for this resource.</p></body></html>");
+		break;
+	case PAYLOAD_TOO_LARGE:
+		set_code(413);
+		set_content("<html><body><h1>413 Payload Too Large</h1><p>The request entity is too large.</p></body></html>");
+		break;
+	case INTERNAL_ERROR:
+		set_code(500);
+		set_content("<html><body><h1>500 Internal Server Error</h1><p>The server encountered an internal error.</p></body></html>");
+		break;
+	default:
+		set_code(500);
+		set_content("<html><body><h1>500 Internal Server Error</h1><p>An unexpected error occurred.</p></body></html>");
+		break;
 	}
-	else
-	{
-		std::cout << "DEBUG: Using default error page" << std::endl;
-		std::ostringstream default_page;
-		default_page << "<html><body><h1>" << code << " " << what_reason(code)
-					 << "</h1><p>The server encountered an error.</p></body></html>";
-		set_content(default_page.str());
-	}
-
 	set_header("Content-Type", "text/html");
 	set_header("Connection", "close");
-}
-
-std::string Response::get_custom_error_page(int status_code, ServerContext *server_config)
-{
-	if (!server_config)
-	{
-		std::cout << "server_config is NULL!" << std::endl;
-		return "";
-	}
-
-	for (std::vector<ErrorPagePair>::iterator pages_it = server_config->errorPages.begin(); pages_it != server_config->errorPages.end(); ++pages_it)
-	{
-		std::vector<int> &codes = pages_it->first;
-		std::string &page_path = pages_it->second;
-		for (std::vector<int>::iterator code_it = codes.begin();code_it != codes.end(); ++code_it)
-		{
-			std::cout << "DEBUG: Checking code " << *code_it << " against " << status_code << std::endl;
-			if (*code_it == status_code)
-			{
-				std::string full_path;
-				if (page_path[0] == '/')
-					full_path = server_config->root + page_path;
-				else
-					full_path = server_config->root + "/" + page_path;
-				std::ifstream file(full_path.c_str());
-				if (file.is_open())
-				{
-					std::ostringstream buffer;
-					buffer << file.rdbuf();
-					file.close();
-					return buffer.str();
-				}
-	
-				break; 
-			}
-		}
-	}
-	return "";
 }
 
 std::string Response::what_reason(int code)
@@ -122,18 +94,10 @@ std::string Response::what_reason(int code)
 		return "Not Found";
 	case 405:
 		return "Method Not Allowed";
-	case 411:
-		return "Length Required";
 	case 413:
 		return "Payload Too Large";
-	case 414:
-		return "URI Too Long";
-	case 431:
-		return "Request Header Fields Too Large";
 	case 500:
 		return "Internal Server Error";
-	case 501:
-		return "Not Implemented";
 	default:
 		return "Unknown";
 	}
@@ -153,36 +117,21 @@ std::string Response::list_dir(const std::string &path, const std::string &reque
 	}
 	else
 	{
-		struct dirent *entry;
-		while ((entry = readdir(dir)) != NULL)
+		struct dirent *item;
+		while ((item = readdir(dir)) != NULL)
 		{
-			if (std::string(entry->d_name) == "." || std::string(entry->d_name) == "..")
-			{
+			if (std::string(item->d_name) == "." || std::string(item->d_name) == "..")
 				continue;
-			}
+			std::string url;
+			if (request_path[request_path.length() - 1] == '/')
+				url = request_path + item->d_name;
+			else
+				url = request_path + "/" + item->d_name;
 
-			std::string fullPath = path + "/" + entry->d_name;
-			struct stat fileStat;
-
-			if (stat(fullPath.c_str(), &fileStat) == 0)
-			{
-				std::string url;
-				if (request_path[request_path.length() - 1] == '/')
-				{
-					url = request_path + entry->d_name;
-				}
-				else
-					url = request_path + "/" + entry->d_name;
-
-				if (S_ISREG(fileStat.st_mode))
-				{
-					html << "<li><a href=\"" << url << "\">" << entry->d_name << "</a> File</li>";
-				}
-				else if (S_ISDIR(fileStat.st_mode))
-				{
-					html << "<li><a href=\"" << url << "/\">" << entry->d_name << "/</a> Directory</li>";
-				}
-			}
+			if (item->d_type == DT_REG)
+				html << "<li><a href=\"" << url << "\">" << item->d_name << "</a> File</li>";
+			else if (item->d_type == DT_DIR)
+				html << "<li><a href=\"" << url << "/\">" << item->d_name << "/</a> Directory</li>";
 		}
 		closedir(dir);
 		set_code(200);
@@ -302,34 +251,59 @@ bool Response::is_still_streaming() const
 	return is_streaming_file;
 }
 
-void Response::analyze_request_and_set_response(const std::string &path, LocationContext * /* location_config */)
+void Response::analyze_request_and_set_response(const std::string &path, LocationContext *location_config)
 {
-	std::cout << "=== ANALYZING REQUEST PATH: " << path << " ===" << std::endl;
+	
 
-	std::string file_path = "www" + path;
-
-	std::cout << "Trying to serve file: " << file_path << std::endl;
-
+	std::string file_path = location_config->root  + path;
+	file_path = file_path.substr(1);
+	std::cout << "=== ANALYZING REQUEST PATH: " << file_path << " ===" << std::endl;
 	struct stat s;
 	if (stat(file_path.c_str(), &s) == 0)
 	{
 		if (s.st_mode & S_IFDIR)
 		{
-			std::string index_path = file_path + "/index.html";
-			std::ifstream index_file(index_path.c_str());
-
-			if (index_file.is_open())
+			std::vector<std::string> index_files;
+			if (location_config && !location_config->indexes.empty())
 			{
-				check_file(index_path);
+				index_files = location_config->indexes;
+
+				bool index_found = false;
+				for (std::vector<std::string>::iterator index_it = index_files.begin(); index_it != index_files.end(); ++index_it)
+				{
+					std::string index_path = file_path + *index_it;
+
+					std::ifstream index_file(index_path.c_str());
+
+					if (index_file.is_open())
+					{
+						std::cout << "Found index file: " << *index_it << std::endl;
+						check_file(index_path);
+						index_found = true;
+						break;
+					}
+				}
+
+				if (!index_found)
+				{
+					if (location_config->autoindex == "on")
+					{
+						std::cout << "Autoindex enabled - generating directory listing" << std::endl;
+						std::string dir_listing = list_dir(file_path, path);
+						set_content(dir_listing);
+						set_header("Content-Type", "text/html");
+					}
+					else
+					{
+						std::cout << "Autoindex disabled - returning 403 Forbidden" << std::endl;
+						set_code(403);
+						set_content("<html><body><h1>403 Forbidden</h1><p>Directory access is forbidden.</p></body></html>");
+						set_header("Content-Type", "text/html");
+					}
+				}
 			}
 			else
-			{
-				std::cout << "No index.html found, generating directory listing" << std::endl;
-				std::string dir_listing = list_dir(file_path, path);
-
-				set_content(dir_listing);
-				set_header("Content-Type", "text/html");
-			}
+				check_file(file_path);
 		}
 		else
 		{
@@ -347,7 +321,7 @@ void Response::analyze_request_and_set_response(const std::string &path, Locatio
 
 void Response::handle_response(int client_fd)
 {
-	std::cout << "-----------------RESPONSE--------------" << std::endl;
+	std::cout << "-----------------RESPONSE---------------------" << std::endl;
 	if (status_code == 200 && !current_file_path.empty())
 	{
 		if (!is_streaming_file)

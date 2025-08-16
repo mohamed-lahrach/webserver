@@ -8,7 +8,7 @@ enum RequestStatus {
 	BODY_BEING_READ,      
 	EVERYTHING_IS_OK,   
 	
-
+	DELETED ,
 	BAD_REQUEST = 400,          // 400 
 	FORBIDDEN = 403,            // 403 
 	NOT_FOUND = 404,            // 404

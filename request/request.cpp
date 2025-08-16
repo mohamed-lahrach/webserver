@@ -21,9 +21,13 @@ void Request::set_config(ServerContext &cfg)
 	config = &cfg;
 	std::cout << " config is up \n";
 	if (!requested_path.empty())
+	{
 		location = match_location(requested_path);
-std::cout << " location is " <<location->path << "\n";
-
+		if (location)
+			std::cout << " location found: " << location->path << "\n";
+		else
+			std::cout << " location not found for path: " << requested_path << "\n";
+	}
 }
 
 static std::string remove_spaces_and_lower(const std::string &str)
@@ -106,13 +110,12 @@ bool Request::check_for_valid_http_start()
 
 	if (!(line_stream >> method >> path >> version))
 	{
-		std::cout<<"error from stream \n";
+		std::cout << "error from stream \n";
 		return false;
-
 	}
 	if (version != "HTTP/1.1" && version != "HTTP/1.0")
 		return false;
-	if(path[0]!='/')
+	if (path[0] != '/')
 		return false;
 	if (method != "GET" && method != "POST" && method != "DELETE")
 		return false;
@@ -135,7 +138,6 @@ bool Request::parse_http_headers(const std::string &header_text)
 
 	while (std::getline(header_stream, current_line))
 	{
-
 
 		size_t colon_position = current_line.find(':');
 		if (colon_position == std::string::npos)
@@ -179,10 +181,14 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 			++it_location;
 			continue;
 		}
-		if (resquested_path.compare(0, it_location->path.size(), it_location->path) == 0)
+		if (resquested_path.compare(0, it_location->path.length(), it_location->path) == 0)
 		{
-			if (resquested_path.length() == it_location->path.length() || resquested_path[it_location->path.length()] == '/')
+			std::cout << "matched location ;" << it_location->path << "\n";
+			if (it_location->path == "/" ||
+				resquested_path.length() == it_location->path.length() ||
+				resquested_path[it_location->path.length()] == '/')
 			{
+				std::cout << "matched location ;" << it_location->path << "\n";
 				if (it_location->path.size() > longest_len)
 				{
 					matched_location = &(*it_location);
@@ -190,6 +196,7 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 				}
 			}
 		}
+
 		++it_location;
 	}
 	return matched_location;
@@ -202,7 +209,7 @@ RequestStatus Request::figure_out_http_method()
 		std::cout << " location not found \n";
 		return NOT_FOUND;
 	}
-		
+
 	else if (!location->allowedMethods.empty())
 	{
 		bool ok = false;
@@ -218,12 +225,13 @@ RequestStatus Request::figure_out_http_method()
 			return METHOD_NOT_ALLOWED;
 	}
 
+	std::string full_path = location->root + requested_path;
 	if (http_method == "GET")
-		return get_handler.handle_get_request(requested_path);
+		return get_handler.handle_get_request(full_path);
 	else if (http_method == "POST")
-		return post_handler.handle_post_request(requested_path, http_headers, incoming_data, expected_body_size);
+		return post_handler.handle_post_request(full_path, http_headers, incoming_data, expected_body_size);
 	else if (http_method == "DELETE")
-		return delete_handler.handle_delete_request(requested_path, http_headers);
+		return delete_handler.handle_delete_request(full_path);
 	else
 		return METHOD_NOT_ALLOWED;
 }
