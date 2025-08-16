@@ -81,15 +81,13 @@ void PostHandler::parse_type_body(const std::string &body,
 
 RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::string,
 	std::string> &http_headers, std::string &incoming_data,
-	size_t expected_body_size, const ServerContext *cfg,
+	const ServerContext *cfg,
 	const LocationContext *loc)
 {
 	size_t	processed_pos;
 	size_t	crlf_pos;
 
-	(void)expected_body_size;
 	(void)loc;
-	// Append new data to parse buffer
 	buffer_not_parser += incoming_data;
 	incoming_data.clear();
 	processed_pos = 0;
@@ -97,7 +95,6 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 	{
 		if (chunk_size == 0)
 		{
-			// Read chunk size line
 			crlf_pos = buffer_not_parser.find("\r\n", processed_pos);
 			if (crlf_pos == std::string::npos)
 				break ; // need more data
@@ -121,9 +118,8 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 		// Check if we have enough chunk data + CRLF
 		if (buffer_not_parser.size() - processed_pos < chunk_size + 2)
 			break ; // not enough data yet
-		// Extract chunk data
 		chunk_body_parser.append(buffer_not_parser, processed_pos, chunk_size);
-		processed_pos += chunk_size + 2; // skip CRLF
+		processed_pos += chunk_size + 2;
 		chunk_size = 0;
 	}
 	// Remove processed part from parse buffer
@@ -143,7 +139,7 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 		&& http_headers.at("Transfer-Encoding") == "chunked\r")
 	{
 		return (handle_post_request_with_chunked(http_headers, incoming_data,
-				expected_body_size, cfg, loc));
+				cfg, loc));
 	}
 	else if (incoming_data.size() < expected_body_size)
 	{
