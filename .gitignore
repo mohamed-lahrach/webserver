@@ -6,5 +6,4 @@ webserv
 *.pdf
 *.log
 *.jpg
-.vscode/
 uploads/*

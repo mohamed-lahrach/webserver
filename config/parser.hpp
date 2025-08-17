@@ -2,9 +2,8 @@
 #define PARSER_HPP
 
 #include <vector>
-#include "Lexer.hpp"
 #include <sstream> // Add at top of your parser.cpp
-
+#include "Lexer.hpp"
 struct LocationContext
 {
     std::string path;
@@ -12,14 +11,18 @@ struct LocationContext
     std::vector<std::string> indexes;
     std::string autoindex;
     std::vector<std::string> allowedMethods;
+    std::string returnDirective; // For return directive (could be just a file or "code file")
+    std::string cgiExtension;
+    std::string cgiPath;
+    std::string uploadStore; // Directory where uploaded files are stored
 };
 
 typedef std::pair<std::vector<int>, std::string> ErrorPagePair;
 
 struct ServerContext
 {
-    std::string listenHost;
-    std::string listenPort;
+    std::string host;
+    std::string port;
     std::string root;
     std::vector<std::string> indexes;
     std::vector<ErrorPagePair> errorPages; // Much cleaner
@@ -49,12 +52,18 @@ private:
     void parseServerBlock();
 
     // Private parsing methods - Directive-specific parsing functions
-    void parseListenDirective();
+    void parseHostDirective();
+    void parsePortDirective();
     void parseRootDirective();
     void parseIndexDirective();
     void parseClientMaxBodySizeDirective();
     void parseErrorPageDirective();
     void parseAutoindexDirective();
+    void parseReturnDirective();
+    void parseReturnDirectiveInLocation(LocationContext& location);
+    void parseCgiExtensionDirective(LocationContext& location);
+    void parseCgiPathDirective(LocationContext& location);
+    void parseUploadStoreDirective(LocationContext& location);
 
 public:
     Parser(const std::vector<Token> &tokenStream);

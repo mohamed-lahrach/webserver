@@ -1,9 +1,0 @@
-This is a plain text file to test the text/plain MIME type.
-
-MIME Type Detection Test Results:
-- File extension: .txt
-- Expected MIME type: text/plain
-- Server: C++98 WebServer
-
-If you see this content as plain text (no HTML formatting), 
-the MIME type detection is working correctly!
