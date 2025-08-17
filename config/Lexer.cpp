@@ -1,4 +1,4 @@
-// Lexer.cpp – C++98-compliant implementation of the NGINX-style lexer
+
 #include "Lexer.hpp"
 #include <cctype>
 #include <string>
@@ -161,13 +161,9 @@ Token Lexer::readWordOrPath()
         }
 
         if (currentChar() == quote)
-        {
             advance(); // closing quote
-        }
         else
-        {
             throw std::runtime_error("Unterminated quoted string at line " + std::string("") /* avoid to_string in C++98 */);
-        }
 
         Token t;
         t.type = STRING;
@@ -317,9 +313,6 @@ Token Lexer::getNextToken()
             break;
         case ';':
             tok.type = SEMICOLON;
-            break;
-        case ',':
-            tok.type = COMMA;
             break;
         case '.':
             tok.type = DOT;
