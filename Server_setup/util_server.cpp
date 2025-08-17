@@ -87,16 +87,16 @@ void Server::init_data(const std::vector<ServerContext> &configs)
 	for (size_t i = 0; i < configs.size(); i++)
 	{
 		const ServerContext &config = configs[i];
-		port = atoi(config.listenPort.c_str());
+		port = atoi(config.port.c_str());
 		// DEBUG: Print what we're trying to setup
 		std::cout << "=== SERVER " << (i + 1) << " SETUP ===" << std::endl;
-		std::cout << "Config listenHost: '" << config.listenHost << "'" << std::endl;
-		std::cout << "Config listenPort: '" << config.listenPort << "'" << std::endl;
-		server_fd = setup_Socket_with_host(port, config.listenHost);
+		std::cout << "Config host: '" << config.host << "'" << std::endl;
+		std::cout << "Config port: '" << config.port << "'" << std::endl;
+		server_fd = setup_Socket_with_host(port, config.host);
 		if (server_fd == -1)
 		{
 			throw std::runtime_error("Failed to setup socket for port "
-				+ config.listenPort);
+				+ config.port);
 		}
 		// 4. Add THIS socket to the existing epoll
 		event.events = EPOLLIN;
