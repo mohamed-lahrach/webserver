@@ -28,11 +28,11 @@ class PostHandler
 		const std::map<std::string, std::string> &http_headers,
 		std::string &incoming_data, size_t expected_body_size, const ServerContext *cfg, const LocationContext *loc);
 	void parse_type_body(const std::string &body,
-		const std::map<std::string, std::string> &http_headers);
+		const std::map<std::string, std::string> &http_headers, const LocationContext *loc);
 	void save_request_body(const std::string &filename,
-		const std::string &body);
+		const std::string &body, const LocationContext *loc);
 	void parse_form_data(const std::string &body,
-		const std::string &content_type);
+		const std::string &content_type, const LocationContext *loc);
 	RequestStatus handle_post_request_with_chunked(const std::map<std::string, std::string> &http_headers,
 		std::string &incoming_data, const ServerContext *cfg, const LocationContext *loc);
 	std::string extract_boundary(const std::string &content_type);

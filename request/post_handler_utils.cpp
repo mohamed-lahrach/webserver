@@ -1,4 +1,12 @@
 #include "post_handler.hpp"
+#include <iostream>
+#include <fstream>
+#include <stdexcept>
+#include <sstream>
+#include <cstdlib>
+#include <dirent.h>
+#include <sys/stat.h> 
+#include <unistd.h> // For access()
 // Add this function to convert size strings like "10M" to bytes
 size_t PostHandler::parse_max_body_size(const std::string &size_str)
 {
@@ -35,19 +43,38 @@ PostHandler::~PostHandler()
 {
 	std::cout << "PostHandler destroyed." << std::endl;
 }
-void PostHandler::save_request_body(const std::string &filename,
-	const std::string &body)
 
+void PostHandler::save_request_body(const std::string &filename,
+    const std::string &body, const LocationContext *loc)
 {
-	std::ofstream file(filename.c_str(), std::ios::binary);
-	// binary mode for any data
-	if (!file)
+	DIR* dir = opendir(loc->uploadStore.c_str());
+    if (!dir)
+    {
+        throw std::runtime_error("Could not open upload directory");
+    }
+	closedir(dir);
+	// Check if upload directory is writable
+	if (access(loc->uploadStore.c_str(), W_OK) != 0)
 	{
-		throw std::runtime_error("Could not open file for writing");
+		throw std::runtime_error("Upload directory is not writable");
 	}
-	file.write(body.data(), body.size());
-	file.close();
+	std::string full_path;
+	full_path = loc->uploadStore + "/" + filename;
+	if(loc->uploadStore[loc->uploadStore.length() - 1] == '/')
+		full_path = loc->uploadStore + filename;
+    std::ofstream file(full_path.c_str(), std::ios::binary);
+	std::cout << "Saving request body to: " << full_path << std::endl;
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Could not open file for writing");
+    }
+    
+    file.write(body.data(), body.size());
+    file.close();
+    
+    std::cout << "✓ File saved: " << full_path << std::endl;
 }
+
 std::string PostHandler::extract_boundary(const std::string &content_type)
 {
 	size_t	pos;

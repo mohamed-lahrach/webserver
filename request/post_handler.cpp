@@ -1,7 +1,7 @@
 #include "post_handler.hpp"
 
 void PostHandler::parse_form_data(const std::string &body,
-	const std::string &content_type)
+	const std::string &content_type, const LocationContext *loc)
 {
 	size_t	start_position;
 	size_t	end_position;
@@ -20,7 +20,7 @@ void PostHandler::parse_form_data(const std::string &body,
 		if (start_position == std::string::npos)
 		{
 			std::cout << "ERROR: Cannot find data start!" << std::endl;
-			save_request_body("debug_error.txt", body);
+			save_request_body("debug_error.txt", body, loc);
 			return ;
 		}
 		start_position += 2; // Skip \n\n
@@ -35,7 +35,7 @@ void PostHandler::parse_form_data(const std::string &body,
 	if (end_position == std::string::npos)
 	{
 		std::cout << "ERROR: Cannot find data end!" << std::endl;
-		save_request_body("debug_error.txt", body);
+		save_request_body("debug_error.txt", body, loc);
 		return ;
 	}
 	// Extract ONLY the data between start and boundary
@@ -53,11 +53,11 @@ void PostHandler::parse_form_data(const std::string &body,
 	}
 	std::string clean_data = body.substr(start_position, data_end
 			- start_position);
-	save_request_body(file_name, clean_data);
+	save_request_body(file_name, clean_data, loc);
 }
 
 void PostHandler::parse_type_body(const std::string &body,
-	const std::map<std::string, std::string> &http_headers)
+	const std::map<std::string, std::string> &http_headers , const LocationContext *loc)
 {
 	if (http_headers.find("Content-Type") != http_headers.end())
 	{
@@ -65,17 +65,17 @@ void PostHandler::parse_type_body(const std::string &body,
 		if (content_type.find("multipart/form-data") != std::string::npos)
 		{
 			std::cout << "Parsing as multipart/form-data" << std::endl;
-			parse_form_data(body, content_type);
+			parse_form_data(body, content_type , loc);
 		}
 		else
 		{
-			save_request_body("post_body_default.txt", body);
+			save_request_body("post_body_default.txt", body,loc);
 		}
 	}
 	else
 	{
 		std::cout << "No Content-Type header found- saving to file" << std::endl;
-		save_request_body("post_body_default.txt", body);
+		save_request_body("post_body_default.txt", body,loc);
 	}
 }
 
@@ -87,7 +87,6 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 	size_t	processed_pos;
 	size_t	crlf_pos;
 
-	(void)loc;
 	buffer_not_parser += incoming_data;
 	incoming_data.clear();
 	processed_pos = 0;
@@ -109,7 +108,7 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 					std::cout << "ERROR: POST body size is too large!" << std::endl;
 					return (PAYLOAD_TOO_LARGE);
 				}
-				parse_type_body(chunk_body_parser, http_headers);
+				parse_type_body(chunk_body_parser, http_headers, loc);
 				buffer_not_parser.clear();
 				chunk_body_parser.clear();
 				return (EVERYTHING_IS_OK);
@@ -134,7 +133,6 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 	const ServerContext *cfg, const LocationContext *loc)
 {
 	(void)requested_path;
-	(void)loc;
 	if (http_headers.find("Transfer-Encoding") != http_headers.end()
 		&& http_headers.at("Transfer-Encoding") == "chunked\r")
 	{
@@ -152,7 +150,7 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 		std::cout << "ERROR: POST body size is too large!" << std::endl;
 		return (PAYLOAD_TOO_LARGE);
 	}
-	parse_type_body(incoming_data, http_headers);
+	parse_type_body(incoming_data, http_headers, loc);
 	std::cout << "-----------------------" << std::endl;
 	std::cout << "-----------------------" << std::endl;
 	return (EVERYTHING_IS_OK); // Now we can process
