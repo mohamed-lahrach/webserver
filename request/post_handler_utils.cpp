@@ -53,7 +53,6 @@ void PostHandler::save_request_body(const std::string &filename,
         throw std::runtime_error("Could not open upload directory");
     }
 	closedir(dir);
-	// Check if upload directory is writable
 	if (access(loc->uploadStore.c_str(), W_OK) != 0)
 	{
 		throw std::runtime_error("Upload directory is not writable");
