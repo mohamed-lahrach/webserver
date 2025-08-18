@@ -92,57 +92,19 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 		{
 			std::cout << "Processing request data - checking handler..." << std::endl;
 			current_request.set_config(server_config);
-			RequestStatus handler_result = current_request.figure_out_http_method();
+			request_status = current_request.figure_out_http_method();
 
-			if (handler_result == BODY_BEING_READ)
+			if (request_status == BODY_BEING_READ)
 			{
 				std::cout << "Need more body data - waiting for more..." << std::endl;
 				return;
 			}
-			else if (handler_result == EVERYTHING_IS_OK || handler_result == DELETED)
-			{
-				std::cout << "Request fully processed and ready!" << std::endl;
-				std::cout << "Final request - Method: " << current_request.get_http_method()
-						  << " Path: " << current_request.get_requested_path() << std::endl;
-				request_status = handler_result;
-			}
-			else
-			{
 
-				request_status = handler_result;
-
-				switch (handler_result)
-				{
-				case BAD_REQUEST:
-					std::cout << "BAD REQUEST (400)" << std::endl;
-					break;
-				case FORBIDDEN:
-					std::cout << "FORBIDDEN (403) " << std::endl;
-					break;
-				case NOT_FOUND:
-					std::cout << "NOT FOUND (404) " << std::endl;
-					break;
-				case METHOD_NOT_ALLOWED:
-					std::cout << "METHOD NOT ALLOWED (405) - Method not supported" << std::endl;
-					break;
-				case PAYLOAD_TOO_LARGE:
-					std::cout << "PAYLOAD TOO LARGE (413) - Request too large" << std::endl;
-					break;
-				case INTERNAL_ERROR:
-					std::cout << "INTERNAL ERROR (500) - Server error" << std::endl;
-					break;
-				default:
-					std::cout << "Unexpected error occurred" << std::endl;
-					break;
-				}
-			}
+			std::cout << "Request fully processed and ready!" << std::endl;
+			std::cout << "Final request - Method: " << current_request.get_http_method()
+					  << " Path: " << current_request.get_requested_path() << std::endl;
 			break;
 		}
-
-		case BAD_REQUEST:
-			std::cout << "ERROR - something went wrong with the request" << std::endl;
-			request_status = BAD_REQUEST;
-			break;
 		default:
 			std::cout << "UNKNOWN" << std::endl;
 			break;
@@ -182,10 +144,17 @@ void Client::handle_client_data_output(int client_fd, int epoll_fd,
 	else
 	{
 
-		if (request_status == DELETED )
+		if (request_status == DELETED_SUCCESSFULLY)
 		{
 			current_response.set_code(200);
 			current_response.set_content("<html><body><h1>200 OK</h1><p>File deleted successfully.</p></body></html>");
+			current_response.set_header("Content-Type", "text/html");
+			current_response.set_header("Connection", "close");
+		}
+		else if (request_status == POSTED_SUCCESSFULLY)
+		{
+			current_response.set_code(201);
+			current_response.set_content("<html><body><h1>201 Created</h1><p>File created successfully.</p></body></html>");
 			current_response.set_header("Content-Type", "text/html");
 			current_response.set_header("Connection", "close");
 		}
@@ -197,7 +166,7 @@ void Client::handle_client_data_output(int client_fd, int epoll_fd,
 		else
 		{
 			std::string request_path = current_request.get_requested_path();
-			LocationContext* location = current_request.get_location();
+			LocationContext *location = current_request.get_location();
 			std::cout << "Creating normal response for path: " << request_path << std::endl;
 			current_response.analyze_request_and_set_response(request_path, location);
 		}

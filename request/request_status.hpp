@@ -8,7 +8,10 @@ enum RequestStatus {
 	BODY_BEING_READ,      
 	EVERYTHING_IS_OK,   
 	
-	DELETED ,
+	DELETED_SUCCESSFULLY ,
+	POSTED_SUCCESSFULLY,
+	MOVED_PERMANENTLY = 301,    // 301 - Permanent redirect
+	FOUND = 302,                // 302 - Temporary redirect  
 	BAD_REQUEST = 400,          // 400 
 	FORBIDDEN = 403,            // 403 
 	NOT_FOUND = 404,            // 404

@@ -16,14 +16,10 @@ DeleteHandler::~DeleteHandler()
 }
 
 RequestStatus DeleteHandler::handle_delete_request(
-    const std::string& requested_path)
+    const std::string& file_path)
 {
     std::cout << "=== DELETE HANDLER ===" << std::endl;
-    std::cout << "Deleting: " << requested_path << std::endl;
-
-    
-    std::string file_path = requested_path.substr(1);
-    std::cout << "Resolved path: " << file_path << std::endl;
+    std::cout << "Deleting: " << file_path << std::endl;
     
     if (file_path.empty())
         return FORBIDDEN;
@@ -38,7 +34,7 @@ RequestStatus DeleteHandler::handle_delete_request(
     if (unlink(file_path.c_str()) == 0)
     {
         std::cout << "File deleted successfully" << std::endl;
-        return DELETED;
+        return DELETED_SUCCESSFULLY;
     }
     
     return FORBIDDEN;

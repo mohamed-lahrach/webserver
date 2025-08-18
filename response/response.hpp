@@ -33,6 +33,9 @@ public:
 	void set_content(const std::string &body_content);
 	void set_header(const std::string &key, const std::string &value);
 	void set_error_response(RequestStatus status);
+	void set_redirect_response(int status_code, const std::string &location);
+	bool handle_return_directive(const std::string &return_directive);
+	void handle_directory_listing(const std::string &file_path, const std::string &path, LocationContext *location_config);
 
 	void analyze_request_and_set_response(const std::string &path,LocationContext *location_config);
 	void check_file(const std::string &file_path);

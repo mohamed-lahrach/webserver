@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iostream>
 #include <cstring>
+#include <cstdlib>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -67,10 +68,6 @@ void Response::set_error_response(RequestStatus status)
 		set_code(413);
 		set_content("<html><body><h1>413 Payload Too Large</h1><p>The request entity is too large.</p></body></html>");
 		break;
-	case INTERNAL_ERROR:
-		set_code(500);
-		set_content("<html><body><h1>500 Internal Server Error</h1><p>The server encountered an internal error.</p></body></html>");
-		break;
 	default:
 		set_code(500);
 		set_content("<html><body><h1>500 Internal Server Error</h1><p>An unexpected error occurred.</p></body></html>");
@@ -80,12 +77,36 @@ void Response::set_error_response(RequestStatus status)
 	set_header("Connection", "close");
 }
 
+
+bool Response::handle_return_directive(const std::string &return_dir)
+{
+	// Config format: "return url" - always 302 redirect
+	if (return_dir.empty())
+		return false;
+	std::string url = return_dir;
+	set_code(302);
+	set_header("Location", url);
+	set_header("Content-Type", "text/html");
+
+	return true;
+}
+
 std::string Response::what_reason(int code)
 {
 	switch (code)
 	{
 	case 200:
 		return "OK";
+	case 301:
+		return "Moved Permanently";
+	case 302:
+		return "Found";
+	case 303:
+		return "See Other";
+	case 307:
+		return "Temporary Redirect";
+	case 308:
+		return "Permanent Redirect";
 	case 400:
 		return "Bad Request";
 	case 403:
@@ -99,47 +120,10 @@ std::string Response::what_reason(int code)
 	case 500:
 		return "Internal Server Error";
 	default:
-		return "Unknown";
+		return "Unknown Status Code";
 	}
 }
 
-std::string Response::list_dir(const std::string &path, const std::string &request_path)
-{
-	std::stringstream html;
-
-	html << "<html><body><h1>Directory list</h1><ul>";
-
-	DIR *dir = opendir(path.c_str());
-	if (dir == NULL)
-	{
-		html << "<li>Error: Could not open directory</li>";
-		set_code(403);
-	}
-	else
-	{
-		struct dirent *item;
-		while ((item = readdir(dir)) != NULL)
-		{
-			if (std::string(item->d_name) == "." || std::string(item->d_name) == "..")
-				continue;
-			std::string url;
-			if (request_path[request_path.length() - 1] == '/')
-				url = request_path + item->d_name;
-			else
-				url = request_path + "/" + item->d_name;
-
-			if (item->d_type == DT_REG)
-				html << "<li><a href=\"" << url << "\">" << item->d_name << "</a> File</li>";
-			else if (item->d_type == DT_DIR)
-				html << "<li><a href=\"" << url << "/\">" << item->d_name << "/</a> Directory</li>";
-		}
-		closedir(dir);
-		set_code(200);
-	}
-
-	html << "</ul></body></html>";
-	return html.str();
-}
 
 void Response::check_file(const std::string &file_path)
 {
@@ -188,7 +172,7 @@ void Response::start_file_streaming(int client_fd)
 		delete file_stream;
 		file_stream = NULL;
 		set_code(500);
-		current_file_path.clear(); // Clear to stop the loop
+		current_file_path.clear(); 
 		return;
 	}
 
@@ -251,12 +235,71 @@ bool Response::is_still_streaming() const
 	return is_streaming_file;
 }
 
+std::string Response::list_dir(const std::string &path, const std::string &request_path)
+{
+	std::stringstream html;
+
+	html << "<html><body><h1>Directory list</h1><ul>";
+
+	DIR *dir = opendir(path.c_str());
+	if (dir == NULL)
+	{
+		html << "<li>Error: Could not open directory</li>";
+		set_code(403);
+	}
+	else
+	{
+		struct dirent *item;
+		while ((item = readdir(dir)) != NULL)
+		{
+			if (std::string(item->d_name) == "." || std::string(item->d_name) == "..")
+				continue;
+			std::string url;
+			if (request_path[request_path.length() - 1] == '/')
+				url = request_path + item->d_name;
+			else
+				url = request_path + "/" + item->d_name;
+
+			if (item->d_type == DT_REG)
+				html << "<li><a href=\"" << url << "\">" << item->d_name << "</a> File</li>";
+			else if (item->d_type == DT_DIR)
+				html << "<li><a href=\"" << url << "/\">" << item->d_name << "/</a> Directory</li>";
+		}
+		closedir(dir);
+		set_code(200);
+	}
+
+	html << "</ul></body></html>";
+	return html.str();
+}
+
+void Response::handle_directory_listing(const std::string &file_path, const std::string &path, LocationContext *location_config)
+{
+	if (location_config && location_config->autoindex == "on")
+	{
+		std::cout << "Generating directory listing" << std::endl;
+		std::string dir_listing = list_dir(file_path, path);
+		set_content(dir_listing);
+		set_header("Content-Type", "text/html");
+	}
+	else
+	{
+		std::cout << "Directory access forbidden" << std::endl;
+		set_code(403);
+		set_content("<html><body><h1>403 Forbidden</h1><p>Directory access is forbidden.</p></body></html>");
+		set_header("Content-Type", "text/html");
+	}
+}
+
 void Response::analyze_request_and_set_response(const std::string &path, LocationContext *location_config)
 {
-	
+	if (!location_config->returnDirective.empty())
+	{
+		if (handle_return_directive(location_config->returnDirective))
+			return;
+	}
 
-	std::string file_path = location_config->root  + path;
-	file_path = file_path.substr(1);
+	std::string file_path = location_config->root + path;
 	std::cout << "=== ANALYZING REQUEST PATH: " << file_path << " ===" << std::endl;
 	struct stat s;
 	if (stat(file_path.c_str(), &s) == 0)
@@ -271,7 +314,10 @@ void Response::analyze_request_and_set_response(const std::string &path, Locatio
 				bool index_found = false;
 				for (std::vector<std::string>::iterator index_it = index_files.begin(); index_it != index_files.end(); ++index_it)
 				{
-					std::string index_path = file_path + *index_it;
+					std::string index_path = file_path;
+					if (index_path[index_path.length() - 1] != '/')
+						index_path += "/";
+					index_path += *index_it;
 
 					std::ifstream index_file(index_path.c_str());
 
@@ -286,24 +332,13 @@ void Response::analyze_request_and_set_response(const std::string &path, Locatio
 
 				if (!index_found)
 				{
-					if (location_config->autoindex == "on")
-					{
-						std::cout << "Autoindex enabled - generating directory listing" << std::endl;
-						std::string dir_listing = list_dir(file_path, path);
-						set_content(dir_listing);
-						set_header("Content-Type", "text/html");
-					}
-					else
-					{
-						std::cout << "Autoindex disabled - returning 403 Forbidden" << std::endl;
-						set_code(403);
-						set_content("<html><body><h1>403 Forbidden</h1><p>Directory access is forbidden.</p></body></html>");
-						set_header("Content-Type", "text/html");
-					}
+					handle_directory_listing(file_path, path, location_config);
 				}
 			}
 			else
-				check_file(file_path);
+			{
+				handle_directory_listing(file_path, path, location_config);
+			}
 		}
 		else
 		{

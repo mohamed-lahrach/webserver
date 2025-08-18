@@ -204,6 +204,12 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 
 RequestStatus Request::figure_out_http_method()
 {
+	if (location && !location->returnDirective.empty())
+	{
+		std::cout << "Found return directive: " << location->returnDirective << std::endl;
+		return EVERYTHING_IS_OK; 
+	}
+	
 	if (!location || location->root.empty())
 	{
 		std::cout << " location not found \n";
@@ -229,7 +235,7 @@ RequestStatus Request::figure_out_http_method()
 	if (http_method == "GET")
 		return get_handler.handle_get_request(full_path);
 	else if (http_method == "POST")
-		return post_handler.handle_post_request(full_path, http_headers, incoming_data, expected_body_size);
+		return post_handler.handle_post_request(requested_path, http_headers, incoming_data, expected_body_size);
 	else if (http_method == "DELETE")
 		return delete_handler.handle_delete_request(full_path);
 	else

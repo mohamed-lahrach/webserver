@@ -19,10 +19,9 @@ RequestStatus GetHandler::handle_get_request(const std::string &requested_path)
         std::cout << "ERROR: Empty path provided" << std::endl;
         return BAD_REQUEST;
     }
-
-    if (requested_path[0] != '/')
+    if (requested_path.find("..") != std::string::npos)
     {
-        std::cout << "ERROR: Path must start with '/' - got: " << requested_path << std::endl;
+        std::cout << "ERROR: Path traversal attempt detected: " << requested_path << std::endl;
         return BAD_REQUEST;
     }
 
