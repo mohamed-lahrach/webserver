@@ -24,8 +24,8 @@ class Request
   size_t expected_body_size;
   size_t body_bytes_we_have;
   std::string request_body;       
-  const ServerContext* cfg_;
-  const LocationContext* loc_;
+  ServerContext* cfg_;
+  LocationContext* loc_;
   
   
   GetHandler get_handler;
@@ -33,7 +33,7 @@ class Request
   DeleteHandler delete_handler;       
   
   // Helper to select the best-matching location by longest prefix
-  const LocationContext* match_location(const std::string& path) const;
+  LocationContext* match_location(const std::string& path);
 
   public:
 
@@ -49,7 +49,7 @@ class Request
 	const std::string& get_request_body() const { return request_body; }
 
     // Bind the parsed server config so Request can consult locations/methods
-    void set_config(const ServerContext& cfg);
+    void set_config( ServerContext& cfg);
 
 	RequestStatus add_new_data(const char *new_data, size_t data_size);
 	RequestStatus figure_out_http_method();

@@ -102,22 +102,22 @@ bool Request::parse_http_headers(const std::string &header_text)
 	return true;
 }
 
-void Request::set_config(const ServerContext &cfg)
+void Request::set_config(ServerContext &cfg)
 {
 	cfg_ = &cfg;
 	if (!requested_path.empty())
 		loc_ = match_location(requested_path);
 }
 
-const LocationContext *Request::match_location(const std::string &path) const
+LocationContext *Request::match_location(const std::string &path)
 {
 	if (!cfg_)
 		return 0;
-	const LocationContext *best = 0;
+	LocationContext *best = 0;
 	size_t bestLen = 0;
-	for (std::vector<LocationContext>::const_iterator it = cfg_->locations.begin(); it != cfg_->locations.end(); ++it)
+	for (std::vector<LocationContext>::iterator it = cfg_->locations.begin(); it != cfg_->locations.end(); ++it)
 	{
-		const std::string &p = it->path;
+		std::string &p = it->path;
 		if (p.empty())
 			continue;
 		if (path.compare(0, p.size(), p) == 0)
