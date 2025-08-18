@@ -1,7 +1,9 @@
 #include "parser.hpp"
 #include "Lexer.hpp"
+#include "helper_functions.hpp"
 #include <sstream>
 #include <cstdlib>
+#include <iostream>
 
 static std::string toString(int number)
 {
@@ -81,8 +83,11 @@ void Parser::parseServerBlock()
     {
         switch (peek().type)
         {
-        case LISTEN_KEYWORD:
-            parseListenDirective();
+        case HOST_KEYWORD:
+            parseHostDirective();
+            break;
+        case PORT_KEYWORD:
+            parsePortDirective();
             break;
         case ROOT_KEYWORD:
             parseRootDirective();
@@ -146,48 +151,44 @@ void Parser::parseIndexDirective()
     currentServer.indexes = indexFiles;
 }
 
-void Parser::parseListenDirective()
+void Parser::parseHostDirective()
 {
-    expect(LISTEN_KEYWORD, "Expected 'listen' directive");
+    expect(HOST_KEYWORD, "Expected 'host' directive");
 
-    std::string host;
-    std::string port;
-    bool foundColon = false;
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected IP address after 'host' at line " + toString(peek().line));
 
-    while (!isAtEnd())
-    {
-        Token token = peek();
-        if (token.type == SEMICOLON)
-            break;
+    std::string host = advance().value;
+    if (!isValidIPv4(host))
+        throw std::runtime_error("Invalid IPv4 address in host: '" + host +
+                                 "' at line " + toString(peek().line));
 
-        if (token.type == DOT || token.type == COLON || token.type == NUMBER)
-        {
-            if (token.type == COLON)
-            {
-                foundColon = true;
-            }
-            else if (!foundColon)
-            {
-                host += token.value;
-            }
-            else
-            {
-                port += token.value;
-            }
-        }
-        else
-        {
-            throw std::runtime_error("Unexpected token in listen directive at line " + toString(token.line));
-        }
+    expect(SEMICOLON, "Expected ';' after host directive");
 
-        advance();
-    }
+    // Store the host (keep existing port or default)
+    currentServer.host = host;
+    if (currentServer.port.empty())
+        currentServer.port = "80";
+}
 
-    expect(SEMICOLON, "Expected ';' after listen directive");
+void Parser::parsePortDirective()
+{
+    expect(PORT_KEYWORD, "Expected 'port' directive");
 
-    // Store in currentServer instead of printing
-    currentServer.listenHost = host.empty() ? "0.0.0.0" : host;
-    currentServer.listenPort = port.empty() ? "80" : port;
+    if (peek().type != NUMBER)
+        throw std::runtime_error("Expected port number after 'port' at line " + toString(peek().line));
+
+    std::string port = advance().value;
+    if (!isValidPortNumber(port))
+        throw std::runtime_error("Invalid port number '" + port +
+                                 "' in port directive at line " + toString(peek().line));
+
+    expect(SEMICOLON, "Expected ';' after port directive");
+
+    // Store the port (keep existing host or default)
+    if (currentServer.host.empty())
+        currentServer.host = "0.0.0.0";
+    currentServer.port = port;
 }
 
 void Parser::parseRootDirective()
@@ -384,6 +385,30 @@ void Parser::parseLocationBlock()
             break;
         }
 
+        case RETURN_KEYWORD:
+        {
+            parseReturnDirectiveInLocation(location);
+            break;
+        }
+
+        case CGI_EXTENSION_KEYWORD:
+        {
+            parseCgiExtensionDirective(location);
+            break;
+        }
+
+        case CGI_PATH_KEYWORD:
+        {
+            parseCgiPathDirective(location);
+            break;
+        }
+
+        case UPLOAD_STORE_KEYWORD:
+        {
+            parseUploadStoreDirective(location);
+            break;
+        }
+
         default:
             throw std::runtime_error("Unknown directive '" + token.value + "' in location block at line " + toString(token.line));
         }
@@ -393,4 +418,50 @@ void Parser::parseLocationBlock()
 
     // Store location in current server
     currentServer.locations.push_back(location);
+}
+
+void Parser::parseReturnDirectiveInLocation(LocationContext &location)
+{
+    std::string returnValue;
+
+    if (peek().type == STRING)
+    {
+        returnValue = advance().value;
+    }
+    else
+    {
+        throw std::runtime_error("Expected status code or filename after 'return' at line " + toString(peek().line) +
+                                 ". Got token type: " + toString(peek().type) + ", value: '" + peek().value + "'");
+    }
+
+    expect(SEMICOLON, "Expected ';' after return directive");
+
+    location.returnDirective = returnValue;
+}
+
+void Parser::parseCgiExtensionDirective(LocationContext &location)
+{
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected file extension after 'cgi_extension' at line " + toString(peek().line));
+
+    location.cgiExtension = advance().value;
+    expect(SEMICOLON, "Expected ';' after cgi_extension");
+}
+
+void Parser::parseCgiPathDirective(LocationContext &location)
+{
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected interpreter path after 'cgi_path' at line " + toString(peek().line));
+
+    location.cgiPath = advance().value;
+    expect(SEMICOLON, "Expected ';' after cgi_path");
+}
+
+void Parser::parseUploadStoreDirective(LocationContext &location)
+{
+    if (peek().type != STRING)
+        throw std::runtime_error("Expected upload directory path after 'upload_store' at line " + toString(peek().line));
+
+    location.uploadStore = advance().value;
+    expect(SEMICOLON, "Expected ';' after upload_store");
 }

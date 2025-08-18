@@ -3,7 +3,7 @@ services:
     image: nginx:stable
     container_name: webserv-nginx-compare
     ports:
-      - "8081:8081"
+      - "80:80"
     volumes:
       - ./nginx.docker.conf:/etc/nginx/nginx.conf:ro
       - ./mime.types:/etc/nginx/mime.types:ro

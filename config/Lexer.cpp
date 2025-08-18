@@ -1,26 +1,20 @@
-// Lexer.cpp – C++98‑compliant implementation of the NGINX‑style lexer
-// ---------------------------------------------------------------
-//  Build with:  g++ -Wall -Wextra -Werror -std=c++98 Lexer.cpp
-// ---------------------------------------------------------------
+// Lexer.cpp – C++98-compliant implementation of the NGINX-style lexer
 #include "Lexer.hpp"
-#include <cctype> // std::isspace, std::isdigit, std::isalpha
+#include <cctype>
 #include <string>
 #include <iostream>
 
-// toString helper for error messages
-
-
-// ──────────────────────────────────────────────────────────────
-//  Keyword lookup – simple if‑else chain (C++98 friendly)
-//
+// ---------- keyword lookup ----------
 static TokenType keywordLookup(const std::string &word)
 {
     if (word == "server")
         return SERVER_KEYWORD;
     if (word == "location")
         return LOCATION_KEYWORD;
-    if (word == "listen")
-        return LISTEN_KEYWORD;
+    if (word == "host")
+        return HOST_KEYWORD;
+    if (word == "port")
+        return PORT_KEYWORD;
     if (word == "server_name")
         return SERVER_NAME_KEYWORD;
     if (word == "root")
@@ -35,15 +29,25 @@ static TokenType keywordLookup(const std::string &word)
         return AUTOINDEX_KEYWORD;
     if (word == "client_max_body_size")
         return CLIENT_MAX_BODY_SIZE_KEYWORD;
-    if (word == "GET" || word == "POST" || word == "PUT" || word == "DELETE" || word == "HEAD" || word == "OPTIONS" || word == "PATCH")
+    if (word == "return")
+        return RETURN_KEYWORD;
+    if (word == "cgi_extension")
+        return CGI_EXTENSION_KEYWORD;
+    if (word == "cgi_path")
+        return CGI_PATH_KEYWORD;
+    if (word == "upload_store")
+        return UPLOAD_STORE_KEYWORD;
+
+    // HTTP methods as their own token (handy for allowed_methods)
+    if (word == "GET" || word == "POST" || word == "PUT" ||
+        word == "DELETE" || word == "HEAD" || word == "OPTIONS" || word == "PATCH")
         return HTTP_METHOD_KEYWORD;
 
-    return STRING; // default to STRING for identifiers
+    // Otherwise, we treat it as a STRING in this lexer design
+    return STRING;
 }
 
-// ──────────────────────────────────────────────────────────────
-//  Character helpers
-//
+// ---------- core char helpers ----------
 char Lexer::currentChar() const
 {
     return position < input.size() ? input[position] : '\0';
@@ -68,9 +72,12 @@ void Lexer::advance()
     ++position;
 }
 
-// ──────────────────────────────────────────────────────────────
-//  Whitespace / comment skipping
-//
+bool Lexer::isAtEnd() const
+{
+    return position >= input.size();
+}
+
+// ---------- whitespace/comments ----------
 void Lexer::skipWhitespace()
 {
     while (std::isspace(static_cast<unsigned char>(currentChar())))
@@ -87,19 +94,19 @@ void Lexer::skipComment()
         advance();
 }
 
-// ──────────────────────────────────────────────────────────────
-//  Literal scanners
-//
+// ---------- scanners ----------
 Token Lexer::readNumber()
 {
     int startLine = line;
     int startCol = column;
     std::string value;
+
     while (std::isdigit(static_cast<unsigned char>(currentChar())))
     {
         value.push_back(currentChar());
         advance();
     }
+
     Token tok;
     tok.type = NUMBER;
     tok.value = value;
@@ -108,10 +115,33 @@ Token Lexer::readNumber()
     return tok;
 }
 
-// ──────────────────────────────────────────────────────────────
-//  Core token factory
-//
+// digits+letters (no dot): e.g., 1000000M, 512K, 1G
+Token Lexer::readSizeValue()
+{
+    int startLine = line;
+    int startCol = column;
+    std::string value;
 
+    while (std::isdigit(static_cast<unsigned char>(currentChar())))
+    {
+        value.push_back(currentChar());
+        advance();
+    }
+    while (std::isalpha(static_cast<unsigned char>(currentChar())))
+    {
+        value.push_back(currentChar());
+        advance();
+    }
+
+    Token tok;
+    tok.type = STRING; // we keep size-as-string; parser interprets it
+    tok.value = value;
+    tok.line = startLine;
+    tok.column = startCol;
+    return tok;
+}
+
+// quoted strings, /paths, and bare words (including dotted words like index.html, 404.html, example.com)
 Token Lexer::readWordOrPath()
 {
     int startLine = line;
@@ -122,7 +152,7 @@ Token Lexer::readWordOrPath()
     if (currentChar() == '"' || currentChar() == '\'')
     {
         char quote = currentChar();
-        advance();
+        advance(); // skip opening quote
 
         while (!isAtEnd() && currentChar() != quote)
         {
@@ -131,82 +161,87 @@ Token Lexer::readWordOrPath()
         }
 
         if (currentChar() == quote)
-            advance();
+        {
+            advance(); // closing quote
+        }
         else
-            throw std::runtime_error("Unterminated quoted string");
+        {
+            throw std::runtime_error("Unterminated quoted string at line " + std::string("") /* avoid to_string in C++98 */);
+        }
 
-        Token token;
-        token.type = STRING;
-        token.value = word;
-        token.line = startLine;
-        token.column = startColumn;
-        return token;
+        Token t;
+        t.type = STRING;
+        t.value = word;
+        t.line = startLine;
+        t.column = startColumn;
+        return t;
     }
 
     // Path (starts with '/')
     if (currentChar() == '/')
     {
-        while (!isAtEnd() && !std::isspace(currentChar()) &&
+        while (!isAtEnd() &&
+               !std::isspace(static_cast<unsigned char>(currentChar())) &&
                currentChar() != ';' && currentChar() != '}')
         {
             word += currentChar();
             advance();
         }
-
-        Token token;
-        token.type = STRING; // Use STRING type for file paths
-        token.value = word;
-        token.line = startLine;
-        token.column = startColumn;
-        return token;
+        Token t;
+        t.type = STRING;
+        t.value = word;
+        t.line = startLine;
+        t.column = startColumn;
+        return t;
     }
 
-    // Identifier or keyword
-    while (!isAtEnd() && (std::isalnum(currentChar()) || currentChar() == '_' || currentChar() == '.'))
+    // Bare word (allow '.', '_', '-', ':' so that 'index.html', '404.html', 'www.example.com', 'http://example.com' stay whole)
+    bool hasDot = false;
+    while (!isAtEnd() &&
+           (std::isalnum(static_cast<unsigned char>(currentChar())) ||
+            currentChar() == '_' || currentChar() == '-' || currentChar() == '.' || currentChar() == ':' || currentChar() == '/'))
     {
+        if (currentChar() == '.')
+            hasDot = true;
         word += currentChar();
         advance();
     }
 
-    Token token;
-    token.type = keywordLookup(word);
-    token.value = word;
-    token.line = startLine;
-    token.column = startColumn;
-    return token;
+    Token t;
+    t.value = word;
+    t.line = startLine;
+    t.column = startColumn;
+
+    // Dotted words (index.html / 404.html / example.com) → STRING
+    if (hasDot)
+    {
+        t.type = STRING;
+    }
+    else
+    {
+        // keywords / http methods (else STRING)
+        t.type = keywordLookup(word);
+    }
+    return t;
 }
 
-Token Lexer::readSizeValue()
-{
-    std::string value;
-    int startLine = line;
-    int startCol = column;
-    while (std::isdigit(static_cast<unsigned char>(currentChar())))
-        value += currentChar(), advance();
-    while (std::isalpha(static_cast<unsigned char>(currentChar())))
-        value += currentChar(), advance();
-    Token token;
-    token.type = STRING;
-    token.value = value;
-    token.line = startLine;
-    token.column = startCol;
-    return token;
-}
+// ---------- main token factory ----------
 Token Lexer::getNextToken()
 {
-    while (true)
+    for (;;)
     {
-        // 1. EOF
+        // EOF
         if (currentChar() == '\0')
         {
             Token eofTok;
             eofTok.type = EOF_TOKEN;
+            eofTok.value = "";
             eofTok.line = line;
             eofTok.column = column;
             return eofTok;
         }
 
-        // 2. Ignore blanks/comments
+        // Ignore whitespace and comments
         if (std::isspace(static_cast<unsigned char>(currentChar())))
         {
             skipWhitespace();
@@ -218,55 +253,79 @@ Token Lexer::getNextToken()
             continue;
         }
 
-        // 3. Literals and identifiers
-        if (isdigit(currentChar()))
+        // Numbers vs sizes vs dotted words beginning with digit
+        if (std::isdigit(static_cast<unsigned char>(currentChar())))
         {
-            // Look ahead for alpha after number to detect size units
-            size_t temp = position;
-            while (isdigit(input[temp]))
-                temp++;
-            if (isalpha(input[temp]))
-                return readSizeValue(); // 1000000M → STRING
-            return readNumber();        // 80, 443 → NUMBER
-        }
-        if (std::isalpha(currentChar()) || currentChar() == '_' || currentChar() == '/' ||
-            currentChar() == '"' || currentChar() == '\'')
-            return readWordOrPath(); // "server", "location", "/var/www/html" → STRING or IDENTIFIER
-        
+            // Lookahead to classify
+            std::size_t t = position;
+            bool hasDot = false;
+            bool hasAlpha = false;
 
-        // 4. Single‑char symbols
+            while (t < input.size())
+            {
+                unsigned char c = static_cast<unsigned char>(input[t]);
+                if (std::isalnum(c) || c == '.' || c == '_' || c == '-')
+                {
+                    if (c == '.')
+                        hasDot = true;
+                    if (std::isalpha(c))
+                        hasAlpha = true;
+                    ++t;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // digits + letters and NO dot → size literal (e.g., 1000M)
+            if (hasAlpha && !hasDot)
+            {
+                return readSizeValue();
+            }
+
+            // dotted or alnum mix → treat as a single word (will become STRING)
+            if (hasDot || hasAlpha)
+            {
+                return readWordOrPath();
+            }
+
+            // pure digits
+            return readNumber();
+        }
+
+        // Words/paths/quoted strings
+        if (std::isalpha(static_cast<unsigned char>(currentChar())) ||
+            currentChar() == '_' || currentChar() == '-' ||
+            currentChar() == '/' || currentChar() == '"' || currentChar() == '\'' || currentChar() == '.')
+        {
+            return readWordOrPath();
+        }
+
+        // Single-char symbols
         Token tok;
+        tok.value = std::string(1, currentChar());
         tok.line = line;
         tok.column = column;
         switch (currentChar())
         {
         case '{':
             tok.type = LEFT_BRACE;
-            tok.value = "{";
             break;
         case '}':
             tok.type = RIGHT_BRACE;
-            tok.value = "}";
             break;
         case ';':
             tok.type = SEMICOLON;
-            tok.value = ";";
-            break;
-        case ':':
-            tok.type = COLON;
-            tok.value = ":";
             break;
         case ',':
             tok.type = COMMA;
-            tok.value = ",";
             break;
         case '.':
             tok.type = DOT;
-            tok.value = ".";
             break;
         default:
             tok.type = UNKNOWN;
-            tok.value = std::string(1, currentChar());
             break;
         }
         advance();
@@ -274,68 +333,46 @@ Token Lexer::getNextToken()
     }
 }
 
-// ──────────────────────────────────────────────────────────────
-//  Simple helper – any chars left?
-//
-
-bool Lexer::isAtEnd() const
-{
-    return position >= input.size();
-}
-
+// ---------- bulk API ----------
 bool Lexer::hasMoreTokens()
 {
     return currentChar() != '\0';
 }
+
 std::vector<Token> Lexer::tokenizeAll()
 {
-    std::vector<Token> tokens;
-
-    while (hasMoreTokens())
+    std::vector<Token> out;
+    for (;;)
     {
-        Token token = getNextToken();
-        tokens.push_back(token);
-        if (token.type == EOF_TOKEN)
+        Token t = getNextToken();
+        out.push_back(t);
+        if (t.type == EOF_TOKEN)
             break;
     }
-
-    return tokens;
+    return out;
 }
 
-// ──────────────────────────────────────────────────────────────
-
-// --------------------------------------------------
-// 1. Path‑based constructor
-// --------------------------------------------------
+// ---------- constructors / dtor ----------
 Lexer::Lexer(const std::string &filePath)
+    : position(0), line(1), column(1)
 {
-    // std::ios::in | std::ios::binary
-    // this mode ensures to open the file for reading, and don’t alter any byte when reading.
     std::ifstream file(filePath.c_str(), std::ios::in | std::ios::binary);
     if (!file)
         throw std::runtime_error("Cannot open config file: " + filePath);
 
     std::ostringstream buffer;
-    buffer << file.rdbuf(); // read entire file
+    buffer << file.rdbuf();
     input = buffer.str();
-    position = 0; // reset position
-    line = 1;     // reset line number
-    column = 1;   // reset column number
+
     std::cout << "File content loaded from: " << filePath << std::endl;
 }
 
-// --------------------------------------------------
-// 2. Stream constructor (unit‑test convenience)
-// --------------------------------------------------
 Lexer::Lexer(std::istream &in)
+    : position(0), line(1), column(1)
 {
     std::ostringstream buffer;
     buffer << in.rdbuf();
     input = buffer.str();
-    position = 0; // reset position
 }
 
-// --------------------------------------------------
-// 3. Destructor (still empty; no manual resources)
-// --------------------------------------------------
 Lexer::~Lexer() {}

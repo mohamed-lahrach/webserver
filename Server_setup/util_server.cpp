@@ -27,8 +27,8 @@ Server::~Server()
 }
 void Server::init_data(ServerContext &server_config)
 {
-	this->port = atoi((server_config.listenPort).c_str());
-	this->hostname = server_config.listenHost;
+	this->port = atoi((server_config.port).c_str());
+	this->hostname = server_config.host;
         // NOW initialize the address with the correct port
     ///aficher data 
     std::cout << "=== INITIALIZING SERVER DATA ===" << std::endl;

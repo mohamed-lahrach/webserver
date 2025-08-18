@@ -19,8 +19,15 @@ Request::~Request()
 void Request::set_config(ServerContext &cfg)
 {
 	config = &cfg;
+	std::cout << " config is up \n";
 	if (!requested_path.empty())
+	{
 		location = match_location(requested_path);
+		if (location)
+			std::cout << " location found: " << location->path << "\n";
+		else
+			std::cout << " location not found for path: " << requested_path << "\n";
+	}
 }
 
 static std::string remove_spaces_and_lower(const std::string &str)
@@ -80,7 +87,7 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 
 		if (http_method == "POST" || http_method == "PUT")
 		{
-			std::map<std::string, std::string>::const_iterator it_content_len = http_headers.find("content-length");
+			std::map<std::string, std::string>::iterator it_content_len = http_headers.find("content-length");
 			if (it_content_len != http_headers.end())
 			{
 				expected_body_size = std::atoi(it_content_len->second.c_str());
@@ -103,13 +110,12 @@ bool Request::check_for_valid_http_start()
 
 	if (!(line_stream >> method >> path >> version))
 	{
-		std::cout<<"error from stream \n";
+		std::cout << "error from stream \n";
 		return false;
-
 	}
 	if (version != "HTTP/1.1" && version != "HTTP/1.0")
 		return false;
-	if(path[0]!='/')
+	if (path[0] != '/')
 		return false;
 	if (method != "GET" && method != "POST" && method != "DELETE")
 		return false;
@@ -137,6 +143,12 @@ bool Request::parse_http_headers(const std::string &header_text)
 		if (colon_position == std::string::npos)
 		{
 			std::cout << "now key value in header: '" << current_line << "'" << std::endl;
+			return false;
+		}
+
+		if (colon_position > 0 && (current_line[colon_position - 1] == ' ' || current_line[colon_position - 1] == '\t'))
+		{
+			std::cout << "Invalid header (whitespace before colon): '" << std::endl;
 			return false;
 		}
 		std::string header_name = current_line.substr(0, colon_position);
@@ -169,10 +181,14 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 			++it_location;
 			continue;
 		}
-		if (resquested_path.compare(0, it_location->path.size(), it_location->path) == 0)
+		if (resquested_path.compare(0, it_location->path.length(), it_location->path) == 0)
 		{
-			if (resquested_path.length() == it_location->path.length() || resquested_path[it_location->path.length()] == '/')
+			std::cout << "matched location ;" << it_location->path << "\n";
+			if (it_location->path == "/" ||
+				resquested_path.length() == it_location->path.length() ||
+				resquested_path[it_location->path.length()] == '/')
 			{
+				std::cout << "matched location ;" << it_location->path << "\n";
 				if (it_location->path.size() > longest_len)
 				{
 					matched_location = &(*it_location);
@@ -180,6 +196,7 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 				}
 			}
 		}
+
 		++it_location;
 	}
 	return matched_location;
@@ -187,12 +204,22 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 
 RequestStatus Request::figure_out_http_method()
 {
+	if (location && !location->returnDirective.empty())
+	{
+		std::cout << "Found return directive: " << location->returnDirective << std::endl;
+		return EVERYTHING_IS_OK; 
+	}
+	
 	if (!location || location->root.empty())
-		return FORBIDDEN;
+	{
+		std::cout << " location not found \n";
+		return NOT_FOUND;
+	}
+
 	else if (!location->allowedMethods.empty())
 	{
 		bool ok = false;
-		for (std::vector<std::string>::const_iterator it_method = location->allowedMethods.begin(); it_method != location->allowedMethods.end(); ++it_method)
+		for (std::vector<std::string>::iterator it_method = location->allowedMethods.begin(); it_method != location->allowedMethods.end(); ++it_method)
 		{
 			if (*it_method == http_method)
 			{
@@ -204,12 +231,13 @@ RequestStatus Request::figure_out_http_method()
 			return METHOD_NOT_ALLOWED;
 	}
 
+	std::string full_path = location->root + requested_path;
 	if (http_method == "GET")
-		return get_handler.handle_get_request(requested_path);
+		return get_handler.handle_get_request(full_path);
 	else if (http_method == "POST")
 		return post_handler.handle_post_request(requested_path, http_headers, incoming_data, expected_body_size);
 	else if (http_method == "DELETE")
-		return delete_handler.handle_delete_request(requested_path, http_headers);
+		return delete_handler.handle_delete_request(full_path);
 	else
 		return METHOD_NOT_ALLOWED;
 }
