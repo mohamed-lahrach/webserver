@@ -1,12 +1,11 @@
-
 NAME = webserv
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g3 -O0
 
 SRC = main.cpp Server_setup/server.cpp Server_setup/util_server.cpp  \
-	Server_setup/socket.cpp Server_setup/non_blocking.cpp client/client.cpp \
+	Server_setup/socket_setup.cpp Server_setup/epoll_setup.cpp client/client.cpp \
 	request/request.cpp request/get_handler.cpp request/post_handler.cpp \
-	request/delete_handler.cpp response/response.cpp config/Lexer.cpp config/parser.cpp config/helper_functions.cpp \
+	request/delete_handler.cpp  request/post_handler_utils.cpp response/response.cpp config/Lexer.cpp config/parser.cpp config/helper_functions.cpp \
 	utils/mime_types.cpp 
 
 OBJ = $(SRC:.cpp=.o)
@@ -15,6 +14,9 @@ all: $(NAME)
 
 $(NAME): $(OBJ)
 	$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJ)
+
+debug: CXXFLAGS += -DDEBUG
+debug: $(NAME)
 
 clean:
 	rm -f $(OBJ)
@@ -28,4 +30,7 @@ run: all clean
 	clear
 	./$(NAME) ./test_configs/default.conf
 
-.PHONY: all clean fclean re run
+leaks: all clean
+	clear
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(NAME) ./test_configs/default.conf
+.PHONY: all clean fclean re

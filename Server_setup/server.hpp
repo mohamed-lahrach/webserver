@@ -28,6 +28,10 @@ class Server
     int epoll_fd;
     std::string hostname;
 
+    std::vector<int> server_fds;
+    std::map<int, ServerContext*> fd_to_config;
+    std::map<int, int> fd_to_port;              // Add this
+    std::map<int, int> client_to_server; 
     std::map<int, Client> active_clients;
     struct sockaddr_in address;
 
@@ -35,11 +39,15 @@ class Server
     Server();
     ~Server();
 
-    void init_data(ServerContext &server_config);
-  void run(ServerContext &server_config);
+    void init_data(const std::vector<ServerContext>& configs);
+    void run();
 
-    int setup_Socket(int port);
-    int setup_epoll(int serverSocket);
+    int setup_Socket_with_host(int port, const std::string& host);
+    int setup_epoll();
+
+    bool is_server_socket(int fd);
+    ServerContext* get_server_config(int fd);
+    ServerContext* get_client_config(int client_fd);
 };
 
 #endif

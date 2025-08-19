@@ -34,7 +34,7 @@ void Client::increment_request_count()
 	request_count++;
 }
 
-void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Client> &active_clients)
+int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Client> &active_clients)
 {
 	Client client;
 	struct sockaddr_in client_addr;
@@ -64,11 +64,12 @@ void Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cl
 	active_clients[client.client_fd] = client;
 	std::cout << "✓ Client " << client.client_fd << " added to map" << std::endl;
 	std::cout << "✓ Total active clients: " << active_clients.size() << std::endl;
+	return client.client_fd; // Return the new client fd
 }
 
 void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &active_clients, ServerContext &server_config)
 {
-	char buffer[8024] = {0};
+	char buffer[1000] = {0};
 	ssize_t bytes_received;
 	struct epoll_event ev;
 
@@ -77,7 +78,6 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 	{
 		buffer[bytes_received] = '\0';
 		std::cout << "=== CLIENT " << client_fd << ": PROCESSING REQUEST ===" << std::endl;
-		std::cout << "Message from client " << client_fd << ": " << buffer << std::endl;
 		increment_request_count();
 
 		RequestStatus result = current_request.add_new_data(buffer, bytes_received);
@@ -109,7 +109,6 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 			std::cout << "UNKNOWN" << std::endl;
 			break;
 		}
-
 		ev.events = EPOLLOUT;
 		ev.data.fd = client_fd;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &ev) == -1)
@@ -216,6 +215,5 @@ void Client::cleanup_connection(int epoll_fd, std::map<int,
 
 	// Remove from active clients map
 	active_clients.erase(client_fd);
-	std::cout << "✓ Client " << client_fd << " removed from active clients map" << std::endl;
-	std::cout << "✓ Remaining active clients: " << active_clients.size() << std::endl;
+	std::cout << "✓ Client removed from active clients map" << std::endl;
 }

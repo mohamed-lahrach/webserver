@@ -5,23 +5,25 @@
 
 int	main(int argc, char **argv)
 {
-	if (argc != 2)
-	{
-		std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
-		std::cerr << "Example: " << argv[0] << " ./test_configs/default.conf" << std::endl;
-		return (1);
-	}
-	
-	Lexer lexer(argv[1]);
-	std::vector<ServerContext> servers_config;
+    /// for parsing config files
+    if (argc != 2)
+    {
+        std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
+        std::cerr << "Example: " << argv[0] << " ./test_configs/default.conf" << std::endl;
+        return (1);
+    }
+    
+    Lexer lexer(argv[1]);
+    std::vector<ServerContext> servers_config;
     std::vector<Token> tokens = lexer.tokenizeAll();
     std::cout << "-------------------------" << std::endl;
     Parser parser(tokens);
     try
     {
         parser.parse();
-		servers_config = parser.getServers();
+        servers_config = parser.getServers();
         std::cout << "Parsing completed successfully!" << std::endl;
+        std::cout << "Found " << servers_config.size() << " server configurations" << std::endl;
     }
     catch (const std::runtime_error &e)
     {
@@ -49,8 +51,8 @@ int	main(int argc, char **argv)
 			std::cerr << "No server blocks found in config." << std::endl;
 			return 1;
 		}
-		server.init_data(servers_config[0]);
-		server.run(servers_config[0]);
+		server.init_data(servers_config);
+		server.run();
 	}
 	catch (const std::exception &e)
 	{
@@ -59,3 +61,5 @@ int	main(int argc, char **argv)
 	}
 	return (0);
 }
+
+

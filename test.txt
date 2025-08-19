@@ -16,3 +16,15 @@ curl -X DELETE http://localhost:2440/users/123
 
 # Test 5: POST with data
 curl -X POST -d "username=test&password=123" http://localhost:2440/login
+
+
+
+--------------------------018b484e3ecd8500--
+
+0
+
+
+--------------------------e56f13a7c5083b77--
+
+0
+
