@@ -111,7 +111,7 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 				parse_type_body(chunk_body_parser, http_headers, loc);
 				buffer_not_parser.clear();
 				chunk_body_parser.clear();
-				return (EVERYTHING_IS_OK);
+				return (POSTED_SUCCESSFULLY);
 			}
 		}
 		// Check if we have enough chunk data + CRLF
@@ -162,5 +162,5 @@ RequestStatus PostHandler::handle_post_request(const std::string &requested_path
 		return (PAYLOAD_TOO_LARGE);
 	}
 	parse_type_body(incoming_data, http_headers, loc);
-	return (EVERYTHING_IS_OK);
+	return (POSTED_SUCCESSFULLY);
 }
