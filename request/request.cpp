@@ -216,7 +216,7 @@ RequestStatus Request::figure_out_http_method()
 		return NOT_FOUND;
 	}
 
-	else if (!location->allowedMethods.empty())
+	if (!location->allowedMethods.empty())
 	{
 		bool ok = false;
 		for (std::vector<std::string>::iterator it_method = location->allowedMethods.begin(); it_method != location->allowedMethods.end(); ++it_method)
