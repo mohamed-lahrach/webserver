@@ -24,8 +24,7 @@ class PostHandler
 	PostHandler();
 	~PostHandler();
 
-	RequestStatus handle_post_request(const std::string &requested_path,
-		const std::map<std::string, std::string> &http_headers,
+	RequestStatus handle_post_request(const std::map<std::string, std::string> &http_headers,
 		std::string &incoming_data, size_t expected_body_size, const ServerContext *cfg, const LocationContext *loc);
 	void parse_type_body(const std::string &body,
 		const std::map<std::string, std::string> &http_headers, const LocationContext *loc);

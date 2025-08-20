@@ -216,7 +216,7 @@ RequestStatus Request::figure_out_http_method()
 		return NOT_FOUND;
 	}
 
-	else if (!location->allowedMethods.empty())
+	if (!location->allowedMethods.empty())
 	{
 		bool ok = false;
 		for (std::vector<std::string>::iterator it_method = location->allowedMethods.begin(); it_method != location->allowedMethods.end(); ++it_method)
@@ -236,7 +236,7 @@ RequestStatus Request::figure_out_http_method()
 		return get_handler.handle_get_request(full_path);
 	else if (http_method == "POST")
 	{
-		return post_handler.handle_post_request(requested_path, http_headers, incoming_data, expected_body_size, config, location);
+		return post_handler.handle_post_request(http_headers, incoming_data, expected_body_size, config, location);
 	}
 	else if (http_method == "DELETE")
 		return delete_handler.handle_delete_request(full_path);

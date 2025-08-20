@@ -127,12 +127,10 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 	return (BODY_BEING_READ);
 }
 
-RequestStatus PostHandler::handle_post_request(const std::string &requested_path,
-	const std::map<std::string, std::string> &http_headers,
+RequestStatus PostHandler::handle_post_request(const std::map<std::string, std::string> &http_headers,
 	std::string &incoming_data, size_t expected_body_size,
 	const ServerContext *cfg, const LocationContext *loc)
 {
-	(void)requested_path;
 	if (http_headers.find("transfer-encoding") != http_headers.end())
 	{
 		std::string transfer_encoding = http_headers.at("transfer-encoding");
