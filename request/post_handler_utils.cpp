@@ -7,7 +7,7 @@
 #include <dirent.h>
 #include <sys/stat.h> 
 #include <unistd.h> // For access()
-// Add this function to convert size strings like "10M" to bytes
+size_t PostHandler::total_received_size = 0;
 size_t PostHandler::parse_max_body_size(const std::string &size_str)
 {
 	char	unit;
@@ -36,6 +36,12 @@ size_t PostHandler::parse_max_body_size(const std::string &size_str)
 PostHandler::PostHandler()
 {
 	chunk_size = 0;
+	first_chunk = true;
+	total_received_size = 0;
+	file_name_found = false;
+	boundary_found = false;
+	start_position = 0;
+	data_start = false;
 	std::cout << "PostHandler initialized." << std::endl;
 }
 
@@ -61,13 +67,23 @@ void PostHandler::save_request_body(const std::string &filename,
 	full_path = loc->uploadStore + "/" + filename;
 	if(loc->uploadStore[loc->uploadStore.length() - 1] == '/')
 		full_path = loc->uploadStore + filename;
-    std::ofstream file(full_path.c_str(), std::ios::binary);
+
+    /// open file for append or create if it doesn't exist
+    std::ofstream file;
+	if(first_chunk)
+	{
+		file.open(full_path.c_str(), std::ios::binary | std::ios::trunc);
+		first_chunk = false;
+	}
+	else
+	{
+		file.open(full_path.c_str(), std::ios::binary | std::ios::app);
+	}
 	std::cout << "Saving request body to: " << full_path << std::endl;
     if (!file.is_open())
     {
         throw std::runtime_error("Could not open file for writing");
     }
-    
     file.write(body.data(), body.size());
     file.close();
     
@@ -83,6 +99,7 @@ std::string PostHandler::extract_boundary(const std::string &content_type)
 	{
 		throw std::runtime_error("Boundary not found in Content-Type header");
 	}
+	boundary_found = true;
 	return (content_type.substr(pos + 9)); // 9 is the length of "boundary="
 }
 std::string PostHandler::extract_filename(const std::string &body)
@@ -103,6 +120,7 @@ std::string PostHandler::extract_filename(const std::string &body)
 	{
 		throw std::runtime_error("End quote for filename not found");
 	}
+	file_name_found = true;
 	return (body.substr(pos, end_pos - pos));
 }
 int PostHandler::parse_size(const ServerContext *cfg, std::string &incoming_data)
