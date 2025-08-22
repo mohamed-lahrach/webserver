@@ -148,7 +148,15 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 		// Check if we have enough chunk data + CRLF
 		if (buffer_not_parser.size() - processed_pos < chunk_size + 2)
 			break ; // not enough data yet
-		chunk_body_parser.append(buffer_not_parser, processed_pos, chunk_size);
+		// append chunk to file directly
+		total_received_size += chunk_size;
+		std::string chunk_data = buffer_not_parser.substr(processed_pos, chunk_size);
+		if(total_received_size > parse_max_body_size(cfg->clientMaxBodySize))
+		{
+			std::cout << "ERROR: POST body size is too large!" << std::endl;
+			return (PAYLOAD_TOO_LARGE);
+		}
+		parse_type_body(chunk_data, http_headers, loc);
 		processed_pos += chunk_size + 2;
 		chunk_size = 0;
 	}
