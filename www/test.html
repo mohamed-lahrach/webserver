@@ -14,8 +14,7 @@
 
     <!-- GET Test -->
     <h2>GET Test</h2>
-    <input type="text" id="getUrl" placeholder="URL to GET" value="/">
-    <button onclick="testGet()">Test GET</button>
+    <button onclick="testGet()">Test GET /</button>
     <div id="get-result" class="result" style="display:none;"></div>
 
     <!-- POST Test -->
@@ -26,17 +25,16 @@
 
     <!-- DELETE Test -->
     <h2>DELETE Test</h2>
-    <input type="text" id="deleteUrl" placeholder="URL to DELETE" value="/upload/test.txt">
-    <button onclick="testDelete()">Delete</button>
+    <input type="text" id="deleteFile" placeholder="filename to delete" value="test.txt">
+    <button onclick="testDelete()">Delete File</button>
     <div id="delete-result" class="result" style="display:none;"></div>
 
     <script>
         function testGet() {
-            const url = document.getElementById('getUrl').value;
             document.getElementById('get-result').style.display = 'block';
             document.getElementById('get-result').innerHTML = 'Testing GET...';
             
-            fetch(url)
+            fetch('/')
                 .then(response => response.text())
                 .then(data => {
                     document.getElementById('get-result').innerHTML = 'GET Success: ' + data.substring(0, 100) + '...';
@@ -73,16 +71,16 @@
         }
 
         function testDelete() {
-            const url = document.getElementById('deleteUrl').value;
-            if (!url) {
-                alert('Please enter URL');
+            const filename = document.getElementById('deleteFile').value;
+            if (!filename) {
+                alert('Please enter filename');
                 return;
             }
 
             document.getElementById('delete-result').style.display = 'block';
             document.getElementById('delete-result').innerHTML = 'Deleting...';
 
-            fetch(url, {
+            fetch('/upload/' + filename, {
                 method: 'DELETE'
             })
             .then(response => response.text())
@@ -95,4 +93,4 @@
         }
     </script>
 </body>
-</html>_
+</html>
