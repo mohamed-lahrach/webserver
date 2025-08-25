@@ -28,6 +28,7 @@ class PostHandler
 	bool is_start;
 	size_t	start_position;
 	bool data_start;
+	std::string file_path;
   public:
 	PostHandler();
 	~PostHandler();
@@ -46,6 +47,7 @@ class PostHandler
 	std::string extract_filename(const std::string &body);
 	size_t parse_max_body_size(const std::string &size_str);
 	int parse_size(const ServerContext *cfg, std::string &incoming_data);
+	void remove_file_data(const std::string &full_path);
 };
 
 #endif

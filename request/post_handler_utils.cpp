@@ -67,7 +67,7 @@ void PostHandler::save_request_body(const std::string &filename,
 	full_path = loc->uploadStore + "/" + filename;
 	if(loc->uploadStore[loc->uploadStore.length() - 1] == '/')
 		full_path = loc->uploadStore + filename;
-
+	file_path = full_path;
     /// open file for append or create if it doesn't exist
     std::ofstream file;
 	if(first_chunk)

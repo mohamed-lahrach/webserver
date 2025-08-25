@@ -1,5 +1,16 @@
 #include "post_handler.hpp"
 
+void PostHandler::remove_file_data(const std::string &full_path)
+{
+	std::ofstream file(full_path.c_str(), std::ios::trunc);
+	if (!file)
+	{
+		std::cerr << "ERROR: Failed to clear file: " << full_path << std::endl;
+		return;
+	}
+	// file is now empty
+	file.close();
+}
 void PostHandler::parse_form_data(const std::string &body,
 	const std::string &content_type, const LocationContext *loc,
 	size_t expected_body_size)
@@ -137,6 +148,7 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 				if (parse_size(cfg, chunk_body_parser) == 0)
 				{
 					std::cout << "ERROR: POST body size is too large!" << std::endl;
+					remove_file_data(file_path);
 					return (PAYLOAD_TOO_LARGE);
 				}
 				parse_type_body(chunk_body_parser, http_headers, loc);
@@ -154,6 +166,7 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 		if(total_received_size > parse_max_body_size(cfg->clientMaxBodySize))
 		{
 			std::cout << "ERROR: POST body size is too large!" << std::endl;
+			remove_file_data(file_path);
 			return (PAYLOAD_TOO_LARGE);
 		}
 		parse_type_body(chunk_data, http_headers, loc);
@@ -165,7 +178,6 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 		buffer_not_parser.erase(0, processed_pos);
 	return (BODY_BEING_READ);
 }
-
 RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 	std::string> &http_headers, std::string &incoming_data,
 	size_t expected_body_size, const ServerContext *cfg,
@@ -200,6 +212,7 @@ RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 		if (total_received_size > parse_max_body_size(cfg->clientMaxBodySize))
 		{
 			std::cout << "ERROR: POST body size is too large!" << std::endl;
+			remove_file_data(file_path);
 			return (PAYLOAD_TOO_LARGE);
 		}
 		if (total_received_size < expected_body_size)
