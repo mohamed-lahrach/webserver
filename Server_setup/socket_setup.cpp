@@ -34,12 +34,22 @@ int Server::setup_Socket_with_host(int port, const std::string& host)
     }
     else
     {
-        if (inet_pton(AF_INET, host.c_str(), &serverAddress.sin_addr) <= 0)
+        struct addrinfo hints, *result;
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_INET;      // IPv4
+        hints.ai_socktype = SOCK_STREAM; // TCP
+        
+        int status = getaddrinfo(host.c_str(), NULL, &hints, &result);
+        if (status != 0)
         {
-            std::cout << "Invalid IP address: " << host << std::endl;
+            std::cout << "Invalid address/hostname: " << host << std::endl;
             close(serverSocket);
             return (-1);
         }
+        
+        struct sockaddr_in* addr_in = (struct sockaddr_in*)result->ai_addr;
+        serverAddress.sin_addr = addr_in->sin_addr;
+        freeaddrinfo(result);
         std::cout << "✓ Using specific address: " << host << std::endl;
     }
 
