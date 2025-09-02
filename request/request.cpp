@@ -125,14 +125,22 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 		if (http_method == "POST" )
 		{
 			std::map<std::string, std::string>::iterator it_content_len = http_headers.find("content-length");
+			std::map<std::string, std::string>::iterator it_transfer_enc = http_headers.find("transfer-encoding");
+			
 			if (it_content_len != http_headers.end())
 			{
 				expected_body_size = std::atoi(it_content_len->second.c_str());
 				std::cout << "This request should have a body with " << expected_body_size << " bytes" << std::endl;
 			}
+			else if (it_transfer_enc != http_headers.end() && 
+					 it_transfer_enc->second.find("chunked") != std::string::npos)
+			{
+				expected_body_size = 0; 
+				std::cout << "Using chunked transfer encoding - size unknown" << std::endl;
+			}
 			else
 			{
-				std::cout << "Missing Content-Length header" << std::endl;
+				std::cout << "Missing Content-Length header and no chunked encoding" << std::endl;
 				return LENGTH_REQUIRED;
 			}
 		}
