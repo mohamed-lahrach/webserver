@@ -64,6 +64,10 @@ void Response::set_error_response(RequestStatus status)
 		set_code(405);
 		set_content("<html><body><h1>405 Method Not Allowed</h1><p>The request method is not supported for this resource.</p></body></html>");
 		break;
+	case LENGTH_REQUIRED:
+		set_code(411);
+		set_content("<html><body><h1>411 Length Required</h1><p>The request did not specify the Content-Length header.</p></body></html>");
+		break;
 	case PAYLOAD_TOO_LARGE:
 		set_code(413);
 		set_content("<html><body><h1>413 Payload Too Large</h1><p>The request entity is too large.</p></body></html>");
@@ -80,7 +84,6 @@ void Response::set_error_response(RequestStatus status)
 
 bool Response::handle_return_directive(const std::string &return_dir)
 {
-	// Config format: "return url" - always 302 redirect
 	if (return_dir.empty())
 		return false;
 	std::string url = return_dir;
@@ -155,14 +158,14 @@ void Response::start_file_streaming(int client_fd)
 
 	std::cout << "File size: " << file_stat.st_size << " bytes" << std::endl;
 
-	std::ostringstream response;
+	std::stringstream response;
 	response << "HTTP/1.0 200 OK\r\n";
 	response << "Content-Type: " << mine_type.get_mime_type(current_file_path) << "\r\n";
 	response << "Content-Length: " << file_stat.st_size << "\r\n";
 	response << "Connection: close\r\n\r\n";
 
 	std::string headers = response.str();
-	std::cout << "Sending headers: " << headers.length() << " bytes" << std::endl;
+	std::cout << "Sending headers " << std::endl;
 	send(client_fd, headers.c_str(), headers.length(), 0);
 
 	file_stream = new std::ifstream(current_file_path.c_str(), std::ios::binary);
@@ -372,7 +375,7 @@ void Response::handle_response(int client_fd)
 	}
 	else
 	{
-		std::ostringstream status_stream;
+		std::stringstream status_stream;
 		status_stream << status_code;
 		std::string code_str = status_stream.str();
 		std::string reason_phrase = what_reason(status_code);
@@ -386,7 +389,7 @@ void Response::handle_response(int client_fd)
 			ite++;
 		}
 
-		std::ostringstream content_length;
+		std::stringstream content_length;
 		content_length << content.length();
 		headers_line += "Content-Length: " + content_length.str() + "\r\n";
 		headers_line += "\r\n";

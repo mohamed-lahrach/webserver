@@ -16,21 +16,8 @@ Request::~Request()
 {
 }
 
-void Request::set_config(ServerContext &cfg)
-{
-	config = &cfg;
-	std::cout << " config is up \n";
-	if (!requested_path.empty())
-	{
-		location = match_location(requested_path);
-		if (location)
-			std::cout << " location found: " << location->path << "\n";
-		else
-			std::cout << " location not found for path: " << requested_path << "\n";
-	}
-}
 
-static std::string remove_spaces_and_lower(const std::string &str)
+std::string remove_spaces_and_lower(const std::string &str)
 {
 
 	size_t start = 0;
@@ -45,6 +32,56 @@ static std::string remove_spaces_and_lower(const std::string &str)
 		lower_str[i] = tolower(lower_str[i]);
 	return lower_str;
 }
+
+void Request::set_config(ServerContext &cfg)
+{
+	config = &cfg;
+	std::cout << " config is up \n";
+	if (!requested_path.empty())
+	{
+		location = match_location(requested_path);
+		if (location)
+			std::cout << " location found: " << location->path << "\n";
+		else
+			std::cout << " location not found for path: " << requested_path << "\n";
+	}
+}
+
+LocationContext *Request::match_location(const std::string &resquested_path)
+{
+	if (!config)
+		return 0;
+	LocationContext *matched_location = 0;
+	size_t longest_len = 0;
+
+	std::vector<LocationContext>::iterator it_location = config->locations.begin();
+	while (it_location != config->locations.end())
+	{
+		if (it_location->path.empty())
+		{
+			++it_location;
+			continue;
+		}
+		if (resquested_path.compare(0, it_location->path.length(), it_location->path) == 0)
+		{
+			if (it_location->path == "/" ||
+				resquested_path.length() == it_location->path.length() ||
+				resquested_path[it_location->path.length()] == '/')
+			{
+				std::cout << "matched location ;" << it_location->path << "\n";
+				if (it_location->path.size() > longest_len)
+				{
+					matched_location = &(*it_location);
+					longest_len = it_location->path.size();
+				}
+			}
+		}
+
+		++it_location;
+	}
+	return matched_location;
+}
+
 
 RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 {
@@ -85,13 +122,18 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 		std::cout << "HTTP Method: " << http_method << ", Requested Path: "
 				  << requested_path << ", Version: " << http_version << std::endl;
 
-		if (http_method == "POST" || http_method == "PUT")
+		if (http_method == "POST" )
 		{
 			std::map<std::string, std::string>::iterator it_content_len = http_headers.find("content-length");
 			if (it_content_len != http_headers.end())
 			{
 				expected_body_size = std::atoi(it_content_len->second.c_str());
 				std::cout << "This request should have a body with " << expected_body_size << " bytes" << std::endl;
+			}
+			else
+			{
+				std::cout << "Missing Content-Length header" << std::endl;
+				return LENGTH_REQUIRED;
 			}
 		}
 
@@ -105,7 +147,7 @@ bool Request::check_for_valid_http_start()
 	size_t first_line_end = incoming_data.find("\r\n");
 
 	std::string first_line = incoming_data.substr(0, first_line_end);
-	std::istringstream line_stream(first_line);
+	std::stringstream line_stream(first_line);
 	std::string method, path, version;
 
 	if (!(line_stream >> method >> path >> version))
@@ -125,12 +167,12 @@ bool Request::check_for_valid_http_start()
 
 bool Request::parse_http_headers(const std::string &header_text)
 {
-	std::istringstream header_stream(header_text);
+	std::stringstream header_stream(header_text);
 	std::string current_line;
 
 	if (!std::getline(header_stream, current_line))
 		return false;
-	std::istringstream first_line_stream(current_line);
+	std::stringstream first_line_stream(current_line);
 	if (!(first_line_stream >> http_method >> requested_path >> http_version))
 		return false;
 
@@ -166,41 +208,6 @@ bool Request::parse_http_headers(const std::string &header_text)
 	return true;
 }
 
-LocationContext *Request::match_location(const std::string &resquested_path)
-{
-	if (!config)
-		return 0;
-	LocationContext *matched_location = 0;
-	size_t longest_len = 0;
-
-	std::vector<LocationContext>::iterator it_location = config->locations.begin();
-	while (it_location != config->locations.end())
-	{
-		if (it_location->path.empty())
-		{
-			++it_location;
-			continue;
-		}
-		if (resquested_path.compare(0, it_location->path.length(), it_location->path) == 0)
-		{
-			std::cout << "matched location ;" << it_location->path << "\n";
-			if (it_location->path == "/" ||
-				resquested_path.length() == it_location->path.length() ||
-				resquested_path[it_location->path.length()] == '/')
-			{
-				std::cout << "matched location ;" << it_location->path << "\n";
-				if (it_location->path.size() > longest_len)
-				{
-					matched_location = &(*it_location);
-					longest_len = it_location->path.size();
-				}
-			}
-		}
-
-		++it_location;
-	}
-	return matched_location;
-}
 
 RequestStatus Request::figure_out_http_method()
 {
