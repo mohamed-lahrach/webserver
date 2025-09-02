@@ -48,6 +48,15 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 	{
 		throw std::runtime_error("Error accepting connection: ");
 	}
+	// handle non-blocking
+	int flags = fcntl(client.client_fd, F_GETFL, 0);
+	if (flags == -1) {
+        perror("fcntl F_GETFL");
+        close(client.client_fd);
+    } else if (fcntl(client.client_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+        perror("fcntl F_SETFL");
+        close(client.client_fd);
+    }
 	std::cout << "✓ New client connected: " << client.client_fd << std::endl;
 	// Set connection time
 	client.set_connect_time(time(NULL));
