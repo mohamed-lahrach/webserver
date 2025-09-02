@@ -81,7 +81,6 @@ void Response::set_error_response(RequestStatus status)
 	set_header("Connection", "close");
 }
 
-
 bool Response::handle_return_directive(const std::string &return_dir)
 {
 	if (return_dir.empty())

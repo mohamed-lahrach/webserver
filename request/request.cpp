@@ -237,7 +237,6 @@ RequestStatus Request::figure_out_http_method()
 		if (!ok)
 			return METHOD_NOT_ALLOWED;
 	}
-
 	std::string full_path = location->root + requested_path;
 	if (http_method == "GET")
 		return get_handler.handle_get_request(full_path);
