@@ -3,8 +3,8 @@
 int Server::setup_Socket_with_host(int port, const std::string& host)
 {
     std::cout << "=== SETTING UP SERVER ON " << host << ":" << port << " ===" << std::endl;
-    
-    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    int serverSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
     if (serverSocket == -1)
     {
         std::cout << "Failed to create socket for " << host << ":" << port << std::endl;
