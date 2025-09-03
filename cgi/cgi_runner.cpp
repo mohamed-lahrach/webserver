@@ -38,7 +38,7 @@ bool run_cgi(const CgiConfig& cfg,
         dup2(inpipe[0], STDIN_FILENO);
         dup2(outpipe[1], STDOUT_FILENO);
         // Optional: stderr to stdout too for debugging
-        dup2(outpipe[1], STDERR_FILENO);
+      //  dup2(outpipe[1], STDERR_FILENO);
 
         close(inpipe[1]); close(outpipe[0]);
 

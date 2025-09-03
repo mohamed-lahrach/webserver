@@ -452,5 +452,6 @@ void Parser::parseUploadStoreDirective(LocationContext& location)
         throw std::runtime_error("Expected upload directory path after 'upload_store' at line " + toString(peek().line));
     
     location.uploadStore = advance().value;
+    std::cout << "Upload store directory: " << location.uploadStore << std::endl;
     expect(SEMICOLON, "Expected ';' after upload_store");
 }
