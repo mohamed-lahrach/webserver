@@ -46,6 +46,7 @@ class Server
     int setup_epoll();
 
     bool is_server_socket(int fd);
+    bool is_client_socket(int fd);
     ServerContext* get_server_config(int fd);
     ServerContext* get_client_config(int client_fd);
 };

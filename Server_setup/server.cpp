@@ -37,22 +37,18 @@ void Server::run()
 		for (int i = 0; i < num_events; i++)
 		{
 			fd = events[i].data.fd;
-			// Check if it's a server socket (new connection)
 			if (is_server_socket(fd))
 			{
 				// Get server info
 				port = fd_to_port[fd];
 				server_config = fd_to_config[fd];
 				std::cout << "📥 New connection on server port " << port << " (server fd: " << fd << ")" << std::endl;
-				// Handle new connection and get the client fd
 				client_fd = Client::handle_new_connection(fd, epoll_fd,
 						active_clients);
-				// Link client to server - NOW WE KNOW THE EXACT CLIENT!
 				client_to_server[client_fd] = fd;
 				std::cout << "👤 Client " << client_fd << " connected to server " << port << std::endl;
 			}
-			// Handle existing client data
-			else
+			else if (is_client_socket(fd))
 			{
 				std::map<int, Client>::iterator it = active_clients.find(fd);
 				if (it != active_clients.end())
@@ -79,10 +75,11 @@ void Server::run()
 							active_clients, *server_config);
 					}
 				}
-				else
-				{
-					std::cout << "⚠️ Warning: Client " << fd << " not found in active_clients map" << std::endl;
-				}
+			}
+			else
+			{
+				std::cout << "⚠️ Warning: Unknown fd " << fd << " - not a server or client socket or CGI" << std::endl;
+				// Could be a CGI process or other type - handle as needed
 			}
 		}
 	}
