@@ -53,8 +53,14 @@ void PostHandler::parse_form_data(const std::string &body,
 		}
 		data_start = true;
 		// handle case small data
-		std::string closing_boundary = "--" + boundary;
+		std::string closing_boundary = "--" + boundary + "--";  // Try final boundary first
 		end_position = body.find(closing_boundary, start_position);
+		if (end_position == std::string::npos)
+		{
+			closing_boundary = "--" + boundary;  // Try regular boundary
+			end_position = body.find(closing_boundary, start_position);
+		}
+		std::cout << "Looking for boundary: '" << closing_boundary << "'" << std::endl;
 		if (end_position != std::string::npos)
 		{
 			// Cut CRLF before boundary
@@ -75,11 +81,26 @@ void PostHandler::parse_form_data(const std::string &body,
 	// Handle last chunk (when total size matches expected)
 	if (total_received_size == expected_body_size)
 	{
-		std::string boundary_marker = "--" + boundary;
+		std::string boundary_marker = "--" + boundary + "--";  // Final boundary has -- at the end
 		end_position = body.find(boundary_marker);
+		std::cout << "Final chunk detected." << std::endl;
+		std::cout << "Looking for final boundary: '" << boundary_marker << "'" << std::endl;
+		std::cout << "End position: " << end_position << std::endl;
+		
+		// If final boundary not found, try regular boundary
+		if (end_position == std::string::npos)
+		{
+			boundary_marker = "--" + boundary;
+			end_position = body.find(boundary_marker);
+			std::cout << "Trying regular boundary: '" << boundary_marker << "'" << std::endl;
+			std::cout << "End position with regular boundary: " << end_position << std::endl;
+		}
+		
 		if (end_position == std::string::npos)
 		{
 			std::cout << "ERROR: Cannot find data end!" << std::endl;
+			std::cout << "Body content (first 200 chars): " << body.substr(0, 200) << std::endl;
+			std::cout << "Body size: " << body.size() << std::endl;
 			save_request_body("debug_error.txt", body, loc);
 			return ;
 		}
