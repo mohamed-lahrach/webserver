@@ -2,12 +2,13 @@
 #include "get_handler.hpp"
 #include "post_handler.hpp"
 #include "delete_handler.hpp"
+#include "../cgi/cgi_headers.hpp"
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
 #include <cctype>
 
-Request::Request() : http_method(""), requested_path(""), http_version(""), got_all_headers(false), expected_body_size(0), request_body(""), config(0), location(0), get_handler(), post_handler(), delete_handler()
+Request::Request() : http_method(""), requested_path(""), http_version(""), got_all_headers(false), expected_body_size(0), request_body(""), config(0), location(0), cgi_response(""), get_handler(), post_handler(), delete_handler()
 {
 	std::cout << "Creating a new HTTP request parser with modular handlers" << std::endl;
 }
@@ -183,6 +184,13 @@ bool Request::parse_http_headers(const std::string &header_text)
 	std::stringstream first_line_stream(current_line);
 	if (!(first_line_stream >> http_method >> requested_path >> http_version))
 		return false;
+	
+	// Strip query parameters from path for location matching
+	size_t query_pos = requested_path.find('?');
+	if (query_pos != std::string::npos)
+	{
+		requested_path = requested_path.substr(0, query_pos);
+	}
 
 	bool host_found = false;
 
@@ -245,6 +253,46 @@ RequestStatus Request::figure_out_http_method()
 		if (!ok)
 			return METHOD_NOT_ALLOWED;
 	}
+	// Check for CGI requests first
+	std::cout << "Checking CGI for path: " << requested_path << " with location: " << (location ? location->path : "NULL") << std::endl;
+	if (location)
+	{
+		std::cout << "Location cgiExtension: '" << location->cgiExtension << "'" << std::endl;
+		std::cout << "Location cgiPath: '" << location->cgiPath << "'" << std::endl;
+		std::cout << "Location root: '" << location->root << "'" << std::endl;
+	}
+	if (CgiHandler::is_cgi_request(requested_path, location))
+	{
+		std::string query_string = "";
+		std::string path_only = requested_path;
+		
+		// Extract query string for GET requests
+		size_t query_pos = requested_path.find('?');
+		if (query_pos != std::string::npos)
+		{
+			path_only = requested_path.substr(0, query_pos);
+			query_string = requested_path.substr(query_pos + 1);
+		}
+		
+		if (http_method == "GET")
+		{
+			cgi_response = get_handler.handle_cgi_get_request(path_only, query_string, http_headers, location);
+			if (!cgi_response.empty())
+			{
+				return EVERYTHING_IS_OK;
+			}
+		}
+		else if (http_method == "POST")
+		{
+			cgi_response = post_handler.handle_cgi_post_request(path_only, query_string, http_headers, request_body, location);
+			if (!cgi_response.empty())
+			{
+				return EVERYTHING_IS_OK;
+			}
+		}
+	}
+	
+	// Handle regular file requests
 	std::string full_path = location->root + requested_path;
 	if (http_method == "GET")
 		return get_handler.handle_get_request(full_path);

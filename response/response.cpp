@@ -399,3 +399,85 @@ void Response::handle_response(int client_fd)
 		send(client_fd, full_response.c_str(), full_response.length(), 0);
 	}
 }
+
+void Response::set_cgi_response(const std::string &cgi_output)
+{
+	if (cgi_output.empty())
+	{
+		set_error_response(static_cast<RequestStatus>(502)); // Bad Gateway
+		return;
+	}
+	
+	// CGI output should already be a complete HTTP response
+	// We need to parse it and extract status, headers, and body
+	size_t header_end = cgi_output.find("\r\n\r\n");
+	if (header_end == std::string::npos)
+	{
+		header_end = cgi_output.find("\n\n");
+		if (header_end == std::string::npos)
+		{
+			// No proper HTTP response format, treat as plain content
+			set_code(200);
+			set_content(cgi_output);
+			set_header("Content-Type", "text/plain");
+			return;
+		}
+		header_end += 2;
+	}
+	else
+	{
+		header_end += 4;
+	}
+	
+	std::string headers_part = cgi_output.substr(0, header_end - 4);
+	std::string body_part = cgi_output.substr(header_end);
+	
+	// Parse the status line
+	size_t first_line_end = headers_part.find('\n');
+	if (first_line_end != std::string::npos)
+	{
+		std::string status_line = headers_part.substr(0, first_line_end);
+		if (status_line.find("HTTP/1.1") != std::string::npos)
+		{
+			size_t code_start = status_line.find(' ');
+			if (code_start != std::string::npos)
+			{
+				code_start++;
+				size_t code_end = status_line.find(' ', code_start);
+				if (code_end != std::string::npos)
+				{
+					std::string code_str = status_line.substr(code_start, code_end - code_start);
+					status_code = std::atoi(code_str.c_str());
+				}
+			}
+		}
+	}
+	
+	// Parse headers
+	std::istringstream header_stream(headers_part);
+	std::string line;
+	std::getline(header_stream, line); // Skip status line
+	
+	while (std::getline(header_stream, line))
+	{
+		if (line.empty() || line == "\r")
+			break;
+			
+		size_t colon_pos = line.find(':');
+		if (colon_pos != std::string::npos)
+		{
+			std::string key = line.substr(0, colon_pos);
+			std::string value = line.substr(colon_pos + 1);
+			
+			// Trim whitespace
+			while (!value.empty() && (value[0] == ' ' || value[0] == '\t'))
+				value.erase(0, 1);
+			while (!value.empty() && (value[value.length() - 1] == '\r' || value[value.length() - 1] == '\n'))
+				value.erase(value.length() - 1);
+				
+			headers[key] = value;
+		}
+	}
+	
+	content = body_part;
+}

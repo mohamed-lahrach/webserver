@@ -173,10 +173,19 @@ void Client::handle_client_data_output(int client_fd, int epoll_fd,
 		}
 		else
 		{
-			std::string request_path = current_request.get_requested_path();
-			LocationContext *location = current_request.get_location();
-			std::cout << "Creating normal response for path: " << request_path << std::endl;
-			current_response.analyze_request_and_set_response(request_path, location);
+			// Check if we have a CGI response first
+			if (current_request.has_cgi_response())
+			{
+				std::cout << "Setting CGI response" << std::endl;
+				current_response.set_cgi_response(current_request.get_cgi_response());
+			}
+			else
+			{
+				std::string request_path = current_request.get_requested_path();
+				LocationContext *location = current_request.get_location();
+				std::cout << "Creating normal response for path: " << request_path << std::endl;
+				current_response.analyze_request_and_set_response(request_path, location);
+			}
 		}
 
 		current_response.handle_response(client_fd);

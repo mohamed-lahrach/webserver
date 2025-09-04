@@ -76,12 +76,7 @@ void Server::run()
 					}
 				}
 			}
-			else if ()// handle CGI process fds if needed
-			{
-				// Handle CGI process I/O here
-				std::cout << "⚙️ Handling CGI process I/O on fd " << fd << std::endl;
-				// Implement CGI handling logic as needed
-			}
+			// CGI handling is now integrated into the request processing
 			else
 			{
 				std::cout << "⚠️ Warning: Unknown fd " << fd << " - not a server or client socket or CGI" << std::endl;

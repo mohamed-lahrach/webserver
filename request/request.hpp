@@ -26,6 +26,7 @@ class Request
   std::string request_body;       
   ServerContext* config;
   LocationContext* location;
+  std::string cgi_response;
   
   
   GetHandler get_handler;
@@ -48,6 +49,8 @@ bool check_for_valid_http_start();
 	const std::map<std::string, std::string>& get_all_headers() const { return http_headers; }
 	const std::string& get_request_body() const { return request_body; }
 	LocationContext* get_location() const { return location; }
+	const std::string& get_cgi_response() const { return cgi_response; }
+	bool has_cgi_response() const { return !cgi_response.empty(); }
 
 
     void set_config(ServerContext& cfg);

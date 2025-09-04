@@ -48,6 +48,7 @@ public:
 	std::string what_reason(int code);
 
 	void handle_response(int client_fd);
+	void set_cgi_response(const std::string &cgi_output);
 };
 
 #endif

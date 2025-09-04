@@ -11,6 +11,7 @@
 #include <sstream> 
 #include <cstdlib>
 #include "../config/parser.hpp"
+#include "../cgi/cgi_headers.hpp"
 
 class PostHandler
 {
@@ -48,6 +49,12 @@ class PostHandler
 	size_t parse_max_body_size(const std::string &size_str);
 	int parse_size(const ServerContext *cfg, std::string &incoming_data);
 	void remove_file_data(const std::string &full_path);
+	std::string handle_cgi_post_request(
+		const std::string &requested_path,
+		const std::string &query_string,
+		const std::map<std::string, std::string> &headers,
+		const std::string &body,
+		const LocationContext *location);
 };
 
 #endif

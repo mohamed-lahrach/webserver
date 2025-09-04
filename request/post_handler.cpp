@@ -1,4 +1,5 @@
 #include "post_handler.hpp"
+#include "../cgi/cgi_headers.hpp"
 
 void PostHandler::remove_file_data(const std::string &full_path)
 {
@@ -246,4 +247,24 @@ RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 	std::cout << "Total received size: " << total_received_size << std::endl;
 	std::cout << "Expected body size: " << expected_body_size << std::endl;
 	return (POSTED_SUCCESSFULLY);
+}
+std::string PostHandler::handle_cgi_post_request(
+    const std::string &requested_path,
+    const std::string &query_string,
+    const std::map<std::string, std::string> &headers,
+    const std::string &body,
+    const LocationContext *location)
+{
+    if (!CgiHandler::is_cgi_request(requested_path, location))
+        return "";
+    
+    CgiRequest cgi_req;
+    cgi_req.method = "POST";
+    cgi_req.path = requested_path;
+    cgi_req.query_string = query_string;
+    cgi_req.http_version = "HTTP/1.1";
+    cgi_req.headers = headers;
+    cgi_req.body = body;
+    
+    return CgiHandler::handle_cgi_request(cgi_req, location);
 }
