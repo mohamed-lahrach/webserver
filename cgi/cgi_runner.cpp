@@ -1,463 +1,400 @@
-// tiny_cgi_webserver.cpp — minimal CGI-correct demo (C++98)
-// Build & run:
-//   g++ -std=c++98 -Wall -Wextra -Werror tiny_cgi_webserver.cpp -o web && ./web
-//
-// Then open http://127.0.0.1:8080/
-//
-// Endpoints:
-//   GET  /           -> simple home page with links/forms
-//   GET  /cgi        -> runs ./cgi_demo.py with QUERY_STRING
-//   POST /cgi        -> runs ./cgi_demo.py with stdin + CONTENT_* env
-//
-// Notes:
-// - We pass proper CGI env: REQUEST_METHOD, QUERY_STRING, CONTENT_LENGTH,
-//   CONTENT_TYPE, GATEWAY_INTERFACE, SERVER_PROTOCOL, SERVER_NAME, SERVER_PORT,
-//   SCRIPT_NAME, PATH_INFO (empty here).
-// - For GET, child's stdin is empty. For POST, we write the body to child's stdin.
-
+#include "cgi_runner.hpp"
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <sys/wait.h>
+#include <sys/epoll.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <errno.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <string>
-#include <map>
-#include <vector>
 #include <iostream>
+#include <sstream>
 
-// ----------------------- small utilities -----------------------
-static bool write_all(int fd, const char *p, size_t n)
-{
-    while (n > 0)
-    {
-        ssize_t w = write(fd, p, n);
-        if (w < 0)
-            return false;
-        p += (size_t)w;
-        n -= (size_t)w;
-    }
-    return true;
+CgiRunner::CgiRunner() {
+    std::cout << "CGI Runner initialized" << std::endl;
 }
-static std::string read_exact(int fd, size_t n)
-{
-    std::string out;
-    out.resize(n);
-    size_t got = 0;
-    while (got < n)
-    {
-        ssize_t r = read(fd, &out[got], n - got);
-        if (r <= 0)
-        {
-            out.resize(got);
-            break;
+
+CgiRunner::~CgiRunner() {
+    // Clean up any remaining processes
+    for (std::map<int, CgiProcess>::iterator it = active_cgi_processes.begin(); 
+         it != active_cgi_processes.end(); ++it) {
+        if (it->second.pid > 0) {
+            kill(it->second.pid, SIGTERM);
+            waitpid(it->second.pid, NULL, 0);
         }
-        got += (size_t)r;
+        if (it->second.input_fd >= 0) close(it->second.input_fd);
+        if (it->second.output_fd >= 0) close(it->second.output_fd);
     }
-    return out;
-}
-static std::string read_until_double_crlf(int fd)
-{
-    std::string out;
-    char c;
-    std::string tail;
-    while (true)
-    {
-        ssize_t r = read(fd, &c, 1);
-        if (r <= 0)
-            break;
-        out.push_back(c);
-        tail.push_back(c);
-        if (tail.size() > 4)
-            tail.erase(0, tail.size() - 4);
-        if (tail == "\r\n\r\n")
-            break;
-    }
-    return out;
-}
-static void split_headers_body(const std::string &raw, std::string &headers, std::string &body)
-{
-    std::string::size_type p = raw.find("\r\n\r\n");
-    size_t sep = 4;
-    if (p == std::string::npos)
-    {
-        p = raw.find("\n\n");
-        sep = 2;
-    }
-    if (p == std::string::npos)
-    {
-        headers = "";
-        body = raw;
-        return;
-    }
-    headers = raw.substr(0, p);
-    body = raw.substr(p + sep);
-}
-static std::vector<char *> vecp(const std::vector<std::string> &v)
-{
-    std::vector<char *> out;
-    for (size_t i = 0; i < v.size(); ++i)
-        out.push_back(const_cast<char *>(v[i].c_str()));
-    out.push_back(NULL);
-    return out;
 }
 
-// ----------------------- HTTP helpers -----------------------
-static std::string build_http_response_200_html(const std::string &html)
-{
-    char lenbuf[64];
-    std::sprintf(lenbuf, "%lu", (unsigned long)html.size());
-    std::string r = "HTTP/1.1 200 OK\r\n";
-    r += "Content-Type: text/html; charset=utf-8\r\n";
-    r += "Content-Length: ";
-    r += lenbuf;
-    r += "\r\n";
-    r += "Connection: close\r\n";
-    r += "\r\n";
-    r += html;
-    return r;
-}
-static std::string build_http_response_404()
-{
-    const char *body = "<!doctype html><html><body><h1>404 Not Found</h1></body></html>";
-    char lenbuf[64];
-    std::sprintf(lenbuf, "%lu", (unsigned long)std::strlen(body));
-    std::string r = "HTTP/1.1 404 Not Found\r\n";
-    r += "Content-Type: text/html; charset=utf-8\r\n";
-    r += "Content-Length: ";
-    r += lenbuf;
-    r += "\r\n";
-    r += "Connection: close\r\n\r\n";
-    r += body;
-    return r;
-}
-static std::string wrap_cgi_into_http(const std::string &raw)
-{
-    std::string headers, body;
-    split_headers_body(raw, headers, body);
-    std::string ct = "text/plain; charset=utf-8";
-    std::string needle = "Content-Type:";
-    std::string::size_type p = headers.find(needle);
-    if (p != std::string::npos)
-    {
-        std::string line = headers.substr(p);
-        std::string::size_type e = line.find('\n');
-        if (e != std::string::npos)
-            line = line.substr(0, e);
-        std::string v = line.substr(needle.size());
-        while (!v.empty() && (v[0] == ' ' || v[0] == '\t'))
-            v.erase(0, 1);
-        if (!v.empty())
-            ct = v;
-        if (!ct.empty() && ct[ct.size() - 1] == '\r')
-            ct.erase(ct.size() - 1);
+static std::vector<char*> vector_to_char_array(const std::vector<std::string>& vec) {
+    std::vector<char*> result;
+    for (size_t i = 0; i < vec.size(); ++i) {
+        result.push_back(const_cast<char*>(vec[i].c_str()));
     }
-    char lenbuf[64];
-    std::sprintf(lenbuf, "%lu", (unsigned long)body.size());
-    std::string r = "HTTP/1.1 200 OK\r\n";
-    r += "Content-Type: " + ct + "\r\n";
-    r += "Content-Length: ";
-    r += lenbuf;
-    r += "\r\n";
-    r += "Connection: close\r\n\r\n";
-    r += body;
-    return r;
+    result.push_back(NULL);
+    return result;
 }
 
-// ----------------------- Request parsing -----------------------
-struct Request
-{
-    std::string method;
-    std::string target;
-    std::string path;
-    std::string query;
-    std::map<std::string, std::string> headers;
-    std::string body;
-};
-static void split_path_query(const std::string &target, std::string &path, std::string &query)
-{
-    std::string::size_type q = target.find('?');
-    if (q == std::string::npos)
-    {
-        path = target;
-        query = "";
-    }
-    else
-    {
-        path = target.substr(0, q);
-        query = target.substr(q + 1);
-    }
-}
-static Request read_request(int cfd)
-{
-    Request req;
-    std::string head = read_until_double_crlf(cfd);
-
-    std::string::size_type sp1 = head.find(' ');
-    std::string::size_type sp2 = (sp1 == std::string::npos) ? std::string::npos : head.find(' ', sp1 + 1);
-    std::string::size_type eol = head.find("\r\n");
-    if (sp1 != std::string::npos && sp2 != std::string::npos && eol != std::string::npos && sp2 < eol)
-    {
-        req.method = head.substr(0, sp1);
-        req.target = head.substr(sp1 + 1, sp2 - (sp1 + 1));
-    }
-    std::string::size_type pos = eol + 2;
-    while (pos < head.size())
-    {
-        std::string::size_type e = head.find("\r\n", pos);
-        if (e == std::string::npos)
-            break;
-        if (e == pos)
-        {
-            pos += 2;
-            break;
-        }
-        std::string line = head.substr(pos, e - pos);
-        std::string::size_type c = line.find(':');
-        if (c != std::string::npos)
-        {
-            std::string k = line.substr(0, c);
-            std::string v = line.substr(c + 1);
-            while (!v.empty() && (v[0] == ' ' || v[0] == '\t'))
-                v.erase(0, 1);
-            req.headers[k] = v;
-        }
-        pos = e + 2;
-    }
-    split_path_query(req.target, req.path, req.query);
-    size_t cl = 0;
-    if (req.headers.find("Content-Length") != req.headers.end())
-    {
-        cl = (size_t)std::strtoul(req.headers["Content-Length"].c_str(), NULL, 10);
-    }
-    if (cl > 0)
-        req.body = read_exact(cfd, cl);
-    return req;
-}
-
-// ----------------------- CGI runner (exec external script) -----------------------
-static std::vector<std::string> build_cgi_env(const Request &req,
-                                              const std::string &server_name,
-                                              const std::string &server_port,
-                                              const std::string &script_name)
-{
+std::vector<std::string> CgiRunner::build_cgi_env(const Request& request, 
+                                                 const std::string& server_name,
+                                                 const std::string& server_port,
+                                                 const std::string& script_name) {
     std::vector<std::string> env;
-
-    env.push_back("REQUEST_METHOD=" + req.method);
-    env.push_back("QUERY_STRING=" + req.query); // GET data lives here
-    // For POST, body is on stdin; inform via CONTENT_LENGTH/TYPE if present:
-    std::map<std::string, std::string>::const_iterator itCT = req.headers.find("Content-Type");
-    std::map<std::string, std::string>::const_iterator itCL = req.headers.find("Content-Length");
-    if (itCT != req.headers.end())
-        env.push_back("CONTENT_TYPE=" + itCT->second);
-    if (itCL != req.headers.end())
-        env.push_back("CONTENT_LENGTH=" + itCL->second);
-
+    
+    env.push_back("REQUEST_METHOD=" + request.get_http_method());
+    
+    // Extract query string from requested path
+    std::string query_string = "";
+    std::string path = request.get_requested_path();
+    size_t query_pos = path.find('?');
+    if (query_pos != std::string::npos) {
+        query_string = path.substr(query_pos + 1);
+    }
+    env.push_back("QUERY_STRING=" + query_string);
+    
+    // Add headers as environment variables
+    const std::map<std::string, std::string>& headers = request.get_all_headers();
+    std::map<std::string, std::string>::const_iterator it;
+    
+    it = headers.find("content-type");
+    if (it != headers.end()) {
+        env.push_back("CONTENT_TYPE=" + it->second);
+    }
+    
+    it = headers.find("content-length");
+    if (it != headers.end()) {
+        env.push_back("CONTENT_LENGTH=" + it->second);
+    }
+    
     env.push_back("GATEWAY_INTERFACE=CGI/1.1");
     env.push_back("SERVER_PROTOCOL=HTTP/1.1");
     env.push_back("SERVER_NAME=" + server_name);
     env.push_back("SERVER_PORT=" + server_port);
-
-    env.push_back("SCRIPT_NAME=" + script_name); // logical mapping of the script
-    env.push_back("PATH_INFO=");                 // none in this tiny demo
-
-    // Minimal but useful extras:
-    std::map<std::string, std::string>::const_iterator itHost = req.headers.find("Host");
-    if (itHost != req.headers.end()) env.push_back("HTTP_HOST=" + itHost->second);
-    std::map<std::string, std::string>::const_iterator itUA = req.headers.find("User-Agent");
-    if (itUA != req.headers.end()) env.push_back("HTTP_USER_AGENT=" + itUA->second);
-    std::map<std::string, std::string>::const_iterator itAcc = req.headers.find("Accept");
-    if (itAcc != req.headers.end()) env.push_back("HTTP_ACCEPT=" + itAcc->second);
-
+    env.push_back("SCRIPT_NAME=" + script_name);
+    env.push_back("PATH_INFO=");
+    
+    // Add some common HTTP headers
+    it = headers.find("host");
+    if (it != headers.end()) {
+        env.push_back("HTTP_HOST=" + it->second);
+    }
+    
+    it = headers.find("user-agent");
+    if (it != headers.end()) {
+        env.push_back("HTTP_USER_AGENT=" + it->second);
+    }
+    
     return env;
 }
 
-static std::string run_cgi_exec(const Request &req,
-                                const std::string &interpreter,   // e.g. "/usr/bin/python3"
-                                const std::string &script_path,   // e.g. "./cgi_demo.py"
-                                const std::string &server_name,   // "127.0.0.1"
-                                const std::string &server_port,   // "8080"
-                                const std::string &script_name)   // "/cgi"
-{
-    int A[2], B[2];
-    if (pipe(A) == -1 || pipe(B) == -1)
-    {
-        perror("pipe");
-        return "";
+int CgiRunner::start_cgi_process(const Request& request, 
+                                const LocationContext& location,
+                                int client_fd,
+                                const std::string& script_path) {
+    
+    std::cout << "Starting CGI process for script: " << script_path << std::endl;
+    std::cout << "CGI interpreter: " << location.cgiPath << std::endl;
+    std::cout << "Request method: " << request.get_http_method() << std::endl;
+    std::cout << "Request path: " << request.get_requested_path() << std::endl;
+    
+    // Check if script file exists
+    if (access(script_path.c_str(), F_OK) != 0) {
+        std::cerr << "CGI script not found: " << script_path << std::endl;
+        return -1;
     }
-
+    
+    if (access(script_path.c_str(), R_OK) != 0) {
+        std::cerr << "CGI script not readable: " << script_path << std::endl;
+        return -1;
+    }
+    
+    // Create pipes for communication
+    int input_pipe[2], output_pipe[2];
+    if (pipe(input_pipe) == -1 || pipe(output_pipe) == -1) {
+        std::cerr << "Failed to create pipes for CGI" << std::endl;
+        return -1;
+    }
+    
     pid_t pid = fork();
-    if (pid < 0)
-    {
-        perror("fork");
-        close(A[0]); close(A[1]);
-        close(B[0]); close(B[1]);
-        return "";
+    if (pid < 0) {
+        std::cerr << "Failed to fork CGI process" << std::endl;
+        close(input_pipe[0]); close(input_pipe[1]);
+        close(output_pipe[0]); close(output_pipe[1]);
+        return -1;
     }
-
-    if (pid == 0)
-    {
-        // Child: stdin <- A[0], stdout -> B[1]
-        if (dup2(A[0], STDIN_FILENO) == -1) _exit(112);
-        if (dup2(B[1], STDOUT_FILENO) == -1) _exit(113);
-
-        close(A[0]); close(A[1]);
-        close(B[0]); close(B[1]);
-
-        // Build argv
-        std::vector<std::string> argvS;
-        argvS.push_back(interpreter);
-        argvS.push_back(script_path);
-
-        std::vector<char *> argv = vecp(argvS);
-
-        // Build envp
-        std::vector<std::string> envS = build_cgi_env(req, server_name, server_port, script_name);
-        std::vector<char *> envp = vecp(envS);
-
+    
+    if (pid == 0) {
+        // Child process - execute CGI script
+        close(input_pipe[1]);  // Close write end of input pipe
+        close(output_pipe[0]); // Close read end of output pipe
+        
+        // Change to the directory containing the CGI script
+        std::string script_dir = script_path;
+        std::string script_filename = script_path;
+        size_t last_slash = script_dir.find_last_of('/');
+        if (last_slash != std::string::npos) {
+            script_dir = script_dir.substr(0, last_slash);
+            script_filename = script_path.substr(last_slash + 1);
+            if (chdir(script_dir.c_str()) != 0) {
+                std::cerr << "Failed to change directory to: " << script_dir << std::endl;
+                _exit(1);
+            }
+            std::cout << "Changed working directory to: " << script_dir << std::endl;
+        }
+        
+        // Redirect stdin and stdout
+        if (dup2(input_pipe[0], STDIN_FILENO) == -1 ||
+            dup2(output_pipe[1], STDOUT_FILENO) == -1) {
+            _exit(1);
+        }
+        
+        // Close the original pipe file descriptors
+        close(input_pipe[0]);
+        close(output_pipe[1]);
+        
+        // Build environment
+        std::vector<std::string> env_vars = build_cgi_env(request, "localhost", "8080", script_path);
+        std::vector<char*> envp = vector_to_char_array(env_vars);
+        
+        // Build arguments
+        std::vector<std::string> args;
+        args.push_back(location.cgiPath);  // interpreter path
+        args.push_back(script_filename);   // script filename (relative to working directory)
+        std::vector<char*> argv = vector_to_char_array(args);
+        
+        // Execute the CGI script
         execve(argv[0], &argv[0], &envp[0]);
         _exit(127); // exec failed
     }
-
-    // Parent
-    close(A[0]); // parent doesn't read from A
-    close(B[1]); // parent doesn't write to B
-
-    // For POST: write the body to child's stdin. For GET: no body written.
-    if (req.method == "POST" && !req.body.empty())
-    {
-        (void)write_all(A[1], req.body.c_str(), req.body.size());
+    
+    // Parent process
+    close(input_pipe[0]);  // Close read end of input pipe
+    close(output_pipe[1]); // Close write end of output pipe
+    
+    // Make output pipe non-blocking
+    int flags = fcntl(output_pipe[0], F_GETFL, 0);
+    fcntl(output_pipe[0], F_SETFL, flags | O_NONBLOCK);
+    
+    // Store CGI process info
+    CgiProcess cgi_proc;
+    cgi_proc.pid = pid;
+    cgi_proc.input_fd = input_pipe[1];
+    cgi_proc.output_fd = output_pipe[0];
+    cgi_proc.client_fd = client_fd;
+    cgi_proc.script_path = script_path;
+    cgi_proc.finished = false;
+    cgi_proc.start_time = time(NULL);
+    
+    active_cgi_processes[output_pipe[0]] = cgi_proc;
+    
+    // Write request body to CGI stdin if it's a POST request
+    if (request.get_http_method() == "POST" && !request.get_request_body().empty()) {
+        const std::string& body = request.get_request_body();
+        write(input_pipe[1], body.c_str(), body.size());
     }
-    // Important: close child's stdin so it sees EOF and can proceed.
-    close(A[1]);
-
-    // Read child's stdout (CGI raw: headers + \r\n\r\n + body)
-    std::string raw;
-    char buf[4096];
-    for (;;)
-    {
-        ssize_t n = read(B[0], buf, sizeof(buf));
-        if (n <= 0) break;
-        raw.append(buf, (size_t)n);
-    }
-    close(B[0]);
-
-    int st = 0;
-    (void)waitpid(pid, &st, 0);
-    return raw;
+    
+    // Close input pipe to signal EOF to CGI
+    close(input_pipe[1]);
+    active_cgi_processes[output_pipe[0]].input_fd = -1;
+    
+    std::cout << "CGI process started with PID: " << pid << ", output fd: " << output_pipe[0] << std::endl;
+    return output_pipe[0]; // Return output fd for epoll monitoring
 }
 
-// ----------------------- Router -----------------------
-static std::string render_home()
-{
-    std::string html;
-    html += "<!doctype html><html><head><meta charset='utf-8'><title>Tiny CGI Demo</title>";
-    html += "<style>body{font-family:system-ui, sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem}";
-    html += "label,input,textarea{display:block;margin:.5rem 0}textarea{width:100%;height:120px}</style>";
-    html += "</head><body>";
-    html += "<h1>Tiny CGI Web Server (C++98) + External Python CGI</h1>";
-    html += "<p>GET uses <code>QUERY_STRING</code>; POST sends the body to the CGI via <code>stdin</code>.</p>";
-
-    html += "<h2>GET form (QUERY_STRING)</h2>";
-    html += "<form action='/cgi' method='get'><label>Text (GET):</label>";
-    html += "<input name='text' value='hello from get'><button type='submit'>Send</button></form>";
-    html += "<p>Or try direct link: <a href='/cgi?text=hello%20cgi&n=2'>/cgi?text=hello%20cgi&n=2</a></p>";
-
-    html += "<h2>POST form (stdin body)</h2>";
-    html += "<form action='/cgi' method='post'><label>Text (POST):</label>";
-    html += "<textarea name='text'>hello from post</textarea>";
-    html += "<button type='submit'>Send</button></form>";
-
-    html += "</body></html>";
-    return html;
-}
-
-static std::string handle_cgi(const Request &req)
-{
-    // Run an external Python script under real CGI rules
-    const std::string interpreter = "/usr/bin/python3"; // adjust if needed
-    const std::string script_path = "./cgi_demo.py";    // this file must be executable
-    const std::string server_name = "127.0.0.1";
-    const std::string server_port = "8080";
-    const std::string script_name = "/cgi";
-
-    std::string raw = run_cgi_exec(req, interpreter, script_path, server_name, server_port, script_name);
-    if (raw.empty())
-    {
-        const char *msg = "HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain\r\nContent-Length: 22\r\nConnection: close\r\n\r\nCGI child failed.\n";
-        return std::string(msg);
+bool CgiRunner::handle_cgi_output(int fd, std::string& response_data) {
+    std::map<int, CgiProcess>::iterator it = active_cgi_processes.find(fd);
+    if (it == active_cgi_processes.end()) {
+        std::cout << "CGI fd " << fd << " not found in active processes" << std::endl;
+        return false;
     }
-    return wrap_cgi_into_http(raw);
-}
-
-static std::string dispatch(const Request &req)
-{
-    if (req.method != "GET" && req.method != "POST")
-    {
-        return "HTTP/1.1 405 Method Not Allowed\r\n"
-               "Content-Type: text/plain\r\n"
-               "Content-Length: 18\r\n"
-               "Connection: close\r\n\r\n"
-               "Method Not Allowed";
+    
+    // Check if process is already finished to prevent infinite loop
+    if (it->second.finished) {
+        std::cout << "CGI process already finished, returning cached response" << std::endl;
+        response_data = format_cgi_response(it->second.output_buffer);
+        return true;
     }
-    if (req.path == "/" || req.path == "/index.html")
-        return build_http_response_200_html(render_home());
-    if (req.path == "/cgi")
-        return handle_cgi(req);
-    return build_http_response_404();
-}
-
-// ----------------------- main -----------------------
-int main()
-{
-    int s = socket(AF_INET, SOCK_STREAM, 0);
-    if (s < 0)
-    {
-        perror("socket");
-        return 1;
-    }
-
-    int yes = 1;
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-
-    sockaddr_in addr;
-    std::memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr.sin_port = htons(8080);
-
-    if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        perror("bind");
-        close(s);
-        return 1;
-    }
-    if (listen(s, 16) < 0)
-    {
-        perror("listen");
-        close(s);
-        return 1;
-    }
-
-    std::cout << "Tiny server on http://127.0.0.1:8080\n";
-    std::cout << "Routes: / (form), /cgi (GET via QUERY_STRING, POST via stdin)\n";
-
-    while (true)
-    {
-        int cfd = accept(s, NULL, NULL);
-        if (cfd < 0)
-        {
-            perror("accept");
-            continue;
+    
+    // Check for timeout (30 seconds)
+    time_t current_time = time(NULL);
+    if (current_time - it->second.start_time > 30) {
+        std::cout << "CGI process timed out, killing process" << std::endl;
+        if (it->second.pid > 0) {
+            kill(it->second.pid, SIGKILL);
+            waitpid(it->second.pid, NULL, 0);
         }
-        Request req = read_request(cfd);
-        std::string resp = dispatch(req);
-        (void)write_all(cfd, resp.c_str(), resp.size());
-        close(cfd);
+        it->second.finished = true;
+        response_data = "HTTP/1.1 504 Gateway Timeout\r\nContent-Type: text/plain\r\nContent-Length: 19\r\nConnection: close\r\n\r\nCGI process timeout";
+        return true;
     }
-    close(s);
-    return 0;
+    
+    char buffer[4096];
+    ssize_t bytes_read = read(fd, buffer, sizeof(buffer));
+    
+    // std::cout << "CGI read result: " << bytes_read << " bytes, errno: " << errno << std::endl;
+    
+    if (bytes_read > 0) {
+        it->second.output_buffer.append(buffer, bytes_read);
+        std::cout << "Read " << bytes_read << " bytes from CGI process, total: " << it->second.output_buffer.size() << std::endl;
+        return false; // Continue reading, don't send response yet
+    } else if (bytes_read == 0) {
+        // EOF - CGI process finished
+        std::cout << "CGI process finished (EOF), total output: " << it->second.output_buffer.size() << " bytes" << std::endl;
+        it->second.finished = true;
+        
+        // Wait for the child process to avoid zombies
+        if (it->second.pid > 0) {
+            int status;
+            pid_t result = waitpid(it->second.pid, &status, WNOHANG);
+            if (result > 0) {
+                std::cout << "CGI process " << it->second.pid << " exited with status " << status << std::endl;
+            } else if (result == 0) {
+                // Process still running, wait for it
+                result = waitpid(it->second.pid, &status, 0);
+                if (result > 0) {
+                    std::cout << "CGI process " << it->second.pid << " exited with status " << status << std::endl;
+                }
+            }
+        }
+        
+        // Format CGI output as HTTP response
+        response_data = format_cgi_response(it->second.output_buffer);
+        std::cout << "Formatted CGI response: " << response_data.size() << " bytes" << std::endl;
+        return true; // Response is ready
+    } else {
+        // Error or would block
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            std::cout << "CGI read would block, trying again later" << std::endl;
+            return false; // Would block, try again later
+        } else {
+            std::cerr << "Error reading from CGI process: " << strerror(errno) << std::endl;
+            it->second.finished = true;
+            // Create error response
+            response_data = "HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain\r\nContent-Length: 22\r\nConnection: close\r\n\r\nCGI process failed.\n";
+            return true;
+        }
+    }
 }
+
+bool CgiRunner::handle_cgi_input(int fd, const std::string& data) {
+    std::map<int, CgiProcess>::iterator it = active_cgi_processes.find(fd);
+    if (it == active_cgi_processes.end() || it->second.input_fd < 0) {
+        return false;
+    }
+    
+    ssize_t bytes_written = write(it->second.input_fd, data.c_str(), data.size());
+    if (bytes_written < 0) {
+        std::cerr << "Error writing to CGI process: " << strerror(errno) << std::endl;
+        return false;
+    }
+    
+    std::cout << "Wrote " << bytes_written << " bytes to CGI process" << std::endl;
+    return true;
+}
+
+bool CgiRunner::is_cgi_fd(int fd) const {
+    return active_cgi_processes.find(fd) != active_cgi_processes.end();
+}
+
+int CgiRunner::get_client_fd(int fd) const {
+    std::map<int, CgiProcess>::const_iterator it = active_cgi_processes.find(fd);
+    if (it != active_cgi_processes.end()) {
+        return it->second.client_fd;
+    }
+    return -1;
+}
+
+void CgiRunner::cleanup_cgi_process(int fd) {
+    std::map<int, CgiProcess>::iterator it = active_cgi_processes.find(fd);
+    if (it != active_cgi_processes.end()) {
+        std::cout << "Cleaning up CGI process with PID: " << it->second.pid << std::endl;
+        
+        if (it->second.pid > 0) {
+            int status;
+            waitpid(it->second.pid, &status, WNOHANG);
+        }
+        
+        if (it->second.input_fd >= 0) {
+            close(it->second.input_fd);
+        }
+        if (it->second.output_fd >= 0) {
+            close(it->second.output_fd);
+        }
+        
+        active_cgi_processes.erase(it);
+    }
+}
+
+void CgiRunner::check_finished_processes() {
+    std::vector<int> finished_fds;
+    
+    for (std::map<int, CgiProcess>::iterator it = active_cgi_processes.begin();
+         it != active_cgi_processes.end(); ++it) {
+        if (it->second.finished) {
+            finished_fds.push_back(it->first);
+        }
+    }
+    
+    for (size_t i = 0; i < finished_fds.size(); ++i) {
+        cleanup_cgi_process(finished_fds[i]);
+    }
+}
+
+std::string CgiRunner::format_cgi_response(const std::string& cgi_output) {
+    // Split CGI output into headers and body
+    std::string headers, body;
+    size_t header_end = cgi_output.find("\r\n\r\n");
+    if (header_end == std::string::npos) {
+        header_end = cgi_output.find("\n\n");
+        if (header_end != std::string::npos) {
+            headers = cgi_output.substr(0, header_end);
+            body = cgi_output.substr(header_end + 2);
+        } else {
+            // No headers found, treat entire output as body
+            headers = "";
+            body = cgi_output;
+        }
+    } else {
+        headers = cgi_output.substr(0, header_end);
+        body = cgi_output.substr(header_end + 4);
+    }
+    
+    // Extract Content-Type from CGI headers
+    std::string content_type = "text/plain; charset=utf-8";
+    if (!headers.empty()) {
+        std::istringstream header_stream(headers);
+        std::string line;
+        while (std::getline(header_stream, line)) {
+            if (line.find("Content-Type:") == 0) {
+                size_t colon_pos = line.find(':');
+                if (colon_pos != std::string::npos) {
+                    content_type = line.substr(colon_pos + 1);
+                    // Trim whitespace
+                    while (!content_type.empty() && (content_type[0] == ' ' || content_type[0] == '\t')) {
+                        content_type.erase(0, 1);
+                    }
+                    if (!content_type.empty() && content_type[content_type.size() - 1] == '\r') {
+                        content_type.erase(content_type.size() - 1);
+                    }
+                }
+                break;
+            }
+        }
+    }
+    
+    // Build HTTP response
+    std::ostringstream response;
+    response << "HTTP/1.1 200 OK\r\n";
+    response << "Content-Type: " << content_type << "\r\n";
+    response << "Content-Length: " << body.size() << "\r\n";
+    response << "Connection: close\r\n";
+    response << "\r\n";
+    response << body;
+    
+    return response.str();
+}
+
+

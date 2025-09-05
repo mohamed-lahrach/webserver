@@ -53,6 +53,11 @@ bool Server::is_client_socket(int fd)
 {
 	return (active_clients.find(fd) != active_clients.end());
 }
+
+bool Server::is_cgi_socket(int fd)
+{
+	return cgi_runner.is_cgi_fd(fd);
+}
 ServerContext *Server::get_server_config(int server_fd)
 {
 	std::map<int, ServerContext *>::iterator it = fd_to_config.find(server_fd);

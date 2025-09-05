@@ -76,7 +76,7 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 	return client.client_fd; // Return the new client fd
 }
 
-void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &active_clients, ServerContext &server_config)
+void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &active_clients, ServerContext &server_config, CgiRunner& cgi_runner)
 {
 	char buffer[7000000] = {0};
 	ssize_t bytes_received;
@@ -112,6 +112,44 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 			std::cout << "Request fully processed and ready!" << std::endl;
 			std::cout << "Final request - Method: " << current_request.get_http_method()
 					  << " Path: " << current_request.get_requested_path() << std::endl;
+			
+			// Check if this is a CGI request
+			if (current_request.is_cgi_request()) {
+				std::cout << "🔧 Detected CGI request - starting CGI process" << std::endl;
+				LocationContext* location = current_request.get_location();
+				if (location) {
+					std::cout << "CGI Extension: " << location->cgiExtension << std::endl;
+					std::cout << "CGI Path: " << location->cgiPath << std::endl;
+				}
+				if (location) {
+					// Build script path
+					std::string script_path = location->root + current_request.get_requested_path();
+					size_t query_pos = script_path.find('?');
+					if (query_pos != std::string::npos) {
+						script_path = script_path.substr(0, query_pos);
+					}
+					
+					// Start CGI process
+					int cgi_output_fd = cgi_runner.start_cgi_process(current_request, *location, client_fd, script_path);
+					if (cgi_output_fd >= 0) {
+						// Add CGI output fd to epoll for monitoring
+						struct epoll_event cgi_ev;
+						cgi_ev.events = EPOLLIN;
+						cgi_ev.data.fd = cgi_output_fd;
+						if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, cgi_output_fd, &cgi_ev) == -1) {
+							std::cerr << "Failed to add CGI output fd to epoll" << std::endl;
+							cgi_runner.cleanup_cgi_process(cgi_output_fd);
+						} else {
+							std::cout << "✅ CGI process started, monitoring output fd: " << cgi_output_fd << std::endl;
+							// Don't switch client to EPOLLOUT - CGI will handle the response
+							return;
+						}
+					} else {
+						std::cerr << "Failed to start CGI process" << std::endl;
+						request_status = INTERNAL_ERROR;
+					}
+				}
+			}
 			break;
 		}
 		default:

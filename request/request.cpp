@@ -54,6 +54,13 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 	LocationContext *matched_location = 0;
 	size_t longest_len = 0;
 
+	// Strip query string from path for location matching
+	std::string path_only = resquested_path;
+	size_t query_pos = path_only.find('?');
+	if (query_pos != std::string::npos) {
+		path_only = path_only.substr(0, query_pos);
+	}
+	std::cout << "Matching path '" << path_only << "' against locations:" << std::endl;
 	std::vector<LocationContext>::iterator it_location = config->locations.begin();
 	while (it_location != config->locations.end())
 	{
@@ -62,11 +69,13 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 			++it_location;
 			continue;
 		}
-		if (resquested_path.compare(0, it_location->path.length(), it_location->path) == 0)
+		std::cout << "  Checking location: '" << it_location->path << "'" << std::endl;
+		if (path_only.compare(0, it_location->path.length(), it_location->path) == 0)
 		{
 			if (it_location->path == "/" ||
-				resquested_path.length() == it_location->path.length() ||
-				resquested_path[it_location->path.length()] == '/')
+				path_only.length() == it_location->path.length() ||
+				(it_location->path[it_location->path.length() - 1] == '/') ||
+				path_only[it_location->path.length()] == '/')
 			{
 				std::cout << "matched location ;" << it_location->path << "\n";
 				if (it_location->path.size() > longest_len)
@@ -131,6 +140,14 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 			{
 				expected_body_size = std::atoi(it_content_len->second.c_str());
 				std::cout << "This request should have a body with " << expected_body_size << " bytes" << std::endl;
+				
+				// Extract the request body from incoming_data
+				if (incoming_data.size() >= expected_body_size) {
+					request_body = incoming_data.substr(0, expected_body_size);
+				} else {
+					std::cout << "Not enough body data yet, have " << incoming_data.size() << " need " << expected_body_size << std::endl;
+					return NEED_MORE_DATA;
+				}
 			}
 			else if (it_transfer_enc != http_headers.end() && 
 					 it_transfer_enc->second.find("chunked") != std::string::npos)
@@ -245,6 +262,23 @@ RequestStatus Request::figure_out_http_method()
 		if (!ok)
 			return METHOD_NOT_ALLOWED;
 	}
+	// Check if this is a CGI request first, before handling with regular handlers
+	if (!location->cgiExtension.empty() && !location->cgiPath.empty()) {
+		std::string path = requested_path;
+		size_t query_pos = path.find('?');
+		if (query_pos != std::string::npos) {
+			path = path.substr(0, query_pos);
+		}
+		
+		if (path.size() >= location->cgiExtension.size()) {
+			std::string file_ext = path.substr(path.size() - location->cgiExtension.size());
+			if (file_ext == location->cgiExtension) {
+				// This is a CGI request - return success and let client handle CGI processing
+				return EVERYTHING_IS_OK;
+			}
+		}
+	}
+	
 	std::string full_path = location->root + requested_path;
 	if (http_method == "GET")
 		return get_handler.handle_get_request(full_path);
@@ -256,4 +290,24 @@ RequestStatus Request::figure_out_http_method()
 		return delete_handler.handle_delete_request(full_path);
 	else
 		return METHOD_NOT_ALLOWED;
+}
+
+bool Request::is_cgi_request() const {
+	if (!location || location->cgiExtension.empty() || location->cgiPath.empty()) {
+		return false;
+	}
+	
+	// Check if the requested path ends with the CGI extension
+	std::string path = requested_path;
+	size_t query_pos = path.find('?');
+	if (query_pos != std::string::npos) {
+		path = path.substr(0, query_pos);
+	}
+	
+	if (path.size() >= location->cgiExtension.size()) {
+		std::string file_ext = path.substr(path.size() - location->cgiExtension.size());
+		return file_ext == location->cgiExtension;
+	}
+	
+	return false;
 }

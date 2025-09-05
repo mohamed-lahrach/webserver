@@ -67,5 +67,5 @@
     ],
     "C_Cpp.default.defines": [],
     "C_Cpp.default.cStandard": "c99",
-    "kiroAgent.configureMCP": "Disabled"
+    "kiroAgent.configureMCP": "Enabled"
 }

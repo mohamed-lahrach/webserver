@@ -4,6 +4,7 @@
 # include "../client/client.hpp"
 # include "../request/request.hpp"
 # include "../response/response.hpp"
+# include "../cgi/cgi_runner.hpp"
 # include <arpa/inet.h>
 # include <cstring>
 # include <exception>
@@ -34,6 +35,7 @@ class Server
     std::map<int, int> client_to_server; 
     std::map<int, Client> active_clients;
     struct sockaddr_in address;
+    CgiRunner cgi_runner;
 
   public:
     Server();
@@ -47,6 +49,7 @@ class Server
 
     bool is_server_socket(int fd);
     bool is_client_socket(int fd);
+    bool is_cgi_socket(int fd);
     ServerContext* get_server_config(int fd);
     ServerContext* get_client_config(int client_fd);
 };
