@@ -258,15 +258,8 @@ RequestStatus Request::figure_out_http_method()
 	}
 	// Check if this is a CGI request first, before handling with regular handlers
 	if (!location->cgiExtension.empty() && !location->cgiPath.empty()) {
-		// Strip query string for file extension checking
-		std::string path_for_extension = requested_path;
-		size_t query_pos = path_for_extension.find('?');
-		if (query_pos != std::string::npos) {
-			path_for_extension = path_for_extension.substr(0, query_pos);
-		}
-		
-		if (path_for_extension.size() >= location->cgiExtension.size()) {
-			std::string file_ext = path_for_extension.substr(path_for_extension.size() - location->cgiExtension.size());
+		if (requested_path.size() >= location->cgiExtension.size()) {
+			std::string file_ext = requested_path.substr(requested_path.size() - location->cgiExtension.size());
 			if (file_ext == location->cgiExtension) {
 				// This is a CGI request - return success and let client handle CGI processing
 				return EVERYTHING_IS_OK;
