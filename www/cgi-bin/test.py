@@ -35,11 +35,7 @@ if os.environ.get('REQUEST_METHOD') == 'POST':
         except:
             print("<p>Error reading POST data</p>")
 
-# If there's query string, display it
-query_string = os.environ.get('QUERY_STRING', '')
-if query_string:
-    print("<h2>Query String:</h2>")
-    print(f"<p>{query_string}</p>")
+# Query strings are not supported in this implementation
 
 print("</body>")
 print("</html>")

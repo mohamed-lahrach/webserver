@@ -54,13 +54,7 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 	LocationContext *matched_location = 0;
 	size_t longest_len = 0;
 
-	// Strip query string from path for location matching
-	std::string path_only = resquested_path;
-	size_t query_pos = path_only.find('?');
-	if (query_pos != std::string::npos) {
-		path_only = path_only.substr(0, query_pos);
-	}
-	std::cout << "Matching path '" << path_only << "' against locations:" << std::endl;
+	std::cout << "Matching path '" << resquested_path << "' against locations:" << std::endl;
 	std::vector<LocationContext>::iterator it_location = config->locations.begin();
 	while (it_location != config->locations.end())
 	{
@@ -70,12 +64,12 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 			continue;
 		}
 		std::cout << "  Checking location: '" << it_location->path << "'" << std::endl;
-		if (path_only.compare(0, it_location->path.length(), it_location->path) == 0)
+		if (resquested_path.compare(0, it_location->path.length(), it_location->path) == 0)
 		{
 			if (it_location->path == "/" ||
-				path_only.length() == it_location->path.length() ||
+				resquested_path.length() == it_location->path.length() ||
 				(it_location->path[it_location->path.length() - 1] == '/') ||
-				path_only[it_location->path.length()] == '/')
+				resquested_path[it_location->path.length()] == '/')
 			{
 				std::cout << "matched location ;" << it_location->path << "\n";
 				if (it_location->path.size() > longest_len)
@@ -264,14 +258,15 @@ RequestStatus Request::figure_out_http_method()
 	}
 	// Check if this is a CGI request first, before handling with regular handlers
 	if (!location->cgiExtension.empty() && !location->cgiPath.empty()) {
-		std::string path = requested_path;
-		size_t query_pos = path.find('?');
+		// Strip query string for file extension checking
+		std::string path_for_extension = requested_path;
+		size_t query_pos = path_for_extension.find('?');
 		if (query_pos != std::string::npos) {
-			path = path.substr(0, query_pos);
+			path_for_extension = path_for_extension.substr(0, query_pos);
 		}
 		
-		if (path.size() >= location->cgiExtension.size()) {
-			std::string file_ext = path.substr(path.size() - location->cgiExtension.size());
+		if (path_for_extension.size() >= location->cgiExtension.size()) {
+			std::string file_ext = path_for_extension.substr(path_for_extension.size() - location->cgiExtension.size());
 			if (file_ext == location->cgiExtension) {
 				// This is a CGI request - return success and let client handle CGI processing
 				return EVERYTHING_IS_OK;
@@ -298,14 +293,8 @@ bool Request::is_cgi_request() const {
 	}
 	
 	// Check if the requested path ends with the CGI extension
-	std::string path = requested_path;
-	size_t query_pos = path.find('?');
-	if (query_pos != std::string::npos) {
-		path = path.substr(0, query_pos);
-	}
-	
-	if (path.size() >= location->cgiExtension.size()) {
-		std::string file_ext = path.substr(path.size() - location->cgiExtension.size());
+	if (requested_path.size() >= location->cgiExtension.size()) {
+		std::string file_ext = requested_path.substr(requested_path.size() - location->cgiExtension.size());
 		return file_ext == location->cgiExtension;
 	}
 	

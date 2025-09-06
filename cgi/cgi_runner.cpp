@@ -46,14 +46,8 @@ std::vector<std::string> CgiRunner::build_cgi_env(const Request& request,
     
     env.push_back("REQUEST_METHOD=" + request.get_http_method());
     
-    // Extract query string from requested path
-    std::string query_string = "";
-    std::string path = request.get_requested_path();
-    size_t query_pos = path.find('?');
-    if (query_pos != std::string::npos) {
-        query_string = path.substr(query_pos + 1);
-    }
-    env.push_back("QUERY_STRING=" + query_string);
+    // No query string support - set empty query string
+    env.push_back("QUERY_STRING=");
     
     // Add headers as environment variables
     const std::map<std::string, std::string>& headers = request.get_all_headers();

@@ -124,10 +124,6 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 				if (location) {
 					// Build script path
 					std::string script_path = location->root + current_request.get_requested_path();
-					size_t query_pos = script_path.find('?');
-					if (query_pos != std::string::npos) {
-						script_path = script_path.substr(0, query_pos);
-					}
 					
 					// Start CGI process
 					int cgi_output_fd = cgi_runner.start_cgi_process(current_request, *location, client_fd, script_path);
