@@ -206,7 +206,11 @@ RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 {
 	size_t	start;
 	size_t	end;
-
+	if(loc->uploadStore.empty())
+	{
+		std::cout << "No upload store configured, skipping file save." << std::endl;
+		return (BAD_REQUEST);
+	}
 	if (http_headers.find("transfer-encoding") != http_headers.end())
 	{
 		std::string transfer_encoding = http_headers.at("transfer-encoding");
