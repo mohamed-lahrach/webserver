@@ -11,6 +11,7 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 CgiRunner::CgiRunner() {
     std::cout << "CGI Runner initialized" << std::endl;
@@ -356,12 +357,42 @@ std::string CgiRunner::format_cgi_response(const std::string& cgi_output) {
         body = cgi_output.substr(header_end + 4);
     }
     
-    // Extract Content-Type from CGI headers
-    std::string content_type = "text/plain; charset=utf-8";
+    // Parse ALL CGI headers and collect them
+    std::string content_type = "text/html; charset=utf-8";  // Default content type
+    std::vector<std::string> all_headers;
+    int status_code = 200;  // Default status
+    
     if (!headers.empty()) {
         std::istringstream header_stream(headers);
         std::string line;
         while (std::getline(header_stream, line)) {
+            // Remove trailing \r if present
+            if (!line.empty() && line[line.size() - 1] == '\r') {
+                line.erase(line.size() - 1);
+            }
+            
+            if (line.empty()) continue;  // Skip empty lines
+            
+            // Check for Status header
+            if (line.find("Status:") == 0) {
+                size_t colon_pos = line.find(':');
+                if (colon_pos != std::string::npos) {
+                    std::string status_str = line.substr(colon_pos + 1);
+                    // Trim whitespace
+                    while (!status_str.empty() && (status_str[0] == ' ' || status_str[0] == '\t')) {
+                        status_str.erase(0, 1);
+                    }
+                    // Extract status code (first number)
+                    std::istringstream status_stream(status_str);
+                    status_stream >> status_code;
+                    if (status_code < 100 || status_code > 599) {
+                        status_code = 200;  // Fallback to 200 if invalid
+                    }
+                }
+                continue;  // Don't include Status header in HTTP response
+            }
+            
+            // Check for Content-Type header
             if (line.find("Content-Type:") == 0) {
                 size_t colon_pos = line.find(':');
                 if (colon_pos != std::string::npos) {
@@ -370,19 +401,39 @@ std::string CgiRunner::format_cgi_response(const std::string& cgi_output) {
                     while (!content_type.empty() && (content_type[0] == ' ' || content_type[0] == '\t')) {
                         content_type.erase(0, 1);
                     }
-                    if (!content_type.empty() && content_type[content_type.size() - 1] == '\r') {
-                        content_type.erase(content_type.size() - 1);
-                    }
                 }
-                break;
+                continue;  // We'll add Content-Type separately
+            }
+            
+            // For all other headers (including Set-Cookie), add them to the response
+            size_t colon_pos = line.find(':');
+            if (colon_pos != std::string::npos) {
+                all_headers.push_back(line);
             }
         }
     }
     
-    // Build HTTP response
+    // Build HTTP response with proper status line
     std::ostringstream response;
-    response << "HTTP/1.1 200 OK\r\n";
+    response << "HTTP/1.1 " << status_code;
+    switch (status_code) {
+        case 200: response << " OK"; break;
+        case 302: response << " Found"; break;
+        case 404: response << " Not Found"; break;
+        case 500: response << " Internal Server Error"; break;
+        default: response << " Status"; break;
+    }
+    response << "\r\n";
+    
+    // Add Content-Type
     response << "Content-Type: " << content_type << "\r\n";
+    
+    // Add all other CGI headers (including Set-Cookie)
+    for (size_t i = 0; i < all_headers.size(); ++i) {
+        response << all_headers[i] << "\r\n";
+    }
+    
+    // Add Content-Length and Connection headers
     response << "Content-Length: " << body.size() << "\r\n";
     response << "Connection: close\r\n";
     response << "\r\n";
