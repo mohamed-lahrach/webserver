@@ -53,35 +53,20 @@ PostHandler::~PostHandler()
 	std::cout << "PostHandler destroyed." << std::endl;
 }
 
-// void PostHandler::reset_state()
-// {
-// 	total_received_size = 0;
-// 	chunk_size = 0;
-// 	first_chunk = true;
-// 	file_name_found = false;
-// 	boundary_found = false;
-// 	start_position = 0;
-// 	data_start = false;
-// 	boundary.clear();
-// 	file_name.clear();
-// 	buffer_not_parser.clear();
-// 	chunk_body_parser.clear();
-// 	file_path.clear();
-// 	std::cout << "PostHandler state reset." << std::endl;
-// }
-
-void PostHandler::save_request_body(const std::string &filename,
+RequestStatus PostHandler::save_request_body(const std::string &filename,
     const std::string &body, const LocationContext *loc)
 {
 	DIR* dir = opendir(loc->uploadStore.c_str());
     if (!dir)
     {
-        throw std::runtime_error("Could not open upload directory");
+		std::cout << "Could not open upload directory: " << loc->uploadStore << std::endl;
+        return (NOT_FOUND);
     }
 	closedir(dir);
 	if (access(loc->uploadStore.c_str(), W_OK) != 0)
 	{
-		throw std::runtime_error("Upload directory is not writable");
+		std::cout << "Upload directory is not writable: " << loc->uploadStore << std::endl;
+		return (FORBIDDEN);
 	}
 	std::string full_path;
 	full_path = loc->uploadStore + "/" + filename;
@@ -102,12 +87,14 @@ void PostHandler::save_request_body(const std::string &filename,
 	std::cout << "Saving request body to: " << full_path << std::endl;
     if (!file.is_open())
     {
-        throw std::runtime_error("Could not open file for writing");
+		std::cout << "Could not open file for writing: " << full_path << std::endl;
+        return (FORBIDDEN);
     }
     file.write(body.data(), body.size());
     file.close();
     
     std::cout << "✓ File saved: " << full_path << std::endl;
+	return (POSTED_SUCCESSFULLY);
 }
 
 std::string PostHandler::extract_boundary(const std::string &content_type)
@@ -119,7 +106,8 @@ std::string PostHandler::extract_boundary(const std::string &content_type)
 	pos = content_type.find("boundary=");
 	if (pos == std::string::npos)
 	{
-		throw std::runtime_error("Boundary not found in Content-Type header");
+		std::cout << "Boundary not found in Content-Type header." << std::endl;
+		return "";
 	}
 	
 	pos += 9; // Move past "boundary="
@@ -185,7 +173,8 @@ std::string PostHandler::extract_filename(const std::string &body)
 	end_pos = body.find("\"", pos);
 	if (end_pos == std::string::npos)
 	{
-		throw std::runtime_error("End quote for filename not found");
+		std::cout << "ERROR: End quote for filename not found" << std::endl;
+		return "";
 	}
 	file_name_found = true;
 	return (body.substr(pos, end_pos - pos));

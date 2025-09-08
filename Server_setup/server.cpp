@@ -39,6 +39,11 @@ void Server::run()
 				std::cout << "📥 New connection on server port " << port << " (server fd: " << fd << ")" << std::endl;
 				client_fd = Client::handle_new_connection(fd, epoll_fd,
 						active_clients);
+				if (client_fd == -1)
+				{
+					std::cout << "❌ Failed to handle new connection on port " << port << std::endl;
+					continue; // Skip this connection and continue with next event
+				}
 				client_to_server[client_fd] = fd;
 				std::cout << "👤 Client " << client_fd << " connected to server " << port << std::endl;
 			}

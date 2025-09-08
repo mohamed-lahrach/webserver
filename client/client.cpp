@@ -46,28 +46,35 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 							  &client_len);
 	if (client.client_fd == -1)
 	{
-		throw std::runtime_error("Error accepting connection: ");
+		std::cout << "ERROR: Failed to accept connection" << std::endl;
+		return -1; // Return error instead of throwing
 	}
+	
 	// handle non-blocking
 	int flags = fcntl(client.client_fd, F_GETFL, 0);
 	if (flags == -1) {
-        perror("fcntl F_GETFL");
-        close(client.client_fd);
-    } else if (fcntl(client.client_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-        perror("fcntl F_SETFL");
-        close(client.client_fd);
-    }
+		std::cout << "ERROR: fcntl F_GETFL failed" << std::endl;
+		close(client.client_fd);
+		return -1; // Return error after cleanup
+	}
+	
+	if (fcntl(client.client_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+		std::cout << "ERROR: fcntl F_SETFL failed" << std::endl;
+		close(client.client_fd);
+		return -1; // Return error after cleanup
+	}
+	
 	std::cout << "✓ New client connected: " << client.client_fd << std::endl;
 	// Set connection time
 	client.set_connect_time(time(NULL));
 	// Add client to epoll
 	client_event.events = EPOLLIN;
 	client_event.data.fd = client.client_fd;
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client.client_fd, &client_event) ==
-		-1)
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client.client_fd, &client_event) == -1)
 	{
+		std::cout << "ERROR: Failed to add client to epoll" << std::endl;
 		close(client.client_fd);
-		throw std::runtime_error("Failed to add client to epoll");
+		return -1; // Return error instead of throwing
 	}
 	// Add to active clients map
 	active_clients[client.client_fd] = client;
@@ -125,7 +132,8 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &ev) == -1)
 		{
 			cleanup_connection(epoll_fd, active_clients); // ← Better cleanup
-			throw std::runtime_error("Failed to modify client socket to EPOLLOUT mode");
+			std::cout << "Failed to modify client socket to EPOLLOUT mode" << std::endl;
+			return;
 		}
 	}
 	else if (bytes_received == 0)
@@ -136,7 +144,8 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 	else
 	{
 		cleanup_connection(epoll_fd, active_clients);
-		throw std::runtime_error("Error receiving data:");
+		std::cout << "Error receiving data from client " << client_fd << std::endl;
+		return;
 	}
 }
 
