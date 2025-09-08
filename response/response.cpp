@@ -23,7 +23,11 @@ Response::~Response()
 {
 	if (file_stream)
 	{
-		file_stream->close();
+		std::cout << "Cleaning up file stream in destructor" << std::endl;
+		if (file_stream->is_open())
+		{
+			file_stream->close();
+		}
 		delete file_stream;
 		file_stream = NULL;
 	}
@@ -175,6 +179,7 @@ void Response::start_file_streaming(int client_fd)
 		file_stream = NULL;
 		set_code(500);
 		current_file_path.clear(); 
+		is_streaming_file = false;  
 		return;
 	}
 
@@ -222,9 +227,13 @@ void Response::continue_file_streaming(int client_fd)
 }
 void Response::finish_file_streaming()
 {
+	std::cout << "Finishing file streaming and cleaning up resources" << std::endl;
 	if (file_stream)
 	{
-		file_stream->close();
+		if (file_stream->is_open())
+		{
+			file_stream->close();
+		}
 		delete file_stream;
 		file_stream = NULL;
 	}

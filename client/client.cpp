@@ -1,7 +1,7 @@
 #include "client.hpp"
 
 // Constructor
-Client::Client() : connect_time(0), request_count(0), request_status(NEED_MORE_DATA)
+Client::Client() : connect_time(0), request_count(0), client_fd(-1), request_status(NEED_MORE_DATA)
 {
 	std::cout << "Client constructor called" << std::endl;
 }
