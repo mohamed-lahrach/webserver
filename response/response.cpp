@@ -12,12 +12,13 @@
 #include <dirent.h>
 #include <errno.h>
 
-Response::Response() : status_code(200), content("Welcome to My Web Server!"), file_stream(NULL), is_streaming_file(false)
+Response::Response() : status_code(200), content("Welcome to My Web Server!"), file_stream(NULL), is_streaming_file(false), server_config(NULL)
 {
 
 	set_header("Content-Type", "text/html");
 	set_header("Connection", "close");
 }
+
 
 Response::~Response()
 {
@@ -38,8 +39,46 @@ void Response::set_code(int code)
 	status_code = code;
 }
 
+void Response::set_server_config(const ServerContext* config)
+{
+	server_config = config;
+}
+
 void Response::set_content(const std::string &body_content)
 {
+	if (server_config && status_code >= 400)
+	{
+		for (std::vector<ErrorPagePair>::const_iterator it = server_config->errorPages.begin(); 
+			 it != server_config->errorPages.end(); ++it)
+		{
+			const std::vector<int>& error_codes = it->first;
+			const std::string& error_page_path = it->second;
+
+			for (std::vector<int>::const_iterator code_it = error_codes.begin(); 
+				 code_it != error_codes.end(); ++code_it)
+			{
+				if (*code_it == status_code)
+				{
+					std::string full_path = error_page_path;
+					if (!full_path.empty() && full_path[0] == '/')
+						full_path = full_path.substr(1);
+					
+					std::ifstream error_file(full_path.c_str());
+					if (error_file.is_open())
+					{
+						std::string custom_content;
+						std::string line;
+						while (std::getline(error_file, line))
+							custom_content += line + "\n";
+						error_file.close();
+						content = custom_content;
+						return;
+					}
+				}
+			}
+		}
+	}
+	
 	content = body_content;
 }
 

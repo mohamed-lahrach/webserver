@@ -23,11 +23,13 @@ private:
 	std::ifstream *file_stream;
 	bool is_streaming_file;
 	char file_buffer[9000];
+	const ServerContext* server_config; 
 
 public:
 	Response();
-
 	~Response();
+
+	void set_server_config(const ServerContext* config); 
 
 	void set_code(int code);
 	void set_content(const std::string &body_content);

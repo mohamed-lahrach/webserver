@@ -152,8 +152,9 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 void Client::handle_client_data_output(int client_fd, int epoll_fd,
 									   std::map<int, Client> &active_clients, ServerContext &server_config)
 {
-	(void)server_config;
 	std::cout << "=== GENERATING RESPONSE FOR CLIENT ===========>" << client_fd << " ===" << std::endl;
+
+	current_response.set_server_config(&server_config);
 
 	if (current_response.is_still_streaming())
 	{
