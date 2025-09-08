@@ -96,7 +96,9 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 		case NEED_MORE_DATA:
 			std::cout << "We need more data from the client" << std::endl;
 			return;
-
+		case BAD_REQUEST:
+			request_status = result;
+			break;
 		case HEADERS_ARE_READY:
 		{
 			std::cout << "Processing request data - checking handler..." << std::endl;

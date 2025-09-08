@@ -153,6 +153,8 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 bool Request::check_for_valid_http_start()
 {
 	size_t first_line_end = incoming_data.find("\r\n");
+	if (first_line_end == std::string::npos)
+		return false;
 
 	std::string first_line = incoming_data.substr(0, first_line_end);
 	std::stringstream line_stream(first_line);
