@@ -23,16 +23,10 @@ void Server::run()
 	while (true)
 	{
 		std::cout << "Waiting for events on all servers..." << std::endl;
-		// Wait for events (1000ms timeout)
 		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, 1000);
 		if (num_events == -1)
 		{
 			throw std::runtime_error("Error in epoll_wait");
-		}
-		if (num_events == 0)
-		{
-			std::cout << "No events (timeout)" << std::endl;
-			continue ;
 		}
 		for (int i = 0; i < num_events; i++)
 		{
