@@ -367,33 +367,29 @@ void Response::analyze_request_and_set_response(const std::string &path, Locatio
 					std::string index_path = file_path;
 					if (index_path[index_path.length() - 1] != '/')
 						index_path += "/";
-					index_path += *index_it;
+					index_path = index_path + *index_it;
 
 					std::ifstream index_file(index_path.c_str());
 
 					if (index_file.is_open())
 					{
 						std::cout << "Found index file: " << *index_it << std::endl;
-						check_file(index_path);
+						index_file.close();
+						current_file_path = index_path;
+						set_code(200);
 						index_found = true;
 						break;
 					}
 				}
 
 				if (!index_found)
-				{
 					handle_directory_listing(file_path, path, location_config);
-				}
 			}
 			else
-			{
 				handle_directory_listing(file_path, path, location_config);
-			}
 		}
 		else
-		{
 			check_file(file_path);
-		}
 	}
 	else
 	{

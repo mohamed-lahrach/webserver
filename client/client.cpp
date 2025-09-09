@@ -108,8 +108,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 			break;
 		case HEADERS_ARE_READY:
 		{
-			std::cout << "Processing request data - checking handler..." << std::endl;
-			current_request.set_config(server_config);
+				current_request.set_config(server_config);
 			request_status = current_request.figure_out_http_method();
 
 			if (request_status == BODY_BEING_READ)
