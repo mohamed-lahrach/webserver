@@ -45,7 +45,7 @@
             fetch(url)
                 .then(response => response.text())
                 .then(data => {
-                    document.getElementById('get-result').innerHTML = 'GET Success: ' + data.substring(0, 100) + '...';
+                    document.getElementById('get-result').innerHTML = '<strong>GET Success:</strong><br><pre>' + data + '</pre>';
                 })
                 .catch(error => {
                     document.getElementById('get-result').innerHTML = 'GET Error: ' + error;
