@@ -54,6 +54,7 @@ bool check_for_valid_http_start();
 
 	RequestStatus add_new_data(const char *new_data, size_t data_size);
 	RequestStatus figure_out_http_method();
+	bool is_cgi_request() const;
 	
 
 	bool parse_http_headers(const std::string& header_text);

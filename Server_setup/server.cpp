@@ -65,7 +65,7 @@ void Server::run()
 					{
 						std::cout << "📨 Data input from client " << fd << " (server port " << port << ")" << std::endl;
 						it->second.handle_client_data_input(epoll_fd,
-							active_clients, *server_config);
+							active_clients, *server_config, cgi_runner);
 					}
 					else if (events[i].events & EPOLLOUT)
 					{
@@ -75,12 +75,75 @@ void Server::run()
 					}
 				}
 			}
-			// else if ()// handle CGI process fds if needed
-			// {
-			// 	// Handle CGI process I/O here
-			// 	std::cout << "⚙️ Handling CGI process I/O on fd " << fd << std::endl;
-			// 	// Implement CGI handling logic as needed
-			// }
+			else if (is_cgi_socket(fd))
+			{
+				// Handle CGI process I/O here
+				std::cout << "⚙️ Handling CGI process I/O on fd " << fd << std::endl;
+				
+				if (events[i].events & EPOLLIN)
+				{
+					std::string response_data;
+					if (cgi_runner.handle_cgi_output(fd, response_data))
+					{
+						// CGI process finished, remove from epoll immediately to prevent infinite loop
+						epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+						
+						// Get the associated client and send response
+						int client_fd = cgi_runner.get_client_fd(fd);
+						if (client_fd >= 0 && !response_data.empty())
+						{
+							std::map<int, Client>::iterator client_it = active_clients.find(client_fd);
+							if (client_it != active_clients.end())
+							{
+								// Send CGI response to client
+								ssize_t sent = send(client_fd, response_data.c_str(), response_data.size(), 0);
+								if (sent > 0)
+								{
+									std::cout << "Sent " << sent << " bytes of CGI response to client " << client_fd << std::endl;
+								}
+								
+								// Close client connection after sending response
+								client_it->second.cleanup_connection(epoll_fd, active_clients);
+							}
+						}
+						
+						// Clean up CGI process
+						cgi_runner.cleanup_cgi_process(fd);
+					}
+				}
+				else if (events[i].events & (EPOLLHUP | EPOLLERR))
+				{
+					// CGI process closed or error occurred
+					std::cout << "CGI process fd " << fd << " closed or error occurred" << std::endl;
+					
+					// Try to read any remaining data before closing
+					std::string response_data;
+					if (cgi_runner.handle_cgi_output(fd, response_data))
+					{
+						// Get the associated client and send response
+						int client_fd = cgi_runner.get_client_fd(fd);
+						if (client_fd >= 0 && !response_data.empty())
+						{
+							std::map<int, Client>::iterator client_it = active_clients.find(client_fd);
+							if (client_it != active_clients.end())
+							{
+								// Send CGI response to client
+								ssize_t sent = send(client_fd, response_data.c_str(), response_data.size(), 0);
+								if (sent > 0)
+								{
+									std::cout << "Sent " << sent << " bytes of CGI response to client " << client_fd << std::endl;
+								}
+								
+								// Close client connection after sending response
+								client_it->second.cleanup_connection(epoll_fd, active_clients);
+							}
+						}
+					}
+					
+					epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+					cgi_runner.cleanup_cgi_process(fd);
+				}
+			}
 			else
 			{
 				std::cout << "⚠️ Warning: Unknown fd " << fd << " - not a server or client socket or CGI" << std::endl;
