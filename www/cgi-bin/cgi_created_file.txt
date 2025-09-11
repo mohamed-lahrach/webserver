@@ -1,0 +1,2 @@
+This file was created by CGI script using relative path.
+Created at: /home/voussama/Desktop/webserver/www/cgi-bin

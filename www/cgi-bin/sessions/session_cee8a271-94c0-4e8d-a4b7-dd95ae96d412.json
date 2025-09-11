@@ -1,0 +1,10 @@
+{
+  "data": {
+    "logged_in": false,
+    "username": null,
+    "login_time": null,
+    "visit_count": 1,
+    "show_register": false
+  },
+  "timestamp": 1757262940.9314132
+}
