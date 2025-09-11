@@ -134,14 +134,6 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 			{
 				expected_body_size = std::atoi(it_content_len->second.c_str());
 				std::cout << "This request should have a body with " << expected_body_size << " bytes" << std::endl;
-				
-				// Extract the request body from incoming_data
-				if (incoming_data.size() >= expected_body_size) {
-					request_body = incoming_data.substr(0, expected_body_size);
-				} else {
-					std::cout << "Not enough body data yet, have " << incoming_data.size() << " need " << expected_body_size << std::endl;
-					return NEED_MORE_DATA;
-				}
 			}
 			else if (it_transfer_enc != http_headers.end() && 
 					 it_transfer_enc->second.find("chunked") != std::string::npos)
