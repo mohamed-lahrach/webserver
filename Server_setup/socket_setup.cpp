@@ -61,7 +61,7 @@ int Server::setup_Socket_with_host(int port, const std::string& host)
     }
     std::cout << "✓ Socket bound to " << host << ":" << port << std::endl;
 
-    if (listen(serverSocket, 5) == -1)
+    if (listen(serverSocket, SOMAXCONN) == -1)
     {
         std::cout << "Failed to listen on " << host << ":" << port << std::endl;
         close(serverSocket);
