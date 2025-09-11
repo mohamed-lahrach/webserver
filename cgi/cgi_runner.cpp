@@ -82,6 +82,12 @@ std::vector<std::string> CgiRunner::build_cgi_env(const Request& request,
         env.push_back("HTTP_USER_AGENT=" + it->second);
     }
     
+    // Add Cookie header for session support
+    it = headers.find("cookie");
+    if (it != headers.end()) {
+        env.push_back("HTTP_COOKIE=" + it->second);
+    }
+    
     return env;
 }
 
@@ -260,17 +266,9 @@ bool CgiRunner::handle_cgi_output(int fd, std::string& response_data) {
         std::cout << "Formatted CGI response: " << response_data.size() << " bytes" << std::endl;
         return true; // Response is ready
     } else {
-        // Error or would block
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            std::cout << "CGI read would block, trying again later" << std::endl;
-            return false; // Would block, try again later
-        } else {
-            std::cerr << "Error reading from CGI process: " << strerror(errno) << std::endl;
-            it->second.finished = true;
-            // Create error response
-            response_data = "HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain\r\nContent-Length: 22\r\nConnection: close\r\n\r\nCGI process failed.\n";
-            return true;
-        }
+        // Error occurred (bytes_read < 0)
+        std::cout << "CGI read error or would block, trying again later" << std::endl;
+        return false; // Try again later - could be EAGAIN/EWOULDBLOCK
     }
 }
 
@@ -282,7 +280,7 @@ bool CgiRunner::handle_cgi_input(int fd, const std::string& data) {
     
     ssize_t bytes_written = write(it->second.input_fd, data.c_str(), data.size());
     if (bytes_written < 0) {
-        std::cerr << "Error writing to CGI process: " << strerror(errno) << std::endl;
+        std::cout << "Error writing to CGI process" << std::endl;
         return false;
     }
     
