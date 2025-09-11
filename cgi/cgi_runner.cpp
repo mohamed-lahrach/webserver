@@ -84,7 +84,7 @@ std::vector<std::string> CgiRunner::build_cgi_env(const Request& request,
     return env;
 }
 
-int CgiRunner::start_cgi_process(const Request& request, 
+int CgiRunner:: start_cgi_process(const Request& request, 
                                 const LocationContext& location,
                                 int client_fd,
                                 const std::string& script_path) {
@@ -122,8 +122,8 @@ int CgiRunner::start_cgi_process(const Request& request,
     
     if (pid == 0) {
         // Child process - execute CGI script
-        close(input_pipe[1]);  // Close write end of input pipe
-        close(output_pipe[0]); // Close read end of output pipe
+        close(input_pipe[1]);  // Close write end of input pipe (we read from it) we read from input_pipe[0]
+        close(output_pipe[0]); // Close read end of output pipe (we write to it) we write to output_pipe[1]
         
         // Change to the directory containing the CGI script
         std::string script_dir = script_path;
@@ -146,7 +146,7 @@ int CgiRunner::start_cgi_process(const Request& request,
         }
         
         // Close the original pipe file descriptors
-        close(input_pipe[0]);
+        close(input_pipe[0]); 
         close(output_pipe[1]);
         
         // Build environment
@@ -160,6 +160,7 @@ int CgiRunner::start_cgi_process(const Request& request,
         std::vector<char*> argv = vector_to_char_array(args);
         
         // Execute the CGI script
+        // execve will write in stdout which is  now redirected to output_pipe[1]
         execve(argv[0], &argv[0], &envp[0]);
         _exit(127); // exec failed
     }
@@ -173,16 +174,16 @@ int CgiRunner::start_cgi_process(const Request& request,
     fcntl(output_pipe[0], F_SETFL, flags | O_NONBLOCK);
     
     // Store CGI process info
-    CgiProcess cgi_proc;
-    cgi_proc.pid = pid;
-    cgi_proc.input_fd = input_pipe[1];
-    cgi_proc.output_fd = output_pipe[0];
-    cgi_proc.client_fd = client_fd;
-    cgi_proc.script_path = script_path;
-    cgi_proc.finished = false;
-    cgi_proc.start_time = time(NULL);
+    CgiProcess cgi_proc; // Initialize with default constructor
+    cgi_proc.pid = pid; // Store the actual pid of the forked process which is the child
+    cgi_proc.input_fd = input_pipe[1]; // Parent writes to this fd
+    cgi_proc.output_fd = output_pipe[0]; // Parent reads from this fd
+    cgi_proc.client_fd = client_fd; // Original client socket fd 
+    cgi_proc.script_path = script_path; // Store the script path like /usr/lib/cgi-bin/script.py
+    cgi_proc.finished = false; // Not finished yet which helps in handle_cgi_output to prevent infinite loop
+    cgi_proc.start_time = time(NULL); // Record start time for timeout handling which helps in handle_cgi_output
     
-    active_cgi_processes[output_pipe[0]] = cgi_proc;
+    active_cgi_processes[output_pipe[0]] = cgi_proc; // Map output fd to CgiProcess struct
     
     // Write request body to CGI stdin if it's a POST request
     if (request.get_http_method() == "POST" && !request.get_request_body().empty()) {
@@ -199,7 +200,11 @@ int CgiRunner::start_cgi_process(const Request& request,
 }
 
 bool CgiRunner::handle_cgi_output(int fd, std::string& response_data) {
+
+
     std::map<int, CgiProcess>::iterator it = active_cgi_processes.find(fd);
+
+    
     if (it == active_cgi_processes.end()) {
         std::cout << "CGI fd " << fd << " not found in active processes" << std::endl;
         return false;
@@ -228,7 +233,7 @@ bool CgiRunner::handle_cgi_output(int fd, std::string& response_data) {
     char buffer[4096];
     ssize_t bytes_read = read(fd, buffer, sizeof(buffer));
     
-    // std::cout << "CGI read result: " << bytes_read << " bytes, errno: " << errno << std::endl;
+    //std::cout << "CGI read result: " << bytes_read << " bytes, errno: " << errno << std::endl;
     
     if (bytes_read > 0) {
         it->second.output_buffer.append(buffer, bytes_read);
