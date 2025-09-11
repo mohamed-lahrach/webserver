@@ -58,11 +58,9 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 	std::vector<LocationContext>::iterator it_location = config->locations.begin();
 	while (it_location != config->locations.end())
 	{
-		if (it_location->path.empty())
-		{
-			++it_location;
-			continue;
-		}
+		if(it_location->path[it_location->path.length() - 1]=='/')
+			it_location->path = it_location->path.substr(0, it_location->path.length() - 1);
+
 		std::cout << "  Checking location: '" << it_location->path << "'" << std::endl;
 		if (resquested_path.compare(0, it_location->path.length(), it_location->path) == 0)
 		{
