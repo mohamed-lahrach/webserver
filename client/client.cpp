@@ -160,16 +160,13 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 			throw std::runtime_error("Failed to modify client socket to EPOLLOUT mode");
 		}
 	}
-	else if (bytes_received == 0)
+	else 
 	{
 		std::cout << "Client " << client_fd << " disconnected" << std::endl;
 		cleanup_connection(epoll_fd, active_clients);
 	}
-	else
-	{
-		cleanup_connection(epoll_fd, active_clients);
-		throw std::runtime_error("Error receiving data:");
-	}
+
+
 }
 
 void Client::handle_client_data_output(int client_fd, int epoll_fd,
