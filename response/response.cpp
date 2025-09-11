@@ -44,6 +44,8 @@ void Response::set_server_config(const ServerContext* config)
 	server_config = config;
 }
 
+
+
 void Response::set_content(const std::string &body_content)
 {
 	if (server_config && status_code >= 400)
@@ -208,7 +210,16 @@ void Response::start_file_streaming(int client_fd)
 
 	std::string headers = response.str();
 	std::cout << "Sending headers " << std::endl;
-	send(client_fd, headers.c_str(), headers.length(), 0);
+	ssize_t bytes_sent = send(client_fd, headers.c_str(), headers.length(), 0);
+	if (bytes_sent == -1 || bytes_sent == 0) {
+		std::cout << "Failed to send headers to client " << client_fd << std::endl;
+		delete file_stream;
+		file_stream = NULL;
+		set_code(500);
+		current_file_path.clear();
+		is_streaming_file = false;
+		return;
+	}
 
 	file_stream = new std::ifstream(current_file_path.c_str(), std::ios::binary);
 	if (!file_stream->is_open())
@@ -244,14 +255,13 @@ void Response::continue_file_streaming(int client_fd)
 	if (bytes_read > 0)
 	{
 		ssize_t bytes_sent = send(client_fd, file_buffer, bytes_read, 0);
-		std::cout << "Sent " << bytes_sent << " bytes to client" << std::endl;
-
-		if (bytes_sent == -1)
+		if (bytes_sent == -1 || bytes_sent == 0)
 		{
-			std::cout << "Client disconnected  " << std::endl;
+			std::cout << "Failed to send file data to client " << client_fd << std::endl;
 			finish_file_streaming();
 			return;
 		}
+		std::cout << "Sent " << bytes_sent << " bytes to client" << std::endl;
 
 		if (file_stream->eof())
 		{
@@ -440,6 +450,9 @@ void Response::handle_response(int client_fd)
 		std::string full_response = status_line + headers_line + content;
 
 		std::cout << "Sending response to client " << client_fd << std::endl;
-		send(client_fd, full_response.c_str(), full_response.length(), 0);
+		ssize_t bytes_sent = send(client_fd, full_response.c_str(), full_response.length(), 0);
+		if (bytes_sent == -1 || bytes_sent == 0) {
+			std::cout << "Failed to send response to client " << client_fd << std::endl;
+		}
 	}
 }

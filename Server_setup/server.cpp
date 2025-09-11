@@ -96,10 +96,14 @@ void Server::run()
 							if (client_it != active_clients.end())
 							{
 								// Send CGI response to client
-								ssize_t sent = send(client_fd, response_data.c_str(), response_data.size(), 0);
-								if (sent > 0)
+								ssize_t bytes_sent = send(client_fd, response_data.c_str(), response_data.size(), 0);
+								if (bytes_sent == -1 || bytes_sent == 0)
 								{
-									std::cout << "Sent " << sent << " bytes of CGI response to client " << client_fd << std::endl;
+									std::cout << "Failed to send CGI response to client " << client_fd << std::endl;
+								}
+								else
+								{
+									std::cout << "Sent " << bytes_sent << " bytes of CGI response to client " << client_fd << std::endl;
 								}
 								
 								// Close client connection after sending response
@@ -128,10 +132,14 @@ void Server::run()
 							if (client_it != active_clients.end())
 							{
 								// Send CGI response to client
-								ssize_t sent = send(client_fd, response_data.c_str(), response_data.size(), 0);
-								if (sent > 0)
+								ssize_t bytes_sent = send(client_fd, response_data.c_str(), response_data.size(), 0);
+								if (bytes_sent == -1 || bytes_sent == 0)
 								{
-									std::cout << "Sent " << sent << " bytes of CGI response to client " << client_fd << std::endl;
+									std::cout << "Failed to send CGI response to client " << client_fd << std::endl;
+								}
+								else
+								{
+									std::cout << "Sent " << bytes_sent << " bytes of CGI response to client " << client_fd << std::endl;
 								}
 								
 								// Close client connection after sending response
