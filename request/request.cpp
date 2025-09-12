@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cctype>
+#include "../utils/utils.hpp"
 
 Request::Request() : http_method(""), requested_path(""), http_version(""), got_all_headers(false), expected_body_size(0), request_body(""), config(0), location(0), get_handler(), post_handler(), delete_handler()
 {
@@ -127,7 +128,6 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 		{
 			std::map<std::string, std::string>::iterator it_content_len = http_headers.find("content-length");
 			std::map<std::string, std::string>::iterator it_transfer_enc = http_headers.find("transfer-encoding");
-			
 			if (it_content_len != http_headers.end())
 			{
 				expected_body_size = std::atoi(it_content_len->second.c_str());
@@ -188,6 +188,18 @@ bool Request::parse_http_headers(const std::string &header_text)
 		return false;
 
 	bool host_found = false;
+	
+	size_t query_pos = requested_path.find('?');
+	if (query_pos != std::string::npos) {
+		query_string = requested_path.substr(query_pos + 1);
+		requested_path = requested_path.substr(0, query_pos);
+		query_params = parse_query_string(query_string);
+	} else {
+		query_string = "";
+		query_params.clear();
+	}
+	
+	requested_path = url_decode(requested_path);
 
 	while (std::getline(header_stream, current_line))
 	{
@@ -248,12 +260,11 @@ RequestStatus Request::figure_out_http_method()
 		if (!ok)
 			return METHOD_NOT_ALLOWED;
 	}
-	// Check if this is a CGI request first, before handling with regular handlers
 	if (!location->cgiExtension.empty() && !location->cgiPath.empty()) {
 		if (requested_path.size() >= location->cgiExtension.size()) {
 			std::string file_ext = requested_path.substr(requested_path.size() - location->cgiExtension.size());
 			if (file_ext == location->cgiExtension) {
-				// This is a CGI request - return success and let client handle CGI processing
+				request_body=incoming_data;
 				return EVERYTHING_IS_OK;
 			}
 		}
