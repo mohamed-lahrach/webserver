@@ -253,7 +253,12 @@ RequestStatus Request::figure_out_http_method()
 		if (requested_path.size() >= location->cgiExtension.size()) {
 			std::string file_ext = requested_path.substr(requested_path.size() - location->cgiExtension.size());
 			if (file_ext == location->cgiExtension) {
-				// This is a CGI request - return success and let client handle CGI processing
+				// This is a CGI request
+				if (http_method == "POST") {
+					// For POST CGI requests, we need to collect the body data first
+					return post_handler.handle_post_request(http_headers, incoming_data, expected_body_size, config, location, requested_path);
+				}
+				// For GET CGI requests, return success immediately
 				return EVERYTHING_IS_OK;
 			}
 		}
@@ -264,7 +269,7 @@ RequestStatus Request::figure_out_http_method()
 		return get_handler.handle_get_request(full_path);
 	else if (http_method == "POST")
 	{
-		return post_handler.handle_post_request(http_headers, incoming_data, expected_body_size, config, location);
+		return post_handler.handle_post_request(http_headers, incoming_data, expected_body_size, config, location, requested_path);
 	}
 	else if (http_method == "DELETE")
 		return delete_handler.handle_delete_request(full_path);
@@ -284,4 +289,9 @@ bool Request::is_cgi_request() const {
 	}
 	
 	return false;
+}
+
+std::string Request::get_cgi_post_body() const
+{
+	return post_handler.get_cgi_body();
 }

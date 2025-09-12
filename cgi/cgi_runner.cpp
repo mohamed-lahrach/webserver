@@ -88,6 +88,22 @@ std::vector<std::string> CgiRunner::build_cgi_env(const Request& request,
         env.push_back("HTTP_COOKIE=" + it->second);
     }
     
+    // Add custom file headers for CGI uploads
+    it = headers.find("x-file-name");
+    if (it != headers.end()) {
+        env.push_back("HTTP_X_FILE_NAME=" + it->second);
+    }
+    
+    it = headers.find("x-file-type");
+    if (it != headers.end()) {
+        env.push_back("HTTP_X_FILE_TYPE=" + it->second);
+    }
+    
+    it = headers.find("x-file-size");
+    if (it != headers.end()) {
+        env.push_back("HTTP_X_FILE_SIZE=" + it->second);
+    }
+    
     return env;
 }
 
@@ -193,9 +209,17 @@ int CgiRunner:: start_cgi_process(const Request& request,
     active_cgi_processes[output_pipe[0]] = cgi_proc; // Map output fd to CgiProcess struct
     
     // Write request body to CGI stdin if it's a POST request
-    if (request.get_http_method() == "POST" && !request.get_request_body().empty()) {
-        const std::string& body = request.get_request_body();
-        write(input_pipe[1], body.c_str(), body.size());
+    if (request.get_http_method() == "POST") {
+        // Try to get body from CGI POST handler first, then fallback to regular body
+        std::string body = request.get_cgi_post_body();
+        if (body.empty()) {
+            body = request.get_request_body();
+        }
+        
+        if (!body.empty()) {
+            write(input_pipe[1], body.c_str(), body.size());
+            std::cout << "Wrote " << body.size() << " bytes of POST data to CGI stdin" << std::endl;
+        }
     }
     
     // Close input pipe to signal EOF to CGI
