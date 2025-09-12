@@ -174,7 +174,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 		std::cout << "Client " << client_fd << " closed connection gracefully" << std::endl;
 		cleanup_connection(epoll_fd, active_clients);
 	}
-	else // bytes_received == -1
+	else 
 	{
 		std::cout << "Error receiving data from client " << client_fd << std::endl;
 		cleanup_connection(epoll_fd, active_clients);

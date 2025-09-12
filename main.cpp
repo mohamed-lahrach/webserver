@@ -2,10 +2,13 @@
 #include "config/Lexer.hpp"
 #include "config/parser.hpp"
 #include <vector>
+#include <signal.h>
 
 int	main(int argc, char **argv)
-{
-    /// for parsing config files
+{    
+	
+    signal(SIGPIPE, SIG_IGN);
+
     if (argc != 2)
     {
         std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;

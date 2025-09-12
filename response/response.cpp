@@ -211,8 +211,8 @@ void Response::start_file_streaming(int client_fd)
 	std::string headers = response.str();
 	std::cout << "Sending headers " << std::endl;
 	ssize_t bytes_sent = send(client_fd, headers.c_str(), headers.length(), 0);
-	if (bytes_sent == -1 || bytes_sent == 0) {
-		std::cout << "Failed to send headers to client " << client_fd << std::endl;
+	if (bytes_sent == -1) {
+		std::cout << "Failed to send headers to client " << client_fd << " (errno: " << errno << ")" << std::endl;
 		delete file_stream;
 		file_stream = NULL;
 		set_code(500);
@@ -255,9 +255,9 @@ void Response::continue_file_streaming(int client_fd)
 	if (bytes_read > 0)
 	{
 		ssize_t bytes_sent = send(client_fd, file_buffer, bytes_read, 0);
-		if (bytes_sent == -1 || bytes_sent == 0)
+		if (bytes_sent == -1)
 		{
-			std::cout << "Failed to send file data to client " << client_fd << std::endl;
+			std::cout << "Failed to send file data to client " << client_fd << " (errno: " << errno << ")" << std::endl;
 			finish_file_streaming();
 			return;
 		}
