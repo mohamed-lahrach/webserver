@@ -45,6 +45,8 @@ PostHandler::PostHandler()
 	boundary_found = false;
 	start_position = 0;
 	data_start = false;
+	cgi_first_write = true;
+	cgi_filename = "";  // Initialize CGI filename
 	std::cout << "PostHandler initialized." << std::endl;
 }
 
@@ -190,4 +192,174 @@ int PostHandler::parse_size(const ServerContext *cfg, std::string &incoming_data
 		return  0;
 	}
 	return 1;;
+}
+std::string PostHandler::get_cgi_body() const
+{
+	// Use stored filename if available, otherwise fallback to default
+	std::string filename = cgi_filename.empty() ? "cgi_post_data.txt" : cgi_filename;
+	std::string full_path = "/tmp/" + filename;
+	
+	// Read CGI POST data from file instead of buffer
+	std::ifstream file(full_path.c_str(), std::ios::binary);
+	if (!file)
+	{
+		std::cout << "No CGI POST data file found at: " << full_path << std::endl;
+		return "";
+	}
+	
+	std::string content;
+	std::string line;
+	while (std::getline(file, line))
+	{
+		content += line + "\n";
+	}
+	
+	// Remove the last newline if it was added
+	if (!content.empty() && content[content.length() - 1] == '\n')
+	{
+		content.erase(content.length() - 1);
+	}
+	
+	file.close();
+	std::cout << "Read " << content.size() << " bytes from CGI POST data file: " << full_path << std::endl;
+	return content;
+}
+
+void PostHandler::clear_cgi_body()
+{
+	// Use stored filename if available, otherwise fallback to default
+	std::string filename = cgi_filename.empty() ? "cgi_post_data.txt" : cgi_filename;
+	std::string full_path = "/tmp/" + filename;
+	
+	// Remove the CGI POST data file
+	if (remove(full_path.c_str()) == 0)
+	{
+		std::cout << "CGI POST data file cleared: " << full_path << std::endl;
+	}
+	
+	// Reset the filename
+	cgi_filename = "";
+}
+
+// CGI-specific save function - saves directly to /tmp
+RequestStatus PostHandler::save_cgi_body(const std::string &data)
+{
+	std::string full_path = "/tmp/cgi_post_data.txt";
+	std::ofstream file;
+	
+	// For first chunk, truncate. For subsequent chunks, append
+	if (cgi_first_write)
+	{
+		file.open(full_path.c_str(), std::ios::binary | std::ios::trunc);
+		cgi_first_write = false;
+	}
+	else
+	{
+		file.open(full_path.c_str(), std::ios::binary | std::ios::app);
+	}
+	
+	if (!file.is_open())
+	{
+		std::cout << "ERROR: Could not open CGI data file: " << full_path << std::endl;
+		return FORBIDDEN;
+	}
+	
+	file.write(data.data(), data.size());
+	file.close();
+	
+	std::cout << "✓ CGI data saved: " << full_path << " (" << data.size() << " bytes)" << std::endl;
+	return POSTED_SUCCESSFULLY;
+}
+
+// CGI-specific save function with filename from headers
+RequestStatus PostHandler::save_cgi_body_with_filename(const std::string &data, const std::map<std::string, std::string> &headers)
+{
+	std::string filename = get_cgi_filename_from_headers(headers);
+	std::string full_path = "/tmp/" + filename;
+	
+	// Store the filename for later retrieval
+	if (cgi_first_write)
+	{
+		cgi_filename = filename;
+	}
+	
+	std::ofstream file;
+	
+	// For first chunk, truncate. For subsequent chunks, append
+	if (cgi_first_write)
+	{
+		file.open(full_path.c_str(), std::ios::binary | std::ios::trunc);
+		cgi_first_write = false;
+	}
+	else
+	{
+		file.open(full_path.c_str(), std::ios::binary | std::ios::app);
+	}
+	
+	if (!file.is_open())
+	{
+		std::cout << "ERROR: Could not open CGI data file: " << full_path << std::endl;
+		return FORBIDDEN;
+	}
+	
+	file.write(data.data(), data.size());
+	file.close();
+	
+	std::cout << "✓ CGI data saved: " << full_path << " (" << data.size() << " bytes)" << std::endl;
+	return POSTED_SUCCESSFULLY;
+}
+
+std::string PostHandler::get_cgi_filename_from_headers(const std::map<std::string, std::string> &headers) const
+{
+	// Try to get filename from X-File-Name header
+	std::map<std::string, std::string>::const_iterator it = headers.find("x-file-name");
+	if (it != headers.end() && !it->second.empty())
+	{
+		std::string filename = it->second;
+		// Trim leading and trailing whitespace
+		size_t start = filename.find_first_not_of(" \t\r\n");
+		size_t end = filename.find_last_not_of(" \t\r\n");
+		if (start != std::string::npos && end != std::string::npos)
+		{
+			filename = filename.substr(start, end - start + 1);
+		}
+		else if (start != std::string::npos)
+		{
+			filename = filename.substr(start);
+		}
+		
+		std::cout << "Found filename in headers: '" << filename << "'" << std::endl;
+		return filename;
+	}
+	
+	// Fallback to default name
+	std::cout << "No filename found in headers, using default" << std::endl;
+	return "cgi_post_data.txt";
+}
+// CGI-specific methods
+bool PostHandler::is_cgi_request(const LocationContext *loc, const std::string &requested_path) const
+{
+	if (!loc || loc->cgiExtension.empty() || loc->cgiPath.empty())
+		return false;
+		
+	// Check if the requested path ends with the CGI extension
+	if (requested_path.size() >= loc->cgiExtension.size())
+	{
+		std::string file_ext = requested_path.substr(requested_path.size() - loc->cgiExtension.size());
+		return file_ext == loc->cgiExtension;
+	}
+	
+	return false;
+}
+
+void PostHandler::remove_file_data(const std::string &full_path)
+{
+	std::ofstream file(full_path.c_str(), std::ios::trunc);
+	if (!file)
+	{
+		std::cerr << "ERROR: Failed to clear file: " << full_path << std::endl;
+		return;
+	}
+	// file is now empty
+	file.close();
 }

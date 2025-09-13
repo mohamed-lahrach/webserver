@@ -1,12 +1,11 @@
 #include "client.hpp"
 
-// Constructor
+
 Client::Client() : connect_time(0), request_count(0), client_fd(-1), request_status(NEED_MORE_DATA)
 {
 	std::cout << "Client constructor called" << std::endl;
 }
 
-// Destructor
 Client::~Client()
 {
 	std::cout << "Client destructor called" << std::endl;
@@ -22,7 +21,6 @@ int Client::get_request_count() const
 	return (request_count);
 }
 
-// Setter methods
 
 void Client::set_connect_time(time_t time)
 {
@@ -159,8 +157,16 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 							return;
 						}
 					} else {
-						std::cerr << "Failed to start CGI process" << std::endl;
-						request_status = INTERNAL_ERROR;
+						if (cgi_output_fd == -2) { // not found
+							request_status = NOT_FOUND;
+							std::cerr << "CGI script resulted in 404 Not Found" << std::endl;
+						} else if (cgi_output_fd == -3) { // not readable / forbidden
+							request_status = FORBIDDEN;
+							std::cerr << "CGI script resulted in 403 Forbidden" << std::endl;
+						} else {
+							request_status = INTERNAL_ERROR;
+							std::cerr << "Failed to start CGI process (internal error)" << std::endl;
+						}
 					}
 				}
 			}

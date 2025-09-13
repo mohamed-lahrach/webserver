@@ -1,16 +1,5 @@
 #include "post_handler.hpp"
 
-void PostHandler::remove_file_data(const std::string &full_path)
-{
-	std::ofstream file(full_path.c_str(), std::ios::trunc);
-	if (!file)
-	{
-		std::cerr << "ERROR: Failed to clear file: " << full_path << std::endl;
-		return;
-	}
-	// file is now empty
-	file.close();
-}
 RequestStatus PostHandler::parse_form_data(const std::string &body,
 	const std::string &content_type, const LocationContext *loc,
 	size_t expected_body_size)
@@ -231,10 +220,73 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 	std::string> &http_headers, std::string &incoming_data,
 	size_t expected_body_size, const ServerContext *cfg,
-	const LocationContext *loc)
+	const LocationContext *loc, const std::string &requested_path)
 {
 	size_t	start;
 	size_t	end;
+	
+	// Check if this is a CGI request first
+	if (is_cgi_request(loc, requested_path))
+	{
+		std::cout << "=== CGI POST REQUEST DETECTED ===" << std::endl;
+		std::cout << "CGI Extension: " << loc->cgiExtension << std::endl;
+		std::cout << "CGI Path: " << loc->cgiPath << std::endl;
+		
+		// Handle CGI POST body data collection - save directly to file
+		if (http_headers.find("transfer-encoding") != http_headers.end())
+		{
+			std::string transfer_encoding = http_headers.at("transfer-encoding");
+			start = transfer_encoding.find_first_not_of(" \t\r\n");
+			end = transfer_encoding.find_last_not_of(" \t\r\n");
+			if (start != std::string::npos && end != std::string::npos)
+			{
+				transfer_encoding = transfer_encoding.substr(start, end - start + 1);
+			}
+			
+			if (transfer_encoding == "chunked")
+			{
+				std::cout << "CGI POST: Using chunked transfer encoding" << std::endl;
+				return handle_cgi_chunked_post(http_headers, incoming_data, cfg, loc);
+			}
+		}
+		
+		// Handle Content-Length based CGI POST - save directly to file
+		if (expected_body_size > 0)
+		{
+			total_received_size += incoming_data.size();
+			RequestStatus status = save_cgi_body_with_filename(incoming_data, http_headers);
+			incoming_data.clear();
+			
+			if (status != POSTED_SUCCESSFULLY)
+				return status;
+				
+			// Check body size limit
+			if (total_received_size > parse_max_body_size(cfg->clientMaxBodySize))
+			{
+				std::cout << "ERROR: CGI POST body size too large!" << std::endl;
+				// Remove the CGI file on error
+				std::string filename = cgi_filename.empty() ? "cgi_post_data.txt" : cgi_filename;
+				remove(("/tmp/" + filename).c_str());
+				return PAYLOAD_TOO_LARGE;
+			}
+			
+			if (total_received_size < expected_body_size)
+			{
+				std::cout << "CGI POST: Need more body data (" << total_received_size 
+						  << "/" << expected_body_size << " bytes)" << std::endl;
+				return BODY_BEING_READ;
+			}
+			
+			std::cout << "CGI POST: Received complete body (" << total_received_size << " bytes)" << std::endl;
+			return POSTED_SUCCESSFULLY;
+		}
+		
+		// No body expected for CGI
+		std::cout << "CGI POST: No body expected" << std::endl;
+		return POSTED_SUCCESSFULLY;
+	}
+	
+	// Regular POST handling (non-CGI)
 	if(loc->uploadStore.empty())
 	{
 		std::cout << "No upload store configured, skipping file save." << std::endl;
@@ -281,3 +333,75 @@ RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 	std::cout << "Expected body size: " << expected_body_size << std::endl;
 	return (POSTED_SUCCESSFULLY);
 }
+
+
+RequestStatus PostHandler::handle_cgi_chunked_post(const std::map<std::string,
+	std::string> &http_headers, std::string &incoming_data,
+	const ServerContext *cfg, const LocationContext *loc)
+{
+	(void)http_headers; // Suppress unused parameter warning
+	(void)loc; // Suppress unused parameter warning
+	
+	std::cout << "=== CGI CHUNKED POST HANDLER ===" << std::endl;
+	std::cout << "Incoming data size: " << incoming_data.size() << std::endl;
+	
+	buffer_not_parser += incoming_data;
+	incoming_data.clear();
+	
+	size_t processed_pos = 0;
+	
+	while (true)
+	{
+		if (chunk_size == 0)
+		{
+			// Look for chunk size line
+			size_t crlf_pos = buffer_not_parser.find("\r\n", processed_pos);
+			if (crlf_pos == std::string::npos)
+				break; // need more data
+				
+			std::string size_str = buffer_not_parser.substr(processed_pos, crlf_pos - processed_pos);
+			chunk_size = std::strtoul(size_str.c_str(), NULL, 16);
+			processed_pos = crlf_pos + 2;
+			
+			if (chunk_size == 0)
+			{
+				// End of chunks
+				std::cout << "CGI POST: Received complete chunked body (" << total_received_size << " bytes)" << std::endl;
+				buffer_not_parser.clear();
+				return POSTED_SUCCESSFULLY;
+			}
+		}
+		
+		// Check if we have enough chunk data + CRLF
+		if (buffer_not_parser.size() - processed_pos < chunk_size + 2)
+			break; // not enough data yet
+			
+		// Extract chunk data and save directly to file
+		std::string chunk_data = buffer_not_parser.substr(processed_pos, chunk_size);
+		total_received_size += chunk_size;
+		
+		RequestStatus status = save_cgi_body_with_filename(chunk_data, http_headers);
+		if (status != POSTED_SUCCESSFULLY)
+			return status;
+		
+		// Check body size limit
+		if (total_received_size > parse_max_body_size(cfg->clientMaxBodySize))
+		{
+			std::cout << "ERROR: CGI POST chunked body size too large!" << std::endl;
+			std::string filename = cgi_filename.empty() ? "cgi_post_data.txt" : cgi_filename;
+			remove(("/tmp/" + filename).c_str());
+			buffer_not_parser.clear();
+			return PAYLOAD_TOO_LARGE;
+		}
+		
+		processed_pos += chunk_size + 2;
+		chunk_size = 0;
+	}
+	
+	// Remove processed part from buffer
+	if (processed_pos > 0)
+		buffer_not_parser.erase(0, processed_pos);
+		
+	return BODY_BEING_READ;
+}
+

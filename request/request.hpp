@@ -60,6 +60,9 @@ bool check_for_valid_http_start();
 	RequestStatus figure_out_http_method();
 	bool is_cgi_request() const;
 	
+	// CGI body access
+	std::string get_cgi_post_body() const;
+	
 
 	bool parse_http_headers(const std::string& header_text);
 	

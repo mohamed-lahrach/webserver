@@ -87,9 +87,30 @@ std::vector<std::string> CgiRunner::build_cgi_env(const Request& request,
         env.push_back("HTTP_COOKIE=" + it->second);
     }
     
+    // Add custom file headers for CGI uploads
+    it = headers.find("x-file-name");
+    if (it != headers.end()) {
+        env.push_back("HTTP_X_FILE_NAME=" + it->second);
+    }
+    
+    it = headers.find("x-file-type");
+    if (it != headers.end()) {
+        env.push_back("HTTP_X_FILE_TYPE=" + it->second);
+    }
+    
+    it = headers.find("x-file-size");
+    if (it != headers.end()) {
+        env.push_back("HTTP_X_FILE_SIZE=" + it->second);
+    }
+    
     return env;
 }
 
+// Return values:
+//  >=0 : success, this is the output fd to monitor
+//   -1 : generic internal error (pipe/fork failure, exec failure)
+//   -2 : script not found (404)
+//   -3 : script not readable (403)
 int CgiRunner:: start_cgi_process(const Request& request, 
                                 const LocationContext& location,
                                 int client_fd,
@@ -127,12 +148,12 @@ int CgiRunner:: start_cgi_process(const Request& request,
     // Check if script file exists
     if (access(script_path.c_str(), F_OK) != 0) {
         std::cerr << "CGI script not found: " << script_path << std::endl;
-        return -1;
+        return -2; // NOT_FOUND
     }
     
     if (access(script_path.c_str(), R_OK) != 0) {
         std::cerr << "CGI script not readable: " << script_path << std::endl;
-        return -1;
+        return -3; // FORBIDDEN
     }
     
     // Create pipes for communication
@@ -216,9 +237,17 @@ int CgiRunner:: start_cgi_process(const Request& request,
     active_cgi_processes[output_pipe[0]] = cgi_proc; // Map output fd to CgiProcess struct
     
     // Write request body to CGI stdin if it's a POST request
-    if (request.get_http_method() == "POST" && !request.get_request_body().empty()) {
-        const std::string& body = request.get_request_body();
-        write(input_pipe[1], body.c_str(), body.size());
+    if (request.get_http_method() == "POST") {
+        // Try to get body from CGI POST handler first, then fallback to regular body
+        std::string body = request.get_cgi_post_body();
+        if (body.empty()) {
+            body = request.get_request_body();
+        }
+        
+        if (!body.empty()) {
+            write(input_pipe[1], body.c_str(), body.size());
+            std::cout << "Wrote " << body.size() << " bytes of POST data to CGI stdin" << std::endl;
+        }
     }
     
     // Close input pipe to signal EOF to CGI
