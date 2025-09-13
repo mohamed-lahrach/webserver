@@ -24,6 +24,10 @@ void Server::run()
 	{
 		std::cout << "Waiting for events on all servers..." << std::endl;
 		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, 1000);
+		
+		// 🔥 CHECK FOR CGI TIMEOUTS ON EVERY LOOP ITERATION
+		cgi_runner.check_cgi_timeouts();
+		
 		if (num_events == -1)
 		{
 			throw std::runtime_error("Error in epoll_wait");

@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/epoll.h>
+#include <sys/socket.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <errno.h>
@@ -60,7 +61,18 @@ std::vector<std::string> CgiRunner::build_cgi_env(const Request& request,
     
     it = headers.find("content-length");
     if (it != headers.end()) {
-        env.push_back("CONTENT_LENGTH=" + it->second);
+        std::string content_length = it->second;
+        // Trim whitespace from content-length value
+        while (!content_length.empty() && (content_length[0] == ' ' || content_length[0] == '\t' || content_length[0] == '\r' || content_length[0] == '\n')) {
+            content_length.erase(0, 1);
+        }
+        while (!content_length.empty() && (content_length[content_length.size()-1] == ' ' || content_length[content_length.size()-1] == '\t' || content_length[content_length.size()-1] == '\r' || content_length[content_length.size()-1] == '\n')) {
+            content_length.erase(content_length.size()-1, 1);
+        }
+        env.push_back("CONTENT_LENGTH=" + content_length);
+        std::cout << "\033[36m📏 Setting CONTENT_LENGTH=" << content_length << "\033[0m" << std::endl;
+    } else {
+        std::cout << "\033[33m⚠️  No content-length header found in request\033[0m" << std::endl;
     }
     
     env.push_back("GATEWAY_INTERFACE=CGI/1.1");
@@ -245,8 +257,12 @@ int CgiRunner:: start_cgi_process(const Request& request,
         }
         
         if (!body.empty()) {
+            std::cout << "\033[35m📊 POST body size: " << body.size() << " bytes\033[0m" << std::endl;
             write(input_pipe[1], body.c_str(), body.size());
-            std::cout << "Wrote " << body.size() << " bytes of POST data to CGI stdin" << std::endl;
+            std::cout << "\033[32mWrote " << body.size() << " bytes of POST data to CGI stdin\033[0m" << std::endl;
+            std::cout << "\033[32mWrote " << body << "\033[0m" << std::endl;
+        } else {
+            std::cout << "\033[33m⚠️  POST body is empty!\033[0m" << std::endl;
         }
     }
     
@@ -276,16 +292,22 @@ bool CgiRunner::handle_cgi_output(int fd, std::string& response_data) {
         return true;
     }
     
-    // Check for timeout (30 seconds)
+    // Check for timeout (10 seconds) - this is backup in case the main timeout checker misses it
     time_t current_time = time(NULL);
-    if (current_time - it->second.start_time > 30) {
-        std::cout << "CGI process timed out, killing process" << std::endl;
+    if (current_time - it->second.start_time > 10) {
+        std::cout << "\033[31m⏰ CGI process timed out in handle_cgi_output! PID: " << it->second.pid << "\033[0m" << std::endl;
         if (it->second.pid > 0) {
             kill(it->second.pid, SIGKILL);
             waitpid(it->second.pid, NULL, 0);
+            std::cout << "\033[31m🔪 Killed timed out CGI process PID: " << it->second.pid << "\033[0m" << std::endl;
         }
         it->second.finished = true;
-        response_data = "HTTP/1.1 504 Gateway Timeout\r\nContent-Type: text/plain\r\nContent-Length: 19\r\nConnection: close\r\n\r\nCGI process timeout";
+        it->second.output_buffer = "Status: 504 Gateway Timeout\r\n"
+                                  "Content-Type: text/html\r\n"
+                                  "\r\n"
+                                  "<html><body><h1>504 Gateway Timeout</h1>"
+                                  "<p>The CGI script took too long to respond (10+ seconds).</p></body></html>";
+        response_data = format_cgi_response(it->second.output_buffer);
         return true;
     }
     
@@ -390,6 +412,54 @@ void CgiRunner::check_finished_processes() {
     
     for (size_t i = 0; i < finished_fds.size(); ++i) {
         cleanup_cgi_process(finished_fds[i]);
+    }
+}
+
+void CgiRunner::check_cgi_timeouts() {
+    std::vector<int> timed_out_fds;
+    time_t current_time = time(NULL);
+    
+    for (std::map<int, CgiProcess>::iterator it = active_cgi_processes.begin();
+         it != active_cgi_processes.end(); ++it) {
+        
+        if (!it->second.finished && (current_time - it->second.start_time > 10)) {
+            std::cout << "\033[31m⏰ CGI process timed out! PID: " << it->second.pid 
+                      << " (running for " << (current_time - it->second.start_time) << " seconds)\033[0m" << std::endl;
+            
+            // Kill the process
+            if (it->second.pid > 0) {
+                kill(it->second.pid, SIGKILL);
+                waitpid(it->second.pid, NULL, 0);
+                std::cout << "\033[31m🔪 Killed CGI process PID: " << it->second.pid << "\033[0m" << std::endl;
+            }
+            
+            // Mark as finished with timeout response
+            it->second.finished = true;
+            it->second.output_buffer = "Status: 504 Gateway Timeout\r\n"
+                                      "Content-Type: text/html\r\n"
+                                      "\r\n"
+                                      "<html><body><h1>504 Gateway Timeout</h1>"
+                                      "<p>The CGI script took too long to respond (10+ seconds).</p></body></html>";
+            
+            timed_out_fds.push_back(it->first);
+        }
+    }
+    
+    // Send timeout responses to clients
+    for (size_t i = 0; i < timed_out_fds.size(); ++i) {
+        int fd = timed_out_fds[i];
+        std::map<int, CgiProcess>::iterator it = active_cgi_processes.find(fd);
+        if (it != active_cgi_processes.end()) {
+            int client_fd = it->second.client_fd;
+            if (client_fd >= 0) {
+                std::string formatted_response = format_cgi_response(it->second.output_buffer);
+                ssize_t bytes_sent = send(client_fd, formatted_response.c_str(), 
+                                        formatted_response.size(), 0);
+                if (bytes_sent > 0) {
+                    std::cout << "\033[33m📤 Sent timeout response to client " << client_fd << "\033[0m" << std::endl;
+                }
+            }
+        }
     }
 }
 
