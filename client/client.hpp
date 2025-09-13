@@ -25,28 +25,15 @@ class	Request;
 class Client
 {
   private:
-	time_t connect_time; // Keep same order as in constructor
-	int request_count;   // Move this after connect_time
+	time_t connect_time;
 	int client_fd;
 	Request current_request;
 	Response current_response;
 	RequestStatus request_status;
 
   public:
-	// Constructor
 	Client();
-
-	// Destructor
 	~Client();
-
-	// Getter methods
-	time_t get_connect_time() const;
-	int get_request_count() const;
-
-	// Setter methods
-	void set_connect_time(time_t time);
-	void increment_request_count();
-	/// 
 
 	static int handle_new_connection(int server_fd, int epoll_fd, std::map<int,
 		Client> &active_clients);
