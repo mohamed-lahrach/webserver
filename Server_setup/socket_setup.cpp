@@ -11,22 +11,16 @@ int Server::setup_Socket_with_host(int port, const std::string& host)
         return (-1);
     }
     std::cout << "✓ Socket created for " << host << ":" << port << std::endl;
-
-    // Set socket option to reuse address
     int opt = 1;
     if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
     {
         std::cout << "Warning: Failed to set SO_REUSEADDR" << std::endl;
     }
     std::cout << "✓ Socket options set" << std::endl;
-
-    // Specifying the address
     sockaddr_in serverAddress;
     memset(&serverAddress, 0, sizeof(serverAddress));
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port);
-
-    // Convert IP string to binary format
     if (host == "0.0.0.0" || host.empty())
     {
         serverAddress.sin_addr.s_addr = INADDR_ANY;
@@ -36,8 +30,8 @@ int Server::setup_Socket_with_host(int port, const std::string& host)
     {
         struct addrinfo hints, *result;
         memset(&hints, 0, sizeof(hints));
-        hints.ai_family = AF_INET;      // IPv4
-        hints.ai_socktype = SOCK_STREAM; // TCP
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM; 
         
         int status = getaddrinfo(host.c_str(), NULL, &hints, &result);
         if (status != 0)

@@ -1,7 +1,7 @@
 #include "client.hpp"
 
 
-Client::Client() : connect_time(0), request_count(0), client_fd(-1), request_status(NEED_MORE_DATA)
+Client::Client() : client_fd(-1), request_status(NEED_MORE_DATA)
 {
 	std::cout << "Client constructor called" << std::endl;
 }
@@ -9,27 +9,6 @@ Client::Client() : connect_time(0), request_count(0), client_fd(-1), request_sta
 Client::~Client()
 {
 	std::cout << "Client destructor called" << std::endl;
-}
-
-time_t Client::get_connect_time() const
-{
-	return (connect_time);
-}
-
-int Client::get_request_count() const
-{
-	return (request_count);
-}
-
-
-void Client::set_connect_time(time_t time)
-{
-	connect_time = time;
-}
-
-void Client::increment_request_count()
-{
-	request_count++;
 }
 
 int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Client> &active_clients)
@@ -45,26 +24,22 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 	if (client.client_fd == -1)
 	{
 		std::cout << "ERROR: Failed to accept connection" << std::endl;
-		return -1; // Return error instead of throwing
+		return -1;
 	}
-	
-	// handle non-blocking
 	int flags = fcntl(client.client_fd, F_GETFL, 0);
 	if (flags == -1) {
 		std::cout << "ERROR: fcntl F_GETFL failed" << std::endl;
 		close(client.client_fd);
-		return -1; // Return error after cleanup
+		return -1;
 	}
 	
 	if (fcntl(client.client_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
 		std::cout << "ERROR: fcntl F_SETFL failed" << std::endl;
 		close(client.client_fd);
-		return -1; // Return error after cleanup
+		return -1;
 	}
 	
 	std::cout << "✓ New client connected: " << client.client_fd << std::endl;
-	// Set connection time
-	client.set_connect_time(time(NULL));
 	// Add client to epoll
 	client_event.events = EPOLLIN;
 	client_event.data.fd = client.client_fd;
@@ -72,7 +47,7 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 	{
 		std::cout << "ERROR: Failed to add client to epoll" << std::endl;
 		close(client.client_fd);
-		return -1; // Return error instead of throwing
+		return -1; 
 	}
 	// Add to active clients map
 	active_clients[client.client_fd] = client;
@@ -92,7 +67,6 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 	{
 		buffer[bytes_received] = '\0';
 		std::cout << "=== CLIENT " << client_fd << ": PROCESSING REQUEST ===" << std::endl;
-		increment_request_count();
 
 		RequestStatus result = current_request.add_new_data(buffer, bytes_received);
 
@@ -118,8 +92,6 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 			std::cout << "Request fully processed and ready!" << std::endl;
 			std::cout << "Final request - Method: " << current_request.get_http_method()
 					  << " Path: " << current_request.get_requested_path() << std::endl;
-			
-			// Check if this is a CGI request
 			if (current_request.is_cgi_request()) {
 				std::cout << "🔧 Detected CGI request - starting CGI process" << std::endl;
 				LocationContext* location = current_request.get_location();
@@ -138,10 +110,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 					std::cout << std::endl;
 				}
 				if (location) {
-					// Build script path
 					std::string script_path = location->root + current_request.get_requested_path();
-					
-					// Start CGI process
 					int cgi_output_fd = cgi_runner.start_cgi_process(current_request, *location, client_fd, script_path);
 					if (cgi_output_fd >= 0) {
 						// Add CGI output fd to epoll for monitoring
@@ -255,12 +224,6 @@ void Client::cleanup_connection(int epoll_fd, std::map<int,
 													   Client> &active_clients)
 {
 	std::cout << "=== CLEANING UP CLIENT " << client_fd << " ===" << std::endl;
-
-	// Display connection statistics
-	std::cout << "✓ Client " << client_fd << " was connected for " << (time(NULL) - get_connect_time()) << " seconds" << std::endl;
-	std::cout << "✓ Client " << client_fd << " made " << get_request_count() << " requests" << std::endl;
-
-	// Remove from epoll monitoring
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1)
 	{
 		std::cout << "Warning: Failed to remove client " << client_fd << " from epoll" << std::endl;
@@ -269,7 +232,6 @@ void Client::cleanup_connection(int epoll_fd, std::map<int,
 	{
 		std::cout << "✓ Client " << client_fd << " removed from epoll" << std::endl;
 	}
-
 	// Close the socket
 	if (close(client_fd) == -1)
 	{
@@ -279,8 +241,6 @@ void Client::cleanup_connection(int epoll_fd, std::map<int,
 	{
 		std::cout << "✓ Client " << client_fd << " socket closed" << std::endl;
 	}
-
-	// Remove from active clients map
 	active_clients.erase(client_fd);
 	std::cout << "✓ Client removed from active clients map" << std::endl;
 }

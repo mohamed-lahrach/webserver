@@ -1,7 +1,7 @@
 #include "server.hpp"
 
-// Function 2: Setup epoll for event monitoring
-int Server::setup_epoll()  // Remove parameter
+//Setup epol for event monitoring
+int Server::setup_epoll()
 {
 	std::cout << "=== SETTING UP EPOLL ===" << std::endl;
 
