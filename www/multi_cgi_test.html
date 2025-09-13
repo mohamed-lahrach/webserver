@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Language CGI Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .cgi-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #444;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .python { border-left: 4px solid #3776ab; }
+        .php { border-left: 4px solid #777bb4; }
+        .bash { border-left: 4px solid #4eaa25; }
+        
+        .test-links {
+            margin: 15px 0;
+        }
+        .test-links a {
+            display: inline-block;
+            margin: 5px 10px 5px 0;
+            padding: 8px 15px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .test-links a:hover {
+            background: #0056b3;
+        }
+        .get-link { background: #28a745 !important; }
+        .get-link:hover { background: #1e7e34 !important; }
+        
+        form {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input[type="submit"] {
+            padding: 8px 15px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background: #c82333;
+        }
+        .description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Multi-Language CGI Testing</h1>
+    <p style="text-align: center; color: #666;">Test your webserver's ability to run CGI scripts in different languages</p>
+    
+    <div class="container">
+        <!-- Python CGI -->
+        <div class="cgi-card python">
+            <h2>🐍 Python CGI</h2>
+            <div class="description">
+                Test Python CGI script execution with both GET and POST methods.
+            </div>
+            
+            <div class="test-links">
+                <strong>GET Tests:</strong><br>
+                <a href="/cgi-bin/hello_world.py" class="get-link">Simple GET</a>
+                <a href="/cgi-bin/hello_world.py?name=Python&version=3.9" class="get-link">GET with Query</a>
+            </div>
+            
+            <form action="/cgi-bin/hello_world.py" method="post">
+                <strong>POST Test:</strong><br>
+                <input type="text" name="message" placeholder="Enter a message for Python CGI" value="Hello from Python!">
+                <input type="submit" value="Send POST">
+            </form>
+        </div>
+
+        <!-- PHP CGI -->
+        <div class="cgi-card php">
+            <h2>🐘 PHP CGI</h2>
+            <div class="description">
+                Test PHP CGI script execution with both GET and POST methods.
+            </div>
+            
+            <div class="test-links">
+                <strong>GET Tests:</strong><br>
+                <a href="/cgi-bin/hello.php" class="get-link">Simple GET</a>
+                <a href="/cgi-bin/hello.php?name=PHP&framework=Laravel" class="get-link">GET with Query</a>
+            </div>
+            
+            <form action="/cgi-bin/hello.php" method="post">
+                <strong>POST Test:</strong><br>
+                <input type="text" name="message" placeholder="Enter a message for PHP CGI" value="Hello from PHP!">
+                <input type="submit" value="Send POST">
+            </form>
+        </div>
+
+        <!-- Bash CGI -->
+        <div class="cgi-card bash">
+            <h2>🐚 Bash CGI</h2>
+            <div class="description">
+                Test Bash shell script CGI execution with both GET and POST methods.
+            </div>
+            
+            <div class="test-links">
+                <strong>GET Tests:</strong><br>
+                <a href="/cgi-bin/hello.sh" class="get-link">Simple GET</a>
+                <a href="/cgi-bin/hello.sh?name=Bash&shell=sh" class="get-link">GET with Query</a>
+            </div>
+            
+            <form action="/cgi-bin/hello.sh" method="post">
+                <strong>POST Test:</strong><br>
+                <input type="text" name="message" placeholder="Enter a message for Bash CGI" value="Hello from Bash!">
+                <input type="submit" value="Send POST">
+            </form>
+        </div>
+    </div>
+
+    <div style="margin-top: 40px; padding: 20px; background: white; border-radius: 8px; text-align: center;">
+        <h3>📝 Testing Instructions</h3>
+        <p><strong>GET Tests:</strong> Click the green buttons to test GET requests with and without query parameters.</p>
+        <p><strong>POST Tests:</strong> Enter a message and click "Send POST" to test form submission.</p>
+        <p><strong>File Output:</strong> POST requests will save data to the upload/ directory with language-specific prefixes.</p>
+    </div>
+</body>
+</html>

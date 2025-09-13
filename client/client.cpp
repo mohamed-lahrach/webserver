@@ -126,8 +126,18 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 				std::cout << "🔧 Detected CGI request - starting CGI process" << std::endl;
 				LocationContext* location = current_request.get_location();
 				if (location) {
-					std::cout << "CGI Extension: " << location->cgiExtension << std::endl;
-					std::cout << "CGI Path: " << location->cgiPath << std::endl;
+					std::cout << "CGI Extensions: ";
+					for (size_t i = 0; i < location->cgiExtensions.size(); ++i) {
+						std::cout << location->cgiExtensions[i];
+						if (i < location->cgiExtensions.size() - 1) std::cout << " ";
+					}
+					std::cout << std::endl;
+					std::cout << "CGI Paths: ";
+					for (size_t i = 0; i < location->cgiPaths.size(); ++i) {
+						std::cout << location->cgiPaths[i];
+						if (i < location->cgiPaths.size() - 1) std::cout << " ";
+					}
+					std::cout << std::endl;
 				}
 				if (location) {
 					// Build script path

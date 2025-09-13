@@ -12,8 +12,8 @@ struct LocationContext
     std::string autoindex;
     std::vector<std::string> allowedMethods;
     std::string returnDirective; // For return directive (could be just a file or "code file")
-    std::string cgiExtension;
-    std::string cgiPath;
+    std::vector<std::string> cgiExtensions;  // Changed to vector for multiple extensions
+    std::vector<std::string> cgiPaths;       // Changed to vector for multiple interpreters
     std::string uploadStore; // Directory where uploaded files are stored
 };
 

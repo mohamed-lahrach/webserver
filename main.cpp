@@ -30,19 +30,9 @@ int	main(int argc, char **argv)
         std::cerr << e.what() << std::endl;
         return 1;
     }
+	//exit(0); // Temporary exit to test parsing only
 	// Debug: print server info and location details
-	std::cout << "Found " << servers_config.size() << " server(s)" << std::endl;
-	if (!servers_config.empty()) {
-		std::cout << "Server 0 has " << servers_config[0].locations.size() << " location(s)" << std::endl;
-		for (size_t i = 0; i < servers_config[0].locations.size(); i++) {
-			const LocationContext& loc = servers_config[0].locations[i];
-			std::cout << "Location " << i << ": path='" << loc.path << "'";
-			if (!loc.returnDirective.empty()) {
-				std::cout << " return='" << loc.returnDirective << "'";
-			}
-			std::cout << std::endl;
-		}
-	}
+
 	Server server;
 	try
 	{

@@ -251,12 +251,17 @@ RequestStatus Request::figure_out_http_method()
 			return METHOD_NOT_ALLOWED;
 	}
 	// Check if this is a CGI request first, before handling with regular handlers
-	if (!location->cgiExtension.empty() && !location->cgiPath.empty()) {
-		if (requested_path.size() >= location->cgiExtension.size()) {
-			std::string file_ext = requested_path.substr(requested_path.size() - location->cgiExtension.size());
-			if (file_ext == location->cgiExtension) {
-				// This is a CGI request - return success and let client handle CGI processing
-				return EVERYTHING_IS_OK;
+	if (!location->cgiExtensions.empty() && !location->cgiPaths.empty()) {
+		std::cout << "Checking for CGI request..." << std::endl;
+		
+		for (size_t i = 0; i < location->cgiExtensions.size(); ++i) {
+			const std::string& ext = location->cgiExtensions[i];
+			if (requested_path.size() >= ext.size()) {
+				std::string file_ext = requested_path.substr(requested_path.size() - ext.size());
+				if (file_ext == ext) {
+					// This is a CGI request - return success and let client handle CGI processing
+					return EVERYTHING_IS_OK;
+				}
 			}
 		}
 	}
@@ -275,14 +280,26 @@ RequestStatus Request::figure_out_http_method()
 }
 
 bool Request::is_cgi_request() const {
-	if (!location || location->cgiExtension.empty() || location->cgiPath.empty()) {
+	if (!location || location->cgiExtensions.empty() || location->cgiPaths.empty()) {
 		return false;
 	}
 	
-	// Check if the requested path ends with the CGI extension
-	if (requested_path.size() >= location->cgiExtension.size()) {
-		std::string file_ext = requested_path.substr(requested_path.size() - location->cgiExtension.size());
-		return file_ext == location->cgiExtension;
+	// Strip query string for extension checking
+	std::string path = requested_path;
+	size_t query_pos = path.find('?');
+	if (query_pos != std::string::npos) {
+		path = path.substr(0, query_pos);
+	}
+	
+	// Check if the requested path ends with any of the CGI extensions
+	for (size_t i = 0; i < location->cgiExtensions.size(); ++i) {
+		const std::string& ext = location->cgiExtensions[i];
+		if (path.size() >= ext.size()) {
+			std::string file_ext = path.substr(path.size() - ext.size());
+			if (file_ext == ext) {
+				return true;
+			}
+		}
 	}
 	
 	return false;

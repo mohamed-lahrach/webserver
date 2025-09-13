@@ -441,19 +441,35 @@ void Parser::parseReturnDirectiveInLocation(LocationContext &location)
 
 void Parser::parseCgiExtensionDirective(LocationContext &location)
 {
-    if (peek().type != STRING)
-        throw std::runtime_error("Expected file extension after 'cgi_extension' at line " + toString(peek().line));
-
-    location.cgiExtension = advance().value;
+    // Clear any existing extensions
+    location.cgiExtensions.clear();
+    
+    // Parse multiple extensions
+    while (peek().type == STRING)
+    {
+        location.cgiExtensions.push_back(advance().value);
+    }
+    
+    if (location.cgiExtensions.empty())
+        throw std::runtime_error("Expected at least one file extension after 'cgi_extension' at line " + toString(peek().line));
+    
     expect(SEMICOLON, "Expected ';' after cgi_extension");
 }
 
 void Parser::parseCgiPathDirective(LocationContext &location)
 {
-    if (peek().type != STRING)
-        throw std::runtime_error("Expected interpreter path after 'cgi_path' at line " + toString(peek().line));
-
-    location.cgiPath = advance().value;
+    // Clear any existing paths
+    location.cgiPaths.clear();
+    
+    // Parse multiple interpreter paths
+    while (peek().type == STRING)
+    {
+        location.cgiPaths.push_back(advance().value);
+    }
+    
+    if (location.cgiPaths.empty())
+        throw std::runtime_error("Expected at least one interpreter path after 'cgi_path' at line " + toString(peek().line));
+    
     expect(SEMICOLON, "Expected ';' after cgi_path");
 }
 

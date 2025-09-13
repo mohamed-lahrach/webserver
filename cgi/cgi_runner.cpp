@@ -97,7 +97,31 @@ int CgiRunner:: start_cgi_process(const Request& request,
                                 const std::string& script_path) {
     
     std::cout << "Starting CGI process for script: " << script_path << std::endl;
-    std::cout << "CGI interpreter: " << location.cgiPath << std::endl;
+    
+    // Find the appropriate interpreter for this script
+    std::string interpreter_path;
+    std::string file_ext;
+    
+    // Extract file extension
+    size_t dot_pos = script_path.rfind('.');
+    if (dot_pos != std::string::npos) {
+        file_ext = script_path.substr(dot_pos);
+    }
+    
+    // Find matching extension and get corresponding interpreter
+    for (size_t i = 0; i < location.cgiExtensions.size() && i < location.cgiPaths.size(); ++i) {
+        if (file_ext == location.cgiExtensions[i]) {
+            interpreter_path = location.cgiPaths[i];
+            break;
+        }
+    }
+    
+    if (interpreter_path.empty()) {
+        std::cout << "No interpreter found for extension: " << file_ext << std::endl;
+        return -1;
+    }
+    
+    std::cout << "CGI interpreter: " << interpreter_path << std::endl;
     std::cout << "Request method: " << request.get_http_method() << std::endl;
     std::cout << "Request path: " << request.get_requested_path() << std::endl;
     
@@ -133,7 +157,7 @@ int CgiRunner:: start_cgi_process(const Request& request,
         close(output_pipe[0]); // Close read end of output pipe (we write to it) we write to output_pipe[1]
         
         // Change to the directory containing the CGI script
-        std::string script_dir = script_path;
+        std::string script_dir = script_path; 
         std::string script_filename = script_path;
         size_t last_slash = script_dir.find_last_of('/');
         if (last_slash != std::string::npos) {
@@ -162,7 +186,7 @@ int CgiRunner:: start_cgi_process(const Request& request,
         
         // Build arguments
         std::vector<std::string> args;
-        args.push_back(location.cgiPath);  // interpreter path
+        args.push_back(interpreter_path);  // interpreter path
         args.push_back(script_filename);   // script filename (relative to working directory)
         std::vector<char*> argv = vector_to_char_array(args);
         
