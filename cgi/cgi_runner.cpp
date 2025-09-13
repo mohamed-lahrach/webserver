@@ -107,6 +107,11 @@ std::vector<std::string> CgiRunner::build_cgi_env(const Request& request,
     return env;
 }
 
+// Return values:
+//  >=0 : success, this is the output fd to monitor
+//   -1 : generic internal error (pipe/fork failure, exec failure)
+//   -2 : script not found (404)
+//   -3 : script not readable (403)
 int CgiRunner:: start_cgi_process(const Request& request, 
                                 const LocationContext& location,
                                 int client_fd,
@@ -120,12 +125,12 @@ int CgiRunner:: start_cgi_process(const Request& request,
     // Check if script file exists
     if (access(script_path.c_str(), F_OK) != 0) {
         std::cerr << "CGI script not found: " << script_path << std::endl;
-        return -1;
+        return -2; // NOT_FOUND
     }
     
     if (access(script_path.c_str(), R_OK) != 0) {
         std::cerr << "CGI script not readable: " << script_path << std::endl;
-        return -1;
+        return -3; // FORBIDDEN
     }
     
     // Create pipes for communication
