@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Query String Test Form</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .form-container { max-width: 500px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="password"] { 
+            width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; 
+        }
+        button { 
+            background: #007bff; color: white; padding: 10px 20px; 
+            border: none; border-radius: 4px; cursor: pointer; margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .info { background: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Query String Test Form</h1>
+        
+        <div class="info">
+            <h3>Test Instructions:</h3>
+            <p>1. Fill in the form below</p>
+            <p>2. Click "Submit via GET" to send data as query parameters in URL</p>
+            <p>3. Click "Submit via POST" to send data in request body</p>
+            <p>4. Check the CGI response to see how your server handles the data</p>
+        </div>
+
+        <form id="testForm" action="/cgi-bin/query_test.py" method="GET">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" value="testuser" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" value="testpass123" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="text" id="email" name="email" value="test@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="role">Role:</label>
+                <input type="text" id="role" name="role" value="admin">
+            </div>
+            
+            <button type="submit" onclick="setMethod('GET')">Submit via GET (Query String)</button>
+            <button type="button" onclick="setMethod('POST'); document.getElementById('testForm').submit();">Submit via POST</button>
+        </form>
+
+       
+    </div>
+
+    <script>
+        function setMethod(method) {
+            document.getElementById('testForm').method = method;
+        }
+    </script>
+</body>
+</html>

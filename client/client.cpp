@@ -174,14 +174,19 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 		ev.data.fd = client_fd;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &ev) == -1)
 		{
-			cleanup_connection(epoll_fd, active_clients); // ← Better cleanup
+			cleanup_connection(epoll_fd, active_clients);
 			std::cout << "Failed to modify client socket to EPOLLOUT mode" << std::endl;
 			return;
 		}
 	}
+	else if (bytes_received == 0)
+	{
+		std::cout << "Client " << client_fd << " closed connection gracefully" << std::endl;
+		cleanup_connection(epoll_fd, active_clients);
+	}
 	else 
 	{
-		std::cout << "Client " << client_fd << " disconnected" << std::endl;
+		std::cout << "Error receiving data from client " << client_fd << std::endl;
 		cleanup_connection(epoll_fd, active_clients);
 	}
 }
@@ -237,9 +242,7 @@ void Client::handle_client_data_output(int client_fd, int epoll_fd,
 		cleanup_connection(epoll_fd, active_clients);
 	}
 	else
-	{
 		std::cout << "File streaming in progress - keeping connection alive" << std::endl;
-	}
 }
 
 void Client::cleanup_connection(int epoll_fd, std::map<int,

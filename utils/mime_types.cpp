@@ -56,6 +56,5 @@ std::string MimeTypes::get_mime_type(const std::string &file_path)
     if (it != mime_map.end())
         return it->second;
 
-    // def
     return "application/octet-stream";
 }

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cctype>
+#include "../utils/utils.hpp"
 
 Request::Request() : http_method(""), requested_path(""), http_version(""), got_all_headers(false), expected_body_size(0), request_body(""), config(0), location(0), get_handler(), post_handler(), delete_handler()
 {
@@ -58,11 +59,9 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 	std::vector<LocationContext>::iterator it_location = config->locations.begin();
 	while (it_location != config->locations.end())
 	{
-		if (it_location->path.empty())
-		{
-			++it_location;
-			continue;
-		}
+		if(it_location->path[it_location->path.length() - 1]=='/' && it_location->path.length()>1)
+			it_location->path = it_location->path.substr(0, it_location->path.length() - 1);
+
 		std::cout << "  Checking location: '" << it_location->path << "'" << std::endl;
 		if (resquested_path.compare(0, it_location->path.length(), it_location->path) == 0)
 		{
@@ -129,7 +128,6 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 		{
 			std::map<std::string, std::string>::iterator it_content_len = http_headers.find("content-length");
 			std::map<std::string, std::string>::iterator it_transfer_enc = http_headers.find("transfer-encoding");
-			
 			if (it_content_len != http_headers.end())
 			{
 				expected_body_size = std::atoi(it_content_len->second.c_str());
@@ -190,6 +188,18 @@ bool Request::parse_http_headers(const std::string &header_text)
 		return false;
 
 	bool host_found = false;
+	
+	size_t query_pos = requested_path.find('?');
+	if (query_pos != std::string::npos) {
+		query_string = requested_path.substr(query_pos + 1);
+		requested_path = requested_path.substr(0, query_pos);
+		query_params = parse_query_string(query_string);
+	} else {
+		query_string = "";
+		query_params.clear();
+	}
+	
+	requested_path = url_decode(requested_path);
 
 	while (std::getline(header_stream, current_line))
 	{

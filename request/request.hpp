@@ -16,6 +16,8 @@ class Request
   std::string requested_path;    
   std::string http_version;     
   std::string full_path;    
+  std::string query_string;
+  std::map<std::string, std::string> query_params;
   std::map<std::string, std::string> http_headers;  
   
 
@@ -45,6 +47,8 @@ bool check_for_valid_http_start();
 	const std::string& get_http_method() const { return http_method; }
 	const std::string& get_requested_path() const { return requested_path; }
 	const std::string& get_http_version() const { return http_version; }
+	const std::string& get_query_string() const { return query_string; }
+	const std::map<std::string, std::string>& get_query_params() const { return query_params; }
 	const std::map<std::string, std::string>& get_all_headers() const { return http_headers; }
 	const std::string& get_request_body() const { return request_body; }
 	LocationContext* get_location() const { return location; }
