@@ -339,14 +339,26 @@ std::string PostHandler::get_cgi_filename_from_headers(const std::map<std::strin
 // CGI-specific methods
 bool PostHandler::is_cgi_request(const LocationContext *loc, const std::string &requested_path) const
 {
-	if (!loc || loc->cgiExtension.empty() || loc->cgiPath.empty())
+	if (!loc || loc->cgiExtensions.empty() || loc->cgiPaths.empty()) {
 		return false;
-		
-	// Check if the requested path ends with the CGI extension
-	if (requested_path.size() >= loc->cgiExtension.size())
-	{
-		std::string file_ext = requested_path.substr(requested_path.size() - loc->cgiExtension.size());
-		return file_ext == loc->cgiExtension;
+	}
+	
+	// Strip query string for extension checking
+	std::string path = requested_path;
+	size_t query_pos = path.find('?');
+	if (query_pos != std::string::npos) {
+		path = path.substr(0, query_pos);
+	}
+	
+	// Check if the requested path ends with any of the CGI extensions
+	for (size_t i = 0; i < loc->cgiExtensions.size(); ++i) {
+		const std::string& ext = loc->cgiExtensions[i];
+		if (path.size() >= ext.size()) {
+			std::string file_ext = path.substr(path.size() - ext.size());
+			if (file_ext == ext) {
+				return true;
+			}
+		}
 	}
 	
 	return false;

@@ -229,8 +229,6 @@ RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 	if (is_cgi_request(loc, requested_path))
 	{
 		std::cout << "=== CGI POST REQUEST DETECTED ===" << std::endl;
-		std::cout << "CGI Extension: " << loc->cgiExtension << std::endl;
-		std::cout << "CGI Path: " << loc->cgiPath << std::endl;
 		
 		// Handle CGI POST body data collection - save directly to file
 		if (http_headers.find("transfer-encoding") != http_headers.end())
