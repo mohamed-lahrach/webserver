@@ -263,7 +263,11 @@ RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 			{
 				std::cout << "ERROR: CGI POST body size too large!" << std::endl;
 				// Remove the CGI file on error
-				std::string filename = cgi_filename.empty() ? "cgi_post_data.txt" : cgi_filename;
+				std::string filename = NULL;
+				if(cgi_filename.empty())
+					filename = "cgi_post_data.txt";
+				else
+					filename = cgi_filename;
 				remove(("/tmp/" + filename).c_str());
 				return PAYLOAD_TOO_LARGE;
 			}

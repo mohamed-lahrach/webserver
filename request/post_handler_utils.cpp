@@ -6,9 +6,9 @@
 #include <cstdlib>
 #include <dirent.h>
 #include <sys/stat.h> 
-#include <unistd.h> // For access()
+#include <unistd.h>
 
-// Static member definition
+
 size_t PostHandler::total_received_size = 0;
 
 size_t PostHandler::parse_max_body_size(const std::string &size_str)
@@ -22,7 +22,6 @@ size_t PostHandler::parse_max_body_size(const std::string &size_str)
 	{
 		number_str = size_str.substr(0, size_str.length() - 1);
 	}
-	// Convert number to integer
 	value = atoi(number_str.c_str());
 	switch (unit)
 	{
@@ -46,7 +45,7 @@ PostHandler::PostHandler()
 	start_position = 0;
 	data_start = false;
 	cgi_first_write = true;
-	cgi_filename = "";  // Initialize CGI filename
+	cgi_filename = "";
 	std::cout << "PostHandler initialized." << std::endl;
 }
 
@@ -75,7 +74,6 @@ RequestStatus PostHandler::save_request_body(const std::string &filename,
 	if(loc->uploadStore[loc->uploadStore.length() - 1] == '/')
 		full_path = loc->uploadStore + filename;
 	file_path = full_path;
-    /// open file for append or create if it doesn't exist
     std::ofstream file;
 	if(first_chunk)
 	{
@@ -112,9 +110,9 @@ std::string PostHandler::extract_boundary(const std::string &content_type)
 		return "";
 	}
 	
-	pos += 9; // Move past "boundary="
+	pos += 9; // move past "boundary="
 	
-	// Check if boundary is quoted
+	// check if boundary is quoted
 	if (pos < content_type.length() && content_type[pos] == '"')
 	{
 		pos++; // Skip opening quote
@@ -131,7 +129,7 @@ std::string PostHandler::extract_boundary(const std::string &content_type)
 	}
 	else
 	{
-		// Not quoted, find end by semicolon, space, or end of string
+		// not quoted, find end by semicolon, space, or end of string
 		end_pos = content_type.find_first_of("; \t\r\n", pos);
 		if (end_pos == std::string::npos)
 		{
@@ -142,8 +140,6 @@ std::string PostHandler::extract_boundary(const std::string &content_type)
 			boundary_value = content_type.substr(pos, end_pos - pos);
 		}
 	}
-	
-	// Trim any remaining whitespace
 	size_t start = boundary_value.find_first_not_of(" \t\r\n");
 	size_t end = boundary_value.find_last_not_of(" \t\r\n");
 	if (start != std::string::npos && end != std::string::npos)
@@ -196,10 +192,14 @@ int PostHandler::parse_size(const ServerContext *cfg, std::string &incoming_data
 std::string PostHandler::get_cgi_body() const
 {
 	// Use stored filename if available, otherwise fallback to default
-	std::string filename = cgi_filename.empty() ? "cgi_post_data.txt" : cgi_filename;
+	std::string filename = NULL;
+	if(cgi_filename.empty())
+	  filename = "cgi_post_data.txt";
+	else
+	  filename = cgi_filename;
 	std::string full_path = "/tmp/" + filename;
 	
-	// Read CGI POST data from file instead of buffer
+	// read CGI POST data from file instead of buffer
 	std::ifstream file(full_path.c_str(), std::ios::binary);
 	if (!file)
 	{
@@ -214,7 +214,7 @@ std::string PostHandler::get_cgi_body() const
 		content += line + "\n";
 	}
 	
-	// Remove the last newline if it was added
+	// remove the last newline if it was added
 	if (!content.empty() && content[content.length() - 1] == '\n')
 	{
 		content.erase(content.length() - 1);
@@ -228,16 +228,18 @@ std::string PostHandler::get_cgi_body() const
 void PostHandler::clear_cgi_body()
 {
 	// Use stored filename if available, otherwise fallback to default
-	std::string filename = cgi_filename.empty() ? "cgi_post_data.txt" : cgi_filename;
+	std::string filename = NULL;
+	if(cgi_filename.empty())
+		filename = "cgi_post_data.txt";
+	else
+		filename = cgi_filename;
 	std::string full_path = "/tmp/" + filename;
 	
-	// Remove the CGI POST data file
+	// remove the CGI POST data file
 	if (remove(full_path.c_str()) == 0)
 	{
 		std::cout << "CGI POST data file cleared: " << full_path << std::endl;
 	}
-	
-	// Reset the filename
 	cgi_filename = "";
 }
 
@@ -246,8 +248,7 @@ RequestStatus PostHandler::save_cgi_body(const std::string &data)
 {
 	std::string full_path = "/tmp/cgi_post_data.txt";
 	std::ofstream file;
-	
-	// For first chunk, truncate. For subsequent chunks, append
+
 	if (cgi_first_write)
 	{
 		file.open(full_path.c_str(), std::ios::binary | std::ios::trunc);
@@ -276,16 +277,13 @@ RequestStatus PostHandler::save_cgi_body_with_filename(const std::string &data, 
 {
 	std::string filename = get_cgi_filename_from_headers(headers);
 	std::string full_path = "/tmp/" + filename;
-	
-	// Store the filename for later retrieval
+
 	if (cgi_first_write)
 	{
 		cgi_filename = filename;
 	}
 	
 	std::ofstream file;
-	
-	// For first chunk, truncate. For subsequent chunks, append
 	if (cgi_first_write)
 	{
 		file.open(full_path.c_str(), std::ios::binary | std::ios::trunc);
@@ -311,7 +309,7 @@ RequestStatus PostHandler::save_cgi_body_with_filename(const std::string &data, 
 
 std::string PostHandler::get_cgi_filename_from_headers(const std::map<std::string, std::string> &headers) const
 {
-	// Try to get filename from X-File-Name header
+	// Try to get filename from file_name exit in headers
 	std::map<std::string, std::string>::const_iterator it = headers.find("x-file-name");
 	if (it != headers.end() && !it->second.empty())
 	{
@@ -332,7 +330,7 @@ std::string PostHandler::get_cgi_filename_from_headers(const std::map<std::strin
 		return filename;
 	}
 	
-	// Fallback to default name
+	// to default name
 	std::cout << "No filename found in headers, using default" << std::endl;
 	return "cgi_post_data.txt";
 }
@@ -346,16 +344,20 @@ bool PostHandler::is_cgi_request(const LocationContext *loc, const std::string &
 	// Strip query string for extension checking
 	std::string path = requested_path;
 	size_t query_pos = path.find('?');
-	if (query_pos != std::string::npos) {
+	if (query_pos != std::string::npos)
+	{
 		path = path.substr(0, query_pos);
 	}
 	
 	// Check if the requested path ends with any of the CGI extensions
-	for (size_t i = 0; i < loc->cgiExtensions.size(); ++i) {
+	for (size_t i = 0; i < loc->cgiExtensions.size(); ++i)
+	{
 		const std::string& ext = loc->cgiExtensions[i];
-		if (path.size() >= ext.size()) {
+		if (path.size() >= ext.size())
+		{
 			std::string file_ext = path.substr(path.size() - ext.size());
-			if (file_ext == ext) {
+			if (file_ext == ext)
+			{
 				return true;
 			}
 		}

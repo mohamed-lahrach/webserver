@@ -31,9 +31,9 @@ class PostHandler
 	std::string file_path;
 	
 	// CGI-specific members
-	std::string cgi_body_buffer;  // Store CGI POST body data
-	bool cgi_first_write;         // Track if this is first CGI write
-	std::string cgi_filename;     // Store the CGI filename for later retrieval
+	std::string cgi_body_buffer;
+	bool cgi_first_write;         
+	std::string cgi_filename;     
   public:
 	PostHandler();
 	~PostHandler();

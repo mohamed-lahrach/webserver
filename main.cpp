@@ -33,9 +33,6 @@ int	main(int argc, char **argv)
         std::cerr << e.what() << std::endl;
         return 1;
     }
-	//exit(0); // Temporary exit to test parsing only
-	// Debug: print server info and location details
-
 	Server server;
 	try
 	{

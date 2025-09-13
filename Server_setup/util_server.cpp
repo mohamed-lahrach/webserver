@@ -9,13 +9,11 @@ Server::Server() : server_fd(-1), epoll_fd(-1)
 Server::~Server()
 {
 	std::cout << "=== DESTROYING SERVER ===" << std::endl;
-	// Close epoll first to stop monitoring
 	if (epoll_fd != -1)
 	{
 		close(epoll_fd);
 		std::cout << "✓ Epoll closed" << std::endl;
 	}
-	// Close all server sockets
 	for (size_t i = 0; i < server_fds.size(); i++)
 	{
 		if (server_fds[i] != -1)
@@ -24,15 +22,13 @@ Server::~Server()
 			std::cout << "✓ Server socket " << server_fds[i] << " closed" << std::endl;
 		}
 	}
-	// DON'T close client sockets - they're already closed by cleanup_connection
-	// Just clear the maps
 	if (!active_clients.empty())
 	{
 		std::cout << "✓ Cleaning up " << active_clients.size() << " remaining clients" << std::endl;
-		active_clients.clear(); // Just clear the map, don't close sockets
+		active_clients.clear(); 
 	}
-	client_to_server.clear(); // Clear the mapping
-	fd_to_port.clear();       // Clear other mappings
+	client_to_server.clear();
+	fd_to_port.clear();
 	fd_to_config.clear();
 	std::cout << "✓ Server object destroyed" << std::endl;
 }
@@ -97,7 +93,7 @@ void Server::init_data(const std::vector<ServerContext> &configs)
 	{
 		const ServerContext &config = configs[i];
 		port = atoi(config.port.c_str());
-		// DEBUG: Print what we're trying to setup
+		// DEBUG: print what we're trying to setup
 		std::cout << "=== SERVER " << (i + 1) << " SETUP ===" << std::endl;
 		std::cout << "Config host: '" << config.host << "'" << std::endl;
 		std::cout << "Config port: '" << config.port << "'" << std::endl;
@@ -107,7 +103,6 @@ void Server::init_data(const std::vector<ServerContext> &configs)
 			throw std::runtime_error("Failed to setup socket for port "
 				+ config.port);
 		}
-		// 4. Add THIS socket to the existing epoll
 		event.events = EPOLLIN;
 		event.data.fd = server_fd;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event) == -1)
@@ -116,7 +111,7 @@ void Server::init_data(const std::vector<ServerContext> &configs)
 			throw std::runtime_error("Failed to add server socket to epoll");
 		}
 		std::cout << "✓ Server socket " << server_fd << " added to epoll for port " << port << std::endl;
-		// 5. Store in mapping tables
+		// store in mapping tables
 		server_fds.push_back(server_fd);
 		fd_to_port[server_fd] = port;
 		fd_to_config[server_fd] = const_cast<ServerContext *>(&configs[i]);
