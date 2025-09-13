@@ -7,7 +7,6 @@ RequestStatus PostHandler::parse_form_data(const std::string &body,
 	size_t	end_position;
 	RequestStatus status;
 	std::cout << "Parsing multipart data..." << std::endl;
-	// Extract boundary once
 	if (!boundary_found)
 	{
 		boundary = extract_boundary(content_type);
@@ -19,7 +18,6 @@ RequestStatus PostHandler::parse_form_data(const std::string &body,
 		boundary_found = true;
 		std::cout << "Extracted boundary: " << boundary << std::endl;
 	}
-	// Extract filename once (usually in the headers of first chunk)
 	if (!file_name_found)
 	{
 		file_name = extract_filename(body);
@@ -31,7 +29,6 @@ RequestStatus PostHandler::parse_form_data(const std::string &body,
 		file_name_found = true;
 		std::cout << "Extracted filename: " << file_name << std::endl;
 	}
-	// Handle first chunk (headers + maybe start of file data)
 	if (!data_start)
 	{
 		start_position = body.find("\r\n\r\n");
@@ -54,17 +51,16 @@ RequestStatus PostHandler::parse_form_data(const std::string &body,
 		}
 		data_start = true;
 		// handle case small data
-		std::string closing_boundary = "--" + boundary + "--";  // Try final boundary first
+		std::string closing_boundary = "--" + boundary + "--";  // try final boundary first
 		end_position = body.find(closing_boundary, start_position);
 		if (end_position == std::string::npos)
 		{
-			closing_boundary = "--" + boundary;  // Try regular boundary
+			closing_boundary = "--" + boundary;  // try regular boundary
 			end_position = body.find(closing_boundary, start_position);
 		}
 		std::cout << "Looking for boundary: '" << closing_boundary << "'" << std::endl;
 		if (end_position != std::string::npos)
 		{
-			// Cut CRLF before boundary
 			if (end_position >= 2 && body.substr(end_position - 2, 2) == "\r\n")
 				end_position -= 2;
 			else if (end_position >= 1 && body[end_position - 1] == '\n')
@@ -76,17 +72,15 @@ RequestStatus PostHandler::parse_form_data(const std::string &body,
 				return status;
 			return POSTED_SUCCESSFULLY;
 		}
-		// Write only after headers
 		std::string chunk = body.substr(start_position);
 		status = save_request_body(file_name, chunk, loc);
 		if (status != POSTED_SUCCESSFULLY)
 			return status;
 		return POSTED_SUCCESSFULLY;
 	}
-	// Handle last chunk (when total size matches expected)
 	if (total_received_size == expected_body_size)
 	{
-		std::string boundary_marker = "--" + boundary + "--";  // Final boundary has -- at the end
+		std::string boundary_marker = "--" + boundary + "--";
 		end_position = body.find(boundary_marker);
 		std::cout << "Final chunk detected." << std::endl;
 		std::cout << "Looking for final boundary: '" << boundary_marker << "'" << std::endl;
@@ -111,7 +105,6 @@ RequestStatus PostHandler::parse_form_data(const std::string &body,
 				return status;
 			return BAD_REQUEST;
 		}
-		// Cut CRLF before boundary if exists
 		if (end_position >= 2 && body.substr(end_position - 2, 2) == "\r\n")
 			end_position -= 2;
 		else if (end_position >= 1 && body[end_position - 1] == '\n')
@@ -194,10 +187,8 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 				return (POSTED_SUCCESSFULLY);
 			}
 		}
-		// Check if we have enough chunk data + CRLF
 		if (buffer_not_parser.size() - processed_pos < chunk_size + 2)
-			break ; // not enough data yet
-		// append chunk to file directly
+			break ; 
 		total_received_size += chunk_size;
 		std::string chunk_data = buffer_not_parser.substr(processed_pos, chunk_size);
 		if(total_received_size > parse_max_body_size(cfg->clientMaxBodySize))
@@ -212,7 +203,6 @@ RequestStatus PostHandler::handle_post_request_with_chunked(const std::map<std::
 		processed_pos += chunk_size + 2;
 		chunk_size = 0;
 	}
-	// Remove processed part from parse buffer
 	if (processed_pos > 0)
 		buffer_not_parser.erase(0, processed_pos);
 	return (BODY_BEING_READ);
@@ -224,13 +214,10 @@ RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 {
 	size_t	start;
 	size_t	end;
-	
-	// Check if this is a CGI request first
+
 	if (is_cgi_request(loc, requested_path))
 	{
 		std::cout << "=== CGI POST REQUEST DETECTED ===" << std::endl;
-		
-		// Handle CGI POST body data collection - save directly to file
 		if (http_headers.find("transfer-encoding") != http_headers.end())
 		{
 			std::string transfer_encoding = http_headers.at("transfer-encoding");
@@ -244,11 +231,9 @@ RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 			if (transfer_encoding == "chunked")
 			{
 				std::cout << "CGI POST: Using chunked transfer encoding" << std::endl;
-				return handle_cgi_chunked_post(http_headers, incoming_data, cfg, loc);
+				return handle_cgi_chunked_post(incoming_data, cfg, http_headers);
 			}
 		}
-		
-		// Handle Content-Length based CGI POST - save directly to file
 		if (expected_body_size > 0)
 		{
 			total_received_size += incoming_data.size();
@@ -257,18 +242,15 @@ RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 			
 			if (status != POSTED_SUCCESSFULLY)
 				return status;
-				
-			// Check body size limit
 			if (total_received_size > parse_max_body_size(cfg->clientMaxBodySize))
 			{
 				std::cout << "ERROR: CGI POST body size too large!" << std::endl;
-				// Remove the CGI file on error
 				std::string filename = NULL;
 				if(cgi_filename.empty())
 					filename = "cgi_post_data.txt";
 				else
 					filename = cgi_filename;
-				remove(("/tmp/" + filename).c_str());
+				remove_file_data(("/tmp/" + filename).c_str());
 				return PAYLOAD_TOO_LARGE;
 			}
 			
@@ -282,13 +264,9 @@ RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 			std::cout << "CGI POST: Received complete body (" << total_received_size << " bytes)" << std::endl;
 			return POSTED_SUCCESSFULLY;
 		}
-		
-		// No body expected for CGI
 		std::cout << "CGI POST: No body expected" << std::endl;
 		return POSTED_SUCCESSFULLY;
 	}
-	
-	// Regular POST handling (non-CGI)
 	if(loc->uploadStore.empty())
 	{
 		std::cout << "No upload store configured, skipping file save." << std::endl;
@@ -337,13 +315,9 @@ RequestStatus PostHandler::handle_post_request(const std::map<std::string,
 }
 
 
-RequestStatus PostHandler::handle_cgi_chunked_post(const std::map<std::string,
-	std::string> &http_headers, std::string &incoming_data,
-	const ServerContext *cfg, const LocationContext *loc)
+RequestStatus PostHandler::handle_cgi_chunked_post(std::string &incoming_data,
+	const ServerContext *cfg, const std::map<std::string, std::string> &http_headers)
 {
-	(void)http_headers; // Suppress unused parameter warning
-	(void)loc; // Suppress unused parameter warning
-	
 	std::cout << "=== CGI CHUNKED POST HANDLER ===" << std::endl;
 	std::cout << "Incoming data size: " << incoming_data.size() << std::endl;
 	
@@ -356,10 +330,9 @@ RequestStatus PostHandler::handle_cgi_chunked_post(const std::map<std::string,
 	{
 		if (chunk_size == 0)
 		{
-			// Look for chunk size line
 			size_t crlf_pos = buffer_not_parser.find("\r\n", processed_pos);
 			if (crlf_pos == std::string::npos)
-				break; // need more data
+				break;
 				
 			std::string size_str = buffer_not_parser.substr(processed_pos, crlf_pos - processed_pos);
 			chunk_size = std::strtoul(size_str.c_str(), NULL, 16);
@@ -373,20 +346,14 @@ RequestStatus PostHandler::handle_cgi_chunked_post(const std::map<std::string,
 				return POSTED_SUCCESSFULLY;
 			}
 		}
-		
-		// Check if we have enough chunk data + CRLF
 		if (buffer_not_parser.size() - processed_pos < chunk_size + 2)
 			break; // not enough data yet
-			
-		// Extract chunk data and save directly to file
 		std::string chunk_data = buffer_not_parser.substr(processed_pos, chunk_size);
 		total_received_size += chunk_size;
 		
 		RequestStatus status = save_cgi_body_with_filename(chunk_data, http_headers);
 		if (status != POSTED_SUCCESSFULLY)
 			return status;
-		
-		// Check body size limit
 		if (total_received_size > parse_max_body_size(cfg->clientMaxBodySize))
 		{
 			std::cout << "ERROR: CGI POST chunked body size too large!" << std::endl;
@@ -399,8 +366,6 @@ RequestStatus PostHandler::handle_cgi_chunked_post(const std::map<std::string,
 		processed_pos += chunk_size + 2;
 		chunk_size = 0;
 	}
-	
-	// Remove processed part from buffer
 	if (processed_pos > 0)
 		buffer_not_parser.erase(0, processed_pos);
 		

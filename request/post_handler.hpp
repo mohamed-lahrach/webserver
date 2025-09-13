@@ -56,8 +56,7 @@ class PostHandler
 	
 	// CGI-specific methods
 	bool is_cgi_request(const LocationContext *loc, const std::string &requested_path) const;
-	RequestStatus handle_cgi_chunked_post(const std::map<std::string, std::string> &http_headers,
-		std::string &incoming_data, const ServerContext *cfg, const LocationContext *loc);
+	RequestStatus handle_cgi_chunked_post(std::string &incoming_data, const ServerContext *cfg, const std::map<std::string, std::string> &http_headers);
 	RequestStatus save_cgi_body(const std::string &data);
 	RequestStatus save_cgi_body_with_filename(const std::string &data, const std::map<std::string, std::string> &headers);
 	std::string get_cgi_body() const;
