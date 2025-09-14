@@ -262,16 +262,15 @@ int CgiRunner::start_cgi_process(const Request &request,
     fcntl(output_pipe[0], F_SETFL, flags | O_NONBLOCK);
 
     // Store CGI process info
-    CgiProcess cgi_proc;                 // Initialize with default constructor
-    cgi_proc.pid = pid;                  // Store the actual pid of the forked process which is the child
-    cgi_proc.input_fd = input_pipe[1];   // Parent writes to this fd
-    cgi_proc.output_fd = output_pipe[0]; // Parent reads from this fd
-    cgi_proc.client_fd = client_fd;      // Original client socket fd
-    cgi_proc.script_path = script_path;  // Store the script path like /usr/lib/cgi-bin/script.py
-    cgi_proc.finished = false;           // Not finished yet which helps in handle_cgi_output to prevent infinite loop
-    cgi_proc.start_time = time(NULL);    // Record start time for timeout handling which helps in handle_cgi_output
+    CgiProcess cgi_proc;
+    cgi_proc.pid = pid;
+    cgi_proc.input_fd = input_pipe[1];
+    cgi_proc.output_fd = output_pipe[0];
+    cgi_proc.client_fd = client_fd;
+    cgi_proc.script_path = script_path;
+    cgi_proc.finished = false;
 
-    active_cgi_processes[output_pipe[0]] = cgi_proc; // Map output fd to CgiProcess struct
+    active_cgi_processes[output_pipe[0]] = cgi_proc;
 
     // Write request body to CGI stdin if it's a POST request
     if (request.get_http_method() == "POST")
@@ -309,25 +308,6 @@ bool CgiRunner::handle_cgi_output(int fd, std::string &response_data)
     // Check if process is already finished to prevent infinite loop
     if (it->second.finished)
     {
-        response_data = format_cgi_response(it->second.output_buffer);
-        return true;
-    }
-
-    // Check for timeout (10 seconds) - this is backup in case the main timeout checker misses it
-    time_t current_time = time(NULL);
-    if (current_time - it->second.start_time > 10)
-    {
-        if (it->second.pid > 0)
-        {
-            kill(it->second.pid, SIGKILL);
-            waitpid(it->second.pid, NULL, 0);
-        }
-        it->second.finished = true;
-        it->second.output_buffer = "Status: 504 Gateway Timeout\r\n"
-                                   "Content-Type: text/html\r\n"
-                                   "\r\n"
-                                   "<html><body><h1>504 Gateway Timeout</h1>"
-                                   "<p>The CGI script took too long to respond (10+ seconds).</p></body></html>";
         response_data = format_cgi_response(it->second.output_buffer);
         return true;
     }
@@ -440,55 +420,6 @@ void CgiRunner::check_finished_processes()
     for (size_t i = 0; i < finished_fds.size(); ++i)
     {
         cleanup_cgi_process(finished_fds[i]);
-    }
-}
-
-void CgiRunner::check_cgi_timeouts()
-{
-    std::vector<int> timed_out_fds;
-    time_t current_time = time(NULL);
-
-    for (std::map<int, CgiProcess>::iterator it = active_cgi_processes.begin();
-         it != active_cgi_processes.end(); ++it)
-    {
-
-        if (!it->second.finished && (current_time - it->second.start_time > 10))
-        {
-            // Kill the process
-            if (it->second.pid > 0)
-            {
-                kill(it->second.pid, SIGKILL);
-                waitpid(it->second.pid, NULL, 0);
-            }
-
-            // Mark as finished with timeout response
-            it->second.finished = true;
-            it->second.output_buffer = "Status: 504 Gateway Timeout\r\n"
-                                       "Content-Type: text/html\r\n"
-                                       "\r\n"
-                                       "<html><body><h1>504 Gateway Timeout</h1>"
-                                       "<p>The CGI script took too long to respond (10+ seconds).</p></body></html>";
-
-            timed_out_fds.push_back(it->first);
-        }
-    }
-
-    // Send timeout responses to clients
-    for (size_t i = 0; i < timed_out_fds.size(); ++i)
-    {
-        int fd = timed_out_fds[i];
-        std::map<int, CgiProcess>::iterator it = active_cgi_processes.find(fd);
-        if (it != active_cgi_processes.end())
-        {
-            int client_fd = it->second.client_fd;
-            if (client_fd >= 0)
-            {
-                std::string formatted_response = format_cgi_response(it->second.output_buffer);
-                ssize_t bytes_sent = send(client_fd, formatted_response.c_str(),
-                                          formatted_response.size(), 0);
-                (void)bytes_sent; // Suppress unused variable warning
-            }
-        }
     }
 }
 
