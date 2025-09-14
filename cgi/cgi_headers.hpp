@@ -4,7 +4,6 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <ctime>
 
 struct CgiProcess
 {
@@ -15,9 +14,8 @@ struct CgiProcess
     std::string script_path;   // resolved script path
     bool finished;             // set when EOF + child reaped
     std::string output_buffer; // accumulates CGI stdout (headers+body)
-    time_t start_time;         // for timeouts (e.g., 30s)
 
-    CgiProcess() : pid(-1), input_fd(-1), output_fd(-1), client_fd(-1), finished(false), start_time(0) {}
+    CgiProcess() : pid(-1), input_fd(-1), output_fd(-1), client_fd(-1), finished(false) {}
 };
 
 #endif

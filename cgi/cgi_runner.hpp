@@ -41,9 +41,6 @@ public:
     // Check for finished processes
     void check_finished_processes();
     
-    // Check for timed out CGI processes (call this regularly!)
-    void check_cgi_timeouts();
-    
 private:
     // Format CGI output into HTTP response
     std::string format_cgi_response(const std::string& cgi_output);
