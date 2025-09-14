@@ -191,8 +191,7 @@ int PostHandler::parse_size(const ServerContext *cfg, std::string &incoming_data
 }
 std::string PostHandler::get_cgi_body() const
 {
-	// Use stored filename if available, otherwise fallback to default
-	std::string filename = NULL;
+	std::string filename;
 	if(cgi_filename.empty())
 	  filename = "cgi_post_data.txt";
 	else

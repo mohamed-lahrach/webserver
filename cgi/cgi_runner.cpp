@@ -153,9 +153,9 @@ int CgiRunner:: start_cgi_process(const Request& request,
         return -1;
     }
     
-    std::cout << "CGI interpreter: " << interpreter_path << std::endl;
-    std::cout << "Request method: " << request.get_http_method() << std::endl;
-    std::cout << "Request path: " << request.get_requested_path() << std::endl;
+    std::cout << "\033[32mCGI interpreter: " << interpreter_path << "\033[0m" << std::endl;
+    std::cout << "\033[32mRequest method: " << request.get_http_method() << "\033[0m" << std::endl;
+    std::cout << "\033[32mRequest path: " << request.get_requested_path() << "\033[0m" << std::endl;
     
     // Check if script file exists
     if (access(script_path.c_str(), F_OK) != 0) {
