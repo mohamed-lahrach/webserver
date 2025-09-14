@@ -416,6 +416,15 @@ void Parser::parseLocationBlock()
 
     expect(RIGHT_BRACE, "Expected '}' to close location block at line " + toString(peek().line));
 
+    // Validate CGI configuration - extensions and paths must have same size
+    if (!location.cgiExtensions.empty() || !location.cgiPaths.empty())
+    {
+        if (location.cgiExtensions.size() != location.cgiPaths.size())
+        {
+            throw std::runtime_error("Parser error: extensions and interpreters must have same number of values at line " + toString(previous().line));
+        }
+    }
+
     // Store location in current server
     currentServer.locations.push_back(location);
 }

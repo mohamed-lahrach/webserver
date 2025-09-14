@@ -46,6 +46,36 @@ static std::vector<char *> vector_to_char_array(const std::vector<std::string> &
     return result;
 }
 
+// Helper function to create error response for failed CGI execution
+static std::string create_error_response(int error_code, const std::string &message)
+{
+    std::ostringstream response;
+    
+    switch (error_code)
+    {
+    case 404:
+        response << "HTTP/1.1 404 Not Found\r\n";
+        break;
+    case 403:
+        response << "HTTP/1.1 403 Forbidden\r\n";
+        break;
+    case 500:
+    default:
+        response << "HTTP/1.1 500 Internal Server Error\r\n";
+        break;
+    }
+    
+    response << "Content-Type: text/html; charset=utf-8\r\n";
+    response << "Connection: close\r\n";
+    
+    std::string body = "<html><body><h1>CGI Error</h1><p>" + message + "</p></body></html>";
+    response << "Content-Length: " << body.size() << "\r\n";
+    response << "\r\n";
+    response << body;
+    
+    return response.str();
+}
+
 std::vector<std::string> CgiRunner::build_cgi_env(const Request &request,
                                                   const std::string &server_name,
                                                   const std::string &server_port,
@@ -141,6 +171,7 @@ std::vector<std::string> CgiRunner::build_cgi_env(const Request &request,
 //   -1 : generic internal error (pipe/fork failure, exec failure)
 //   -2 : script not found (404)
 //   -3 : script not readable (403)
+
 int CgiRunner::start_cgi_process(const Request &request,
                                  const LocationContext &location,
                                  int client_fd,
@@ -322,7 +353,8 @@ bool CgiRunner::handle_cgi_output(int fd, std::string &response_data)
         // EOF - CGI process finished
         it->second.finished = true;
 
-        // Wait for the child process to avoid zombies
+        // Wait for the child process to avoid zombies and check exit status
+        int exit_status = 0;
         if (it->second.pid > 0)
         {
             int status;
@@ -332,6 +364,28 @@ bool CgiRunner::handle_cgi_output(int fd, std::string &response_data)
                 // Process still running, wait for it
                 waitpid(it->second.pid, &status, 0);
             }
+            
+            // Extract exit code
+            if (WIFEXITED(status))
+            {
+                exit_status = WEXITSTATUS(status);
+            }
+        }
+
+        // Check if CGI execution failed based on exit status
+        if (exit_status != 0)
+        {
+            // Any non-zero exit code indicates CGI failure - return HTTP 500
+            std::cout << "\033[31mCGI script failed with exit code " << exit_status 
+                      << " for: " << it->second.script_path << "\033[0m" << std::endl;
+            response_data = create_error_response(500, "Error 500 internal errors in the server");
+            return true;
+        }
+        else
+        {
+            // Exit code 0 - success
+            std::cout << "\033[32mCGI script completed successfully for: " 
+                      << it->second.script_path << "\033[0m" << std::endl;
         }
 
         // Format CGI output as HTTP response
