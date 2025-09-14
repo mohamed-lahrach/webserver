@@ -1,6 +1,5 @@
 #include "client.hpp"
 
-
 Client::Client() : client_fd(-1), request_status(NEED_MORE_DATA)
 {
 	std::cout << "Client constructor called" << std::endl;
@@ -8,7 +7,6 @@ Client::Client() : client_fd(-1), request_status(NEED_MORE_DATA)
 
 Client::~Client()
 {
-	std::cout << "Client destructor called" << std::endl;
 }
 
 int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Client> &active_clients)
@@ -27,18 +25,20 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 		return -1;
 	}
 	int flags = fcntl(client.client_fd, F_GETFL, 0);
-	if (flags == -1) {
+	if (flags == -1)
+	{
 		std::cout << "ERROR: fcntl F_GETFL failed" << std::endl;
 		close(client.client_fd);
 		return -1;
 	}
-	
-	if (fcntl(client.client_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+
+	if (fcntl(client.client_fd, F_SETFL, flags | O_NONBLOCK) == -1)
+	{
 		std::cout << "ERROR: fcntl F_SETFL failed" << std::endl;
 		close(client.client_fd);
 		return -1;
 	}
-	
+
 	std::cout << "✓ New client connected: " << client.client_fd << std::endl;
 	// Add client to epoll
 	client_event.events = EPOLLIN;
@@ -47,7 +47,7 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 	{
 		std::cout << "ERROR: Failed to add client to epoll" << std::endl;
 		close(client.client_fd);
-		return -1; 
+		return -1;
 	}
 	// Add to active clients map
 	active_clients[client.client_fd] = client;
@@ -56,7 +56,7 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 	return client.client_fd; // Return the new client fd
 }
 
-void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &active_clients, ServerContext &server_config, CgiRunner& cgi_runner)
+void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &active_clients, ServerContext &server_config, CgiRunner &cgi_runner)
 {
 	char buffer[7000000] = {0};
 	ssize_t bytes_received;
@@ -80,7 +80,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 			break;
 		case HEADERS_ARE_READY:
 		{
-				current_request.set_config(server_config);
+			current_request.set_config(server_config);
 			request_status = current_request.figure_out_http_method();
 
 			if (request_status == BODY_BEING_READ)
@@ -95,21 +95,23 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 			if (current_request.is_cgi_request())
 			{
 				std::cout << "🔧 Detected CGI request - starting CGI process" << std::endl;
-				LocationContext* location = current_request.get_location();
+				LocationContext *location = current_request.get_location();
 				if (location)
 				{
 					std::cout << "CGI Extensions: ";
-					for (size_t i = 0; i < location->cgiExtensions.size(); i++)
+					for (size_t i = 0; i < location->cgiExtensions.size(); ++i)
 					{
 						std::cout << location->cgiExtensions[i];
-						if (i < location->cgiExtensions.size() - 1) std::cout << " ";
+						if (i < location->cgiExtensions.size() - 1)
+							std::cout << " ";
 					}
 					std::cout << std::endl;
 					std::cout << "CGI Paths: ";
-					for (size_t i = 0; i < location->cgiPaths.size(); i++)
+					for (size_t i = 0; i < location->cgiPaths.size(); ++i)
 					{
 						std::cout << location->cgiPaths[i];
-						if (i < location->cgiPaths.size() - 1) std::cout << " ";
+						if (i < location->cgiPaths.size() - 1)
+							std::cout << " ";
 					}
 					std::cout << std::endl;
 				}
@@ -123,24 +125,31 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 						struct epoll_event cgi_ev;
 						cgi_ev.events = EPOLLIN;
 						cgi_ev.data.fd = cgi_output_fd;
-						if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, cgi_output_fd, &cgi_ev) == -1) {
+						if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, cgi_output_fd, &cgi_ev) == -1)
+						{
 							std::cerr << "Failed to add CGI output fd to epoll" << std::endl;
 							cgi_runner.cleanup_cgi_process(cgi_output_fd);
-						} else {
-							std::cout << "✅ CGI process started, monitoring output fd: " << cgi_output_fd << std::endl;
-							// Don't switch client to EPOLLOUT - CGI will handle the response
+						}
+						else
+						{
+							std::cout << "CGI process started, monitoring output fd: " << cgi_output_fd << std::endl;
 							return;
 						}
-					} 
-					else 
+					}
+					else
 					{
-						if (cgi_output_fd == -2) { // not found
+						if (cgi_output_fd == -2) // not found
+						{
 							request_status = NOT_FOUND;
 							std::cerr << "CGI script resulted in 404 Not Found" << std::endl;
-						} else if (cgi_output_fd == -3) { // not readable / forbidden
+						}
+						else if (cgi_output_fd == -3)
+						{ 
 							request_status = FORBIDDEN;
 							std::cerr << "CGI script resulted in 403 Forbidden" << std::endl;
-						} else {
+						}
+						else
+						{
 							request_status = INTERNAL_ERROR;
 							std::cerr << "Failed to start CGI process (internal error)" << std::endl;
 						}
@@ -167,7 +176,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 		std::cout << "Client " << client_fd << " closed connection gracefully" << std::endl;
 		cleanup_connection(epoll_fd, active_clients);
 	}
-	else 
+	else
 	{
 		std::cout << "Error receiving data from client " << client_fd << std::endl;
 		cleanup_connection(epoll_fd, active_clients);
@@ -211,6 +220,8 @@ void Client::handle_client_data_output(int client_fd, int epoll_fd,
 		else
 		{
 			std::string request_path = current_request.get_requested_path();
+			std::cout << "=== ANALYZING REQUEST PATH: " << request_path << " ===" << std::endl;
+
 			LocationContext *location = current_request.get_location();
 			std::cout << "Creating normal response for path: " << request_path << std::endl;
 			current_response.analyze_request_and_set_response(request_path, location);

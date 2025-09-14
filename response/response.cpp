@@ -1,4 +1,5 @@
 #include "response.hpp"
+#include "../utils/utils.hpp"
 #include <sstream>
 #include <iostream>
 #include <cstring>
@@ -356,8 +357,8 @@ void Response::analyze_request_and_set_response(const std::string &path, Locatio
 		if (handle_return_directive(location_config->returnDirective))
 			return;
 	}
-
-	std::string file_path = location_config->root + path;
+	
+	std::string file_path = resolve_file_path(path, location_config);
 	std::cout << "=== ANALYZING REQUEST PATH: " << file_path << " ===" << std::endl;
 	struct stat s;
 	if (stat(file_path.c_str(), &s) == 0)

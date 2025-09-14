@@ -30,7 +30,4 @@ run: all clean
 	clear
 	./$(NAME) ./test_configs/default.conf
 
-leaks: all clean
-	clear
-	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(NAME) ./test_configs/default.conf
-.PHONY: all clean fclean re
+
