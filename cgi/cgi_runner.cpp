@@ -260,7 +260,7 @@ int CgiRunner:: start_cgi_process(const Request& request,
             std::cout << "\033[35m📊 POST body size: " << body.size() << " bytes\033[0m" << std::endl;
             write(input_pipe[1], body.c_str(), body.size());
             std::cout << "\033[32mWrote " << body.size() << " bytes of POST data to CGI stdin\033[0m" << std::endl;
-            std::cout << "\033[32mWrote " << body << "\033[0m" << std::endl;
+            //std::cout << "\033[32mWrote " << body << "\033[0m" << std::endl;
         } else {
             std::cout << "\033[33m⚠️  POST body is empty!\033[0m" << std::endl;
         }

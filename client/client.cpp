@@ -92,27 +92,33 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 			std::cout << "Request fully processed and ready!" << std::endl;
 			std::cout << "Final request - Method: " << current_request.get_http_method()
 					  << " Path: " << current_request.get_requested_path() << std::endl;
-			if (current_request.is_cgi_request()) {
+			if (current_request.is_cgi_request())
+			{
 				std::cout << "🔧 Detected CGI request - starting CGI process" << std::endl;
 				LocationContext* location = current_request.get_location();
-				if (location) {
+				if (location)
+				{
 					std::cout << "CGI Extensions: ";
-					for (size_t i = 0; i < location->cgiExtensions.size(); ++i) {
+					for (size_t i = 0; i < location->cgiExtensions.size(); i++)
+					{
 						std::cout << location->cgiExtensions[i];
 						if (i < location->cgiExtensions.size() - 1) std::cout << " ";
 					}
 					std::cout << std::endl;
 					std::cout << "CGI Paths: ";
-					for (size_t i = 0; i < location->cgiPaths.size(); ++i) {
+					for (size_t i = 0; i < location->cgiPaths.size(); i++)
+					{
 						std::cout << location->cgiPaths[i];
 						if (i < location->cgiPaths.size() - 1) std::cout << " ";
 					}
 					std::cout << std::endl;
 				}
-				if (location) {
+				if (location)
+				{
 					std::string script_path = location->root + current_request.get_requested_path();
 					int cgi_output_fd = cgi_runner.start_cgi_process(current_request, *location, client_fd, script_path);
-					if (cgi_output_fd >= 0) {
+					if (cgi_output_fd >= 0)
+					{
 						// Add CGI output fd to epoll for monitoring
 						struct epoll_event cgi_ev;
 						cgi_ev.events = EPOLLIN;
@@ -125,7 +131,9 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 							// Don't switch client to EPOLLOUT - CGI will handle the response
 							return;
 						}
-					} else {
+					} 
+					else 
+					{
 						if (cgi_output_fd == -2) { // not found
 							request_status = NOT_FOUND;
 							std::cerr << "CGI script resulted in 404 Not Found" << std::endl;
