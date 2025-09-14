@@ -60,3 +60,24 @@ std::map<std::string, std::string> parse_query_string(const std::string &query_s
 
     return params;
 }
+std::string normalize_path(const std::string& path)
+{
+	if (path.empty())
+		return "/";
+	
+	std::string result = path;
+	
+	for (size_t i = 0; i < result.length() - 1; ++i)
+	{
+		if (result[i] == '/' && result[i + 1] == '/')
+		{
+			result.erase(i, 1);
+			--i;
+		}
+	}
+
+	if (result[0] != '/')
+		result = "/" + result;
+	
+	return result;
+}

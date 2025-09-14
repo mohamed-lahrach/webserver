@@ -22,7 +22,6 @@ void Server::run()
 	}
 	while (true)
 	{
-		std::cout << "Waiting for events on all servers..." << std::endl;
 		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, 1000);
 		if (num_events == -1)
 		{

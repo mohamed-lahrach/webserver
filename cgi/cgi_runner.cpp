@@ -14,7 +14,6 @@
 #include <vector>
 
 CgiRunner::CgiRunner() {
-    std::cout << "CGI Runner initialized" << std::endl;
 }
 
 CgiRunner::~CgiRunner() {

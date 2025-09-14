@@ -11,7 +11,7 @@ GetHandler::~GetHandler()
 }
 RequestStatus GetHandler::handle_get_request(const std::string &requested_path)
 {
-    std::cout << "Requested path: '" << requested_path << "'" << std::endl;
+
 
     if (requested_path.empty())
     {
@@ -21,11 +21,6 @@ RequestStatus GetHandler::handle_get_request(const std::string &requested_path)
     if (requested_path.find("..") != std::string::npos)
     {
         std::cout << "ERROR: Path traversal attempt detected: " << requested_path << std::endl;
-        return BAD_REQUEST;
-    }
-
-    if (requested_path.find("//") != std::string::npos)
-    {
         return BAD_REQUEST;
     }
 

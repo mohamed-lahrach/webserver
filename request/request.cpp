@@ -17,7 +17,6 @@ Request::~Request()
 {
 }
 
-
 std::string remove_spaces_and_lower(const std::string &str)
 {
 
@@ -59,7 +58,7 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 	std::vector<LocationContext>::iterator it_location = config->locations.begin();
 	while (it_location != config->locations.end())
 	{
-		if(it_location->path[it_location->path.length() - 1]=='/' && it_location->path.length()>1)
+		if (it_location->path[it_location->path.length() - 1] == '/' && it_location->path.length() > 1)
 			it_location->path = it_location->path.substr(0, it_location->path.length() - 1);
 
 		std::cout << "  Checking location: '" << it_location->path << "'" << std::endl;
@@ -70,7 +69,7 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 				(it_location->path[it_location->path.length() - 1] == '/') ||
 				resquested_path[it_location->path.length()] == '/')
 			{
-				std::cout << "matched location ;" << it_location->path << "\n";
+				std::cout << "matched location: " << it_location->path << std::endl;
 				if (it_location->path.size() > longest_len)
 				{
 					matched_location = &(*it_location);
@@ -83,7 +82,6 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 	}
 	return matched_location;
 }
-
 
 RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 {
@@ -124,7 +122,7 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 		std::cout << "HTTP Method: " << http_method << ", Requested Path: "
 				  << requested_path << ", Version: " << http_version << std::endl;
 
-		if (http_method == "POST" )
+		if (http_method == "POST")
 		{
 			std::map<std::string, std::string>::iterator it_content_len = http_headers.find("content-length");
 			std::map<std::string, std::string>::iterator it_transfer_enc = http_headers.find("transfer-encoding");
@@ -133,10 +131,10 @@ RequestStatus Request::add_new_data(const char *new_data, size_t data_size)
 				expected_body_size = std::atoi(it_content_len->second.c_str());
 				std::cout << "This request should have a body with " << expected_body_size << " bytes" << std::endl;
 			}
-			else if (it_transfer_enc != http_headers.end() && 
+			else if (it_transfer_enc != http_headers.end() &&
 					 it_transfer_enc->second.find("chunked") != std::string::npos)
 			{
-				expected_body_size = 0; 
+				expected_body_size = 0;
 				std::cout << "Using chunked transfer encoding - size unknown" << std::endl;
 			}
 			else
@@ -188,18 +186,22 @@ bool Request::parse_http_headers(const std::string &header_text)
 		return false;
 
 	bool host_found = false;
-	
+
 	size_t query_pos = requested_path.find('?');
-	if (query_pos != std::string::npos) {
+	if (query_pos != std::string::npos)
+	{
 		query_string = requested_path.substr(query_pos + 1);
 		requested_path = requested_path.substr(0, query_pos);
 		query_params = parse_query_string(query_string);
-	} else {
+	}
+	else
+	{
 		query_string = "";
 		query_params.clear();
 	}
-	
+
 	requested_path = url_decode(requested_path);
+	requested_path = normalize_path(requested_path);
 
 	while (std::getline(header_stream, current_line))
 	{
@@ -223,7 +225,6 @@ bool Request::parse_http_headers(const std::string &header_text)
 		http_headers[lower_name] = header_value;
 		if (lower_name == "host")
 			host_found = true;
-		std::cout << "Found header: " << header_name << " = " << header_value << std::endl;
 	}
 	if (!host_found)
 		return false;
@@ -231,15 +232,14 @@ bool Request::parse_http_headers(const std::string &header_text)
 	return true;
 }
 
-
 RequestStatus Request::figure_out_http_method()
 {
 	if (location && !location->returnDirective.empty())
 	{
 		std::cout << "Found return directive: " << location->returnDirective << std::endl;
-		return EVERYTHING_IS_OK; 
+		return EVERYTHING_IS_OK;
 	}
-	
+
 	if (!location || location->root.empty())
 	{
 		std::cout << " location not found \n";
@@ -260,27 +260,29 @@ RequestStatus Request::figure_out_http_method()
 		if (!ok)
 			return METHOD_NOT_ALLOWED;
 	}
-	// Check if this is a CGI request first, before handling with regular handlers
-	if (!location->cgiExtensions.empty() && !location->cgiPaths.empty()) {
+	if (!location->cgiExtensions.empty() && !location->cgiPaths.empty())
+	{
 		std::cout << "Checking for CGI request..." << std::endl;
-		
-		for (size_t i = 0; i < location->cgiExtensions.size(); ++i) {
-			const std::string& ext = location->cgiExtensions[i];
-			if (requested_path.size() >= ext.size()) {
+
+		for (size_t i = 0; i < location->cgiExtensions.size(); ++i)
+		{
+			const std::string &ext = location->cgiExtensions[i];
+			if (requested_path.size() >= ext.size())
+			{
 				std::string file_ext = requested_path.substr(requested_path.size() - ext.size());
-				if (file_ext == ext) {
-				if (http_method == "POST") {
-					// For POST CGI requests, we need to collect the body data first
-					return post_handler.handle_post_request(http_headers, incoming_data, expected_body_size, config, location, requested_path);
-				}	
-					// This is a CGI request - return success and let client handle CGI processing
+				if (file_ext == ext)
+				{
+					if (http_method == "POST")
+					{
+						return post_handler.handle_post_request(http_headers, incoming_data, expected_body_size, config, location, requested_path);
+					}
 					return EVERYTHING_IS_OK;
 				}
-
 			}
 		}
 	}
-	
+	if(location->root == "/")
+		location->root = ".";
 	std::string full_path = location->root + requested_path;
 	if (http_method == "GET")
 		return get_handler.handle_get_request(full_path);
@@ -294,29 +296,35 @@ RequestStatus Request::figure_out_http_method()
 		return METHOD_NOT_ALLOWED;
 }
 
-bool Request::is_cgi_request() const {
-	if (!location || location->cgiExtensions.empty() || location->cgiPaths.empty()) {
+bool Request::is_cgi_request() const
+{
+	if (!location || location->cgiExtensions.empty() || location->cgiPaths.empty())
+	{
 		return false;
 	}
-	
+
 	// Strip query string for extension checking
 	std::string path = requested_path;
 	size_t query_pos = path.find('?');
-	if (query_pos != std::string::npos) {
+	if (query_pos != std::string::npos)
+	{
 		path = path.substr(0, query_pos);
 	}
-	
+
 	// Check if the requested path ends with any of the CGI extensions
-	for (size_t i = 0; i < location->cgiExtensions.size(); ++i) {
-		const std::string& ext = location->cgiExtensions[i];
-		if (path.size() >= ext.size()) {
+	for (size_t i = 0; i < location->cgiExtensions.size(); ++i)
+	{
+		const std::string &ext = location->cgiExtensions[i];
+		if (path.size() >= ext.size())
+		{
 			std::string file_ext = path.substr(path.size() - ext.size());
-			if (file_ext == ext) {
+			if (file_ext == ext)
+			{
 				return true;
 			}
 		}
 	}
-	
+
 	return false;
 }
 

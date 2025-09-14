@@ -1,0 +1,2 @@
+This is a test file in the pouet directory.
+Testing the directory resolution: /dir/pouic/toto/pouet should map to www/pouic/toto/pouet
