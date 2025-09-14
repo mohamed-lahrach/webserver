@@ -1,10 +1,12 @@
 #include "utils.hpp"
+#include "../config/parser.hpp"
 #include <string>
 #include <sstream>
 #include <iomanip>
 #include <cstdlib>
 #include <cctype>
 #include <map>
+#include <iostream>
 
 std::string url_decode(const std::string &encoded)
 {
@@ -60,24 +62,29 @@ std::map<std::string, std::string> parse_query_string(const std::string &query_s
 
     return params;
 }
-std::string normalize_path(const std::string& path)
-{
-	if (path.empty())
-		return "/";
-	
-	std::string result = path;
-	
-	for (size_t i = 0; i < result.length() - 1; ++i)
-	{
-		if (result[i] == '/' && result[i + 1] == '/')
-		{
-			result.erase(i, 1);
-			--i;
-		}
-	}
 
-	if (result[0] != '/')
-		result = "/" + result;
+std::string resolve_file_path(const std::string& request_path, LocationContext* location_config)
+{
+	if (!location_config)
+		return "";
+
+	std::string root = location_config->root;
+	if (root == "/")
+		root = ".";
+	std::string relative_path = request_path;
+	if (location_config->path != "/" && request_path.find(location_config->path) == 0)
+	{
+		relative_path = request_path.substr(location_config->path.length());
+		std::cout << "Extracted relative path: " << relative_path << std::endl;
+
+		if (!relative_path.empty() && relative_path[0] != '/')
+			relative_path = "/" + relative_path;
+		else if (relative_path.empty())
+			relative_path = "/";
+	}
 	
-	return result;
+	std::string file_path = root + relative_path;
+
+	std::cout << "Resolved file path: " << file_path << std::endl;
+	return file_path;
 }

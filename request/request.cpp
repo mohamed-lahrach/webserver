@@ -201,8 +201,14 @@ bool Request::parse_http_headers(const std::string &header_text)
 	}
 
 	requested_path = url_decode(requested_path);
-	requested_path = normalize_path(requested_path);
-
+	size_t pos = 0;
+	while ((pos = requested_path.find("//", pos)) != std::string::npos)
+		requested_path.erase(pos, 1);
+	
+	if (requested_path.empty())
+		requested_path = "/";
+	else if (requested_path[0] != '/')
+		requested_path = "/" + requested_path;
 	while (std::getline(header_stream, current_line))
 	{
 
@@ -281,9 +287,8 @@ RequestStatus Request::figure_out_http_method()
 			}
 		}
 	}
-	if(location->root == "/")
-		location->root = ".";
-	std::string full_path = location->root + requested_path;
+	
+	std::string full_path = resolve_file_path(requested_path, location);
 	if (http_method == "GET")
 		return get_handler.handle_get_request(full_path);
 	else if (http_method == "POST")

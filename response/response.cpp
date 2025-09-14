@@ -357,22 +357,8 @@ void Response::analyze_request_and_set_response(const std::string &path, Locatio
 		if (handle_return_directive(location_config->returnDirective))
 			return;
 	}
-	std::string file_path;
-	if(location_config->root == "/")
-		location_config->root = ".";
 	
-	std::string relative_path = path;
-	if (location_config->path != "/" && path.find(location_config->path) == 0)
-	{
-		relative_path = path.substr(location_config->path.length());
-		std::cout<<relative_path<<std::endl;
-
-		if (!relative_path.empty() && relative_path[0] != '/')
-			relative_path = "/" + relative_path;
-		else if (relative_path.empty())
-			relative_path = "/";
-	}
-	file_path = location_config->root + relative_path;
+	std::string file_path = resolve_file_path(path, location_config);
 	std::cout << "=== ANALYZING REQUEST PATH: " << file_path << " ===" << std::endl;
 	struct stat s;
 	if (stat(file_path.c_str(), &s) == 0)
