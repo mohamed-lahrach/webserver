@@ -1,104 +1,224 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Simple Webserver Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to My Webserver</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        button { padding: 10px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; }
-        input, textarea { padding: 8px; margin: 10px 0; width: 300px; }
-        .result { padding: 10px; margin: 10px 0; border: 1px solid #ccc; background: #f9f9f9; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%),
+                linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 10% 20%, rgb(255,246,236) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgb(238,174,202) 0%, transparent 50%),
+                radial-gradient(circle at 0% 50%, rgb(233,196,255) 0%, transparent 50%),
+                radial-gradient(circle at 100% 0%, rgb(162,254,255) 0%, transparent 50%);
+            z-index: -1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.92);
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.1),
+                0 0 80px rgba(102, 126, 234, 0.1),
+                inset 0 1px 0 rgba(255,255,255,0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            border-radius: 25px;
+            pointer-events: none;
+        }
+
+        .welcome-title {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .welcome-subtitle {
+            color: #666;
+            font-size: 1.1em;
+            font-weight: 300;
+            margin-bottom: 40px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+
+        .nav-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .nav-btn:hover::before {
+            left: 100%;
+        }
+
+        .nav-btn:hover {
+            background: linear-gradient(45deg, #5a67d8, #6b46c1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 768px) {
+            .welcome-title {
+                font-size: 2em;
+            }
+            
+            .welcome-subtitle {
+                font-size: 1em;
+            }
+            
+            .container {
+                padding: 30px 20px;
+            }
+            
+            .nav-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .nav-btn {
+                width: 80%;
+                max-width: 300px;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Webserver Test</h1>
+    <div class="container">
+        <h1 class="welcome-title">Welcome to My Webserver</h1>
+        <p class="welcome-subtitle">A powerful HTTP server built with modern web technologies</p>
 
-    <!-- GET Test -->
-    <h2>GET Test</h2>
-    <input type="text" id="getUrl" placeholder="URL to GET" value="/">
-    <button onclick="testGet()">Test GET</button>
-    <div id="get-result" class="result" style="display:none;"></div>
-
-    <!-- POST Test -->
-    <h2>POST Test</h2>
-    <div class="upload-form">
-        <h2>File Upload Form</h2>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <div class="file-input">
-                <label for="file">Choose a file:</label>
-                <input type="file" id="file" name="file" accept=".txt, .pdf, .doc, .docx, .jpg, .mp4" required>
-            </div>
-            <button type="submit" class="submit-btn">Upload File</button>
-        </form>
+        <div class="nav-buttons">
+            <a href="/main_test.html" class="nav-btn">🧪 Main Test</a>
+            <a href="/session_test.html" class="nav-btn">👤 Session Test</a>
+        </div>
     </div>
-    <!-- DELETE Test -->
-    <h2>DELETE Test</h2>
-    <input type="text" id="deleteUrl" placeholder="URL to DELETE" value="/upload/test.txt">
-    <button onclick="testDelete()">Delete</button>
-    <div id="delete-result" class="result" style="display:none;"></div>
 
     <script>
-        function testGet() {
-            const url = document.getElementById('getUrl').value;
-            document.getElementById('get-result').style.display = 'block';
-            document.getElementById('get-result').innerHTML = 'Testing GET...';
-            
-            fetch(url)
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById('get-result').innerHTML = '<strong>GET Success:</strong><br><pre>' + data + '</pre>';
-                })
-                .catch(error => {
-                    document.getElementById('get-result').innerHTML = 'GET Error: ' + error;
+        // Add some interactive elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add subtle animation to nav buttons
+            const buttons = document.querySelectorAll('.nav-btn');
+            buttons.forEach((button, index) => {
+                button.style.animationDelay = `${index * 0.2}s`;
+                button.classList.add('fadeInUp');
+            });
+
+            // Add click effect to buttons
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.cssText = `
+                        position: absolute;
+                        width: ${size}px;
+                        height: ${size}px;
+                        left: ${x}px;
+                        top: ${y}px;
+                        background: rgba(255, 255, 255, 0.3);
+                        border-radius: 50%;
+                        transform: scale(0);
+                        animation: ripple 0.6s linear;
+                        pointer-events: none;
+                    `;
+                    
+                    this.appendChild(ripple);
+                    setTimeout(() => ripple.remove(), 600);
                 });
-        }
-
-        function testPost() {
-            const file = document.getElementById('fileInput').files[0];
-            if (!file) {
-                alert('Please select a file');
-                return;
-            }
-
-            document.getElementById('post-result').style.display = 'block';
-            document.getElementById('post-result').innerHTML = 'Uploading...';
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(data => {
-                document.getElementById('post-result').innerHTML = 'Upload Success: ' + data;
-            })
-            .catch(error => {
-                document.getElementById('post-result').innerHTML = 'Upload Error: ' + error;
             });
-        }
+        });
 
-        function testDelete() {
-            const url = document.getElementById('deleteUrl').value;
-            if (!url) {
-                alert('Please enter URL');
-                return;
+        // Add ripple animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
             }
-
-            document.getElementById('delete-result').style.display = 'block';
-            document.getElementById('delete-result').innerHTML = 'Deleting...';
-
-            fetch(url, {
-                method: 'DELETE'
-            })
-            .then(response => response.text())
-            .then(data => {
-                document.getElementById('delete-result').innerHTML = 'Delete Success: ' + data;
-            })
-            .catch(error => {
-                document.getElementById('delete-result').innerHTML = 'Delete Error: ' + error;
-            });
-        }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
-</html>_
+</html>

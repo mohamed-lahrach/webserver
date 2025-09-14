@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍪 Session Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%),
+                linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 10% 20%, rgb(255,246,236) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgb(238,174,202) 0%, transparent 50%),
+                radial-gradient(circle at 0% 50%, rgb(233,196,255) 0%, transparent 50%),
+                radial-gradient(circle at 100% 0%, rgb(162,254,255) 0%, transparent 50%);
+            z-index: -1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.92);
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.1),
+                0 0 80px rgba(156, 39, 176, 0.1),
+                inset 0 1px 0 rgba(255,255,255,0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            border-radius: 25px;
+            pointer-events: none;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #333;
+        }
+
+        .header h1 {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+            font-weight: 300;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border-radius: 20px;
+            background: 
+                linear-gradient(145deg, rgba(102, 126, 234, 0.05) 0%, rgba(255,255,255,0.9) 100%);
+            box-shadow: 
+                0 10px 30px rgba(0,0,0,0.1),
+                0 0 20px rgba(102, 126, 234, 0.05),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .test-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.6s;
+        }
+
+        .test-section:hover::before {
+            left: 100%;
+        }
+
+        .test-section:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 
+                0 20px 50px rgba(0,0,0,0.15),
+                0 0 30px rgba(102, 126, 234, 0.1);
+        }
+        
+        .test-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            position: relative;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+
+        .test-section h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .test-section h2::before {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .test-section h2::before { content: "🍪"; }
+        
+        button {
+            padding: 12px 24px;
+            margin: 8px 5px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            background: linear-gradient(45deg, #5a67d8, #6b46c1);
+        }
+
+        .nav-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .nav-btn:hover {
+            background: linear-gradient(45deg, #5a67d8, #6b46c1);
+        }
+
+        .info-btn {
+            background: linear-gradient(45deg, #17a2b8, #138496);
+        }
+
+        .info-btn:hover {
+            background: linear-gradient(45deg, #138496, #117a8b);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            border-left: 5px solid;
+            backdrop-filter: blur(5px);
+        }
+        
+        .result.success {
+            background: linear-gradient(145deg, #d4edda 0%, #c3e6cb 100%);
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: linear-gradient(145deg, #f8d7da 0%, #f5c6cb 100%);
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+
+        .result.info {
+            background: linear-gradient(145deg, #e1ecf4 0%, #bee5eb 100%);
+            border-left-color: #667eea;
+            color: #0c5460;
+        }
+
+        .session-info {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        /* Loading animation */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 25px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍪 Session Test</h1>
+            <p>Test basic session functionality with cookies</p>
+            <div style="margin-top: 20px;">
+                <a href="main_test.html" style="text-decoration: none;">
+                    <button class="nav-btn">
+                        🚀 Go to Main Tests
+                    </button>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Simple Session Test -->
+        <div class="test-section">
+            <h2>Basic Session Test</h2>
+            <p style="margin-bottom: 20px; color: #666;">This test creates a simple session cookie and shows session information.</p>
+            
+            <button onclick="testSimpleSession()">🔍 Test Session</button>
+            <button class="info-btn" onclick="showCurrentCookies()">📋 Show Current Cookies</button>
+            
+            <div id="session-result" class="result"></div>
+        </div>
+
+        <!-- Session Information Display -->
+        <div class="test-section">
+            <h2>Session Information</h2>
+            <p style="margin-bottom: 20px; color: #666;">View current browser session and cookie information.</p>
+            
+            <button class="info-btn" onclick="displaySessionInfo()">📊 Display Session Info</button>
+            <button onclick="clearAllCookies()">🗑️ Clear All Cookies</button>
+            
+            <div id="info-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Utility function to show results
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+            element.innerHTML = content;
+            
+            // Add smooth scroll to result
+            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function setLoading(elementId, message = 'Loading...') {
+            const element = document.getElementById(elementId);
+            element.className = 'result info loading';
+            element.style.display = 'block';
+            element.innerHTML = `<div style="display: flex; align-items: center;">
+                <div style="width: 20px; height: 20px; border: 2px solid #667eea; border-top: 2px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px;"></div>
+                ${message}
+            </div>`;
+            
+            // Add spin animation
+            if (!document.querySelector('#spin-style')) {
+                const style = document.createElement('style');
+                style.id = 'spin-style';
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        // Test Simple Session
+        function testSimpleSession() {
+            setLoading('session-result', 'Testing session...');
+            
+            fetch('/cgi-bin/simple_session_test.py')
+                .then(response => {
+                    const status = response.status;
+                    return response.text().then(data => ({ status, data }));
+                })
+                .then(result => {
+                    const content = `
+                        <div style="display: flex; align-items: center; justify-content: center; padding: 20px;">
+                            <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                            <strong style="color: #28a745; font-size: 16px;">Session Test Complete</strong>
+                        </div>`;
+                    showResult('session-result', content, 'success');
+                })
+                .catch(error => {
+                    const content = `
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                            <strong style="color: #dc3545;">Session Test Failed</strong>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
+                            <strong>Error:</strong> ${error.message}
+                        </div>`;
+                    showResult('session-result', content, 'error');
+                });
+        }
+
+        // Show Current Cookies
+        function showCurrentCookies() {
+            const cookies = document.cookie;
+            
+            if (!cookies) {
+                showResult('session-result', 
+                    `<div style="text-align: center; padding: 20px;">
+                        <span style="font-size: 48px;">🍪</span>
+                        <h3 style="color: #666; margin: 10px 0;">No Cookies Found</h3>
+                        <p>No cookies are currently set in your browser for this domain.</p>
+                    </div>`, 'info');
+                return;
+            }
+
+            const cookieList = cookies.split(';').map(cookie => {
+                const [name, value] = cookie.trim().split('=');
+                return { name: name.trim(), value: value ? value.trim() : '' };
+            });
+
+            const content = `
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <span style="color: #667eea; font-size: 18px; margin-right: 8px;">🍪</span>
+                    <strong style="color: #667eea;">Current Cookies</strong>
+                </div>
+                <div class="session-info">
+                    <strong>Total Cookies:</strong> ${cookieList.length}<br>
+                    <strong>Raw Cookie String:</strong> ${cookies}
+                </div>
+                <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
+                    <strong>Cookie Details:</strong><br>
+                    ${cookieList.map(cookie => 
+                        `<div style="margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                            <strong>${cookie.name}:</strong> ${cookie.value}
+                        </div>`
+                    ).join('')}
+                </div>`;
+
+            showResult('session-result', content, 'info');
+        }
+
+        // Open Session in New Tab
+        function openSessionInNewTab() {
+            const url = '/cgi-bin/simple_session_test.py';
+            const newWindow = window.open(url, '_blank');
+            
+            if (newWindow) {
+                showResult('session-result', 
+                    `<div style="text-align: center; padding: 20px;">
+                        <span style="font-size: 48px;">🌐</span>
+                        <h3 style="color: #667eea; margin: 10px 0;">New Tab Opened</h3>
+                        <p>Session test opened in a new tab. Check if the same session ID is maintained!</p>
+                    </div>`, 'info');
+            } else {
+                showResult('session-result', 
+                    `<div style="text-align: center; padding: 20px;">
+                        <span style="font-size: 48px;">🚫</span>
+                        <h3 style="color: #dc3545; margin: 10px 0;">Popup Blocked</h3>
+                        <p>Your browser blocked the popup. Please allow popups for this site or manually visit: <br>
+                        <a href="${url}" target="_blank">${url}</a></p>
+                    </div>`, 'error');
+            }
+        }
+
+        // Display Session Information
+        function displaySessionInfo() {
+            const sessionInfo = {
+                userAgent: navigator.userAgent,
+                cookieEnabled: navigator.cookieEnabled,
+                language: navigator.language,
+                platform: navigator.platform,
+                currentTime: new Date().toLocaleString(),
+                currentCookies: document.cookie || 'None',
+                sessionStorage: typeof(Storage) !== "undefined" ? 'Supported' : 'Not supported',
+                localStorageItems: localStorage.length
+            };
+
+            const content = `
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <span style="color: #17a2b8; font-size: 18px; margin-right: 8px;">📊</span>
+                    <strong style="color: #17a2b8;">Browser Session Information</strong>
+                </div>
+                <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
+                    <div style="margin-bottom: 10px;"><strong>Cookie Support:</strong> ${sessionInfo.cookieEnabled ? '✅ Enabled' : '❌ Disabled'}</div>
+                    <div style="margin-bottom: 10px;"><strong>Session Storage:</strong> ${sessionInfo.sessionStorage}</div>
+                    <div style="margin-bottom: 10px;"><strong>Local Storage Items:</strong> ${sessionInfo.localStorageItems}</div>
+                    <div style="margin-bottom: 10px;"><strong>Current Time:</strong> ${sessionInfo.currentTime}</div>
+                    <div style="margin-bottom: 10px;"><strong>Language:</strong> ${sessionInfo.language}</div>
+                    <div style="margin-bottom: 10px;"><strong>Platform:</strong> ${sessionInfo.platform}</div>
+                    <div style="margin-bottom: 10px;"><strong>Current Cookies:</strong> 
+                        <div style="font-family: monospace; background: #f8f9fa; padding: 8px; border-radius: 4px; margin-top: 5px; word-break: break-all;">
+                            ${sessionInfo.currentCookies}
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;"><strong>User Agent:</strong> 
+                        <div style="font-family: monospace; background: #f8f9fa; padding: 8px; border-radius: 4px; margin-top: 5px; font-size: 11px; word-break: break-all;">
+                            ${sessionInfo.userAgent}
+                        </div>
+                    </div>
+                </div>`;
+
+            showResult('info-result', content, 'info');
+        }
+
+        // Clear All Cookies
+        function clearAllCookies() {
+            const cookies = document.cookie.split(";");
+            let clearedCount = 0;
+
+            for (let cookie of cookies) {
+                const eqPos = cookie.indexOf("=");
+                const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+                if (name) {
+                    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+                    clearedCount++;
+                }
+            }
+
+            const content = `
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <span style="color: #28a745; font-size: 18px; margin-right: 8px;">🗑️</span>
+                    <strong style="color: #28a745;">Cookies Cleared</strong>
+                </div>
+                <div class="session-info">
+                    <strong>Cookies Cleared:</strong> ${clearedCount}<br>
+                    <strong>Remaining Cookies:</strong> ${document.cookie || 'None'}
+                </div>
+                <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
+                    <p>All cookies for this domain have been cleared. You can now test session creation from scratch!</p>
+                    <p style="margin-top: 10px;"><em>Note: Some cookies might be restored by the server or other scripts running on this page.</em></p>
+                </div>`;
+
+            showResult('info-result', content, 'success');
+        }
+    </script>
+</body>
+</html>

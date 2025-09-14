@@ -3,9 +3,423 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Server Information - My Webserver</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(-45deg, #667eea, #764ba2, #667eea, #764ba2);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 1000px;
+            width: 100%;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.1);
+            animation: float 6s ease-in-out infinite;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .main-title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #fff, #e8f4fd);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-card h3 {
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-card p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #4CAF50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        .spec-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .spec-list li {
+            color: rgba(255, 255, 255, 0.9);
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .spec-list li:last-child {
+            border-bottom: none;
+        }
+
+        .spec-value {
+            color: #64b5f6;
+            font-weight: 600;
+        }
+
+        .nav-section {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .decorative-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .floating-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: floatCircle 20s linear infinite;
+        }
+
+        .floating-circle:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-circle:nth-child(2) {
+            width: 120px;
+            height: 120px;
+            top: 60%;
+            right: 10%;
+            animation-delay: -10s;
+        }
+
+        .floating-circle:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: -5s;
+        }
+
+        @keyframes floatCircle {
+            0% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
+            50% { transform: translateY(-100px) rotate(180deg); opacity: 0.3; }
+            100% { transform: translateY(0px) rotate(360deg); opacity: 0.7; }
+        }
+
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .nav-btn {
+                width: 80%;
+                max-width: 300px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>welcome to out omar </h1>
+    <div class="decorative-elements">
+        <div class="floating-circle"></div>
+        <div class="floating-circle"></div>
+        <div class="floating-circle"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="main-title">Server Information</h1>
+            <p class="subtitle">Detailed specifications and capabilities of the webserver</p>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <h3><span class="status-indicator"></span>🚀 Server Status</h3>
+                <p><strong>Status:</strong> Online and operational</p>
+                <p><strong>Uptime:</strong> Ready to serve requests</p>
+                <p><strong>Performance:</strong> Optimized for concurrent connections</p>
+                <p><strong>Stability:</strong> Production-ready implementation</p>
+            </div>
+
+            <div class="info-card">
+                <h3>🌐 Protocol Details</h3>
+                <ul class="spec-list">
+                    <li>HTTP Version <span class="spec-value">1.0</span></li>
+                    <li>Port <span class="spec-value">8080</span></li>
+                    <li>Connection Type <span class="spec-value">Keep-Alive</span></li>
+                    <li>Transfer Encoding <span class="spec-value">Chunked</span></li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>⚡ Supported Methods</h3>
+                <ul class="spec-list">
+                    <li>GET <span class="spec-value">✅ Enabled</span></li>
+                    <li>POST <span class="spec-value">✅ Enabled</span></li>
+                    <li>DELETE <span class="spec-value">✅ Enabled</span></li>
+                    <li>HEAD <span class="spec-value">✅ Enabled</span></li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>📁 File Operations</h3>
+                <p><strong>Upload Directory:</strong> /upload/</p>
+                <p><strong>Max File Size:</strong> Configurable</p>
+                <p><strong>Supported Types:</strong> .txt, .pdf, .doc, .jpg, .mp4, etc.</p>
+                <p><strong>Multipart Encoding:</strong> Supported</p>
+            </div>
+
+            <div class="info-card">
+                <h3>🎯 CGI Support</h3>
+                <ul class="spec-list">
+                    <li>Python Scripts <span class="spec-value">✅ Supported</span></li>
+                    <li>Shell Scripts <span class="spec-value">✅ Supported</span></li>
+                    <li>CGI Directory <span class="spec-value">/cgi-bin/</span></li>
+                    <li>Environment Variables <span class="spec-value">Full Support</span></li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>🔐 Session Management</h3>
+                <p><strong>Session Type:</strong> Cookie-based</p>
+                <p><strong>Cookie Name:</strong> SESSION</p>
+                <p><strong>Session Storage:</strong> File-based</p>
+                <p><strong>Session Directory:</strong> /sessions/</p>
+            </div>
+
+            <div class="info-card">
+                <h3>🛠️ Configuration</h3>
+                <ul class="spec-list">
+                    <li>Config Parser <span class="spec-value">Custom Implementation</span></li>
+                    <li>MIME Types <span class="spec-value">Full Support</span></li>
+                    <li>Error Pages <span class="spec-value">Customizable</span></li>
+                    <li>Directory Listing <span class="spec-value">Configurable</span></li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>📊 Performance Features</h3>
+                <p><strong>Multiplexing:</strong> epoll-based I/O</p>
+                <p><strong>Concurrency:</strong> Asynchronous processing</p>
+                <p><strong>Memory Management:</strong> Optimized buffers</p>
+                <p><strong>Request Handling:</strong> Non-blocking</p>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <h3 style="color: white; margin-bottom: 20px; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);">Navigation</h3>
+            <div class="nav-buttons">
+                <a href="/" class="nav-btn">🏠 Home</a>
+                <a href="/main_test.html" class="nav-btn">🧪 Main Tests</a>
+                <a href="/session_test.html" class="nav-btn">👤 Session Tests</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add interactive elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add fade-in animation to cards
+            const cards = document.querySelectorAll('.info-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                card.style.transition = 'all 0.6s ease';
+                
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            // Add ripple effect to buttons
+            const buttons = document.querySelectorAll('.nav-btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.cssText = `
+                        position: absolute;
+                        width: ${size}px;
+                        height: ${size}px;
+                        left: ${x}px;
+                        top: ${y}px;
+                        background: rgba(255, 255, 255, 0.3);
+                        border-radius: 50%;
+                        transform: scale(0);
+                        animation: ripple 0.6s linear;
+                        pointer-events: none;
+                    `;
+                    
+                    this.appendChild(ripple);
+                    setTimeout(() => ripple.remove(), 600);
+                });
+            });
+        });
+
+        // Add ripple animation CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
 </body>
 </html>

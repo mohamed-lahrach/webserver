@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Webserver </title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 950px;
+            margin: 0 auto;
+            padding: 20px;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%),
+                linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 10% 20%, rgb(255,246,236) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgb(238,174,202) 0%, transparent 50%),
+                radial-gradient(circle at 0% 50%, rgb(233,196,255) 0%, transparent 50%),
+                radial-gradient(circle at 100% 0%, rgb(162,254,255) 0%, transparent 50%);
+            z-index: -1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.92);
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.1),
+                0 0 80px rgba(102, 126, 234, 0.1),
+                inset 0 1px 0 rgba(255,255,255,0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            border-radius: 25px;
+            pointer-events: none;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #333;
+        }
+
+        .header h1 {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+            font-weight: 300;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border-radius: 20px;
+            background: 
+                linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(248,249,250,0.8) 100%);
+            box-shadow: 
+                0 10px 30px rgba(0,0,0,0.1),
+                0 0 20px rgba(102, 126, 234, 0.05),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .test-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.6s;
+        }
+
+        .test-section:hover::before {
+            left: 100%;
+        }
+
+        .test-section:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 
+                0 20px 50px rgba(0,0,0,0.15),
+                0 0 30px rgba(102, 126, 234, 0.1);
+        }
+        
+        .test-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            position: relative;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+
+        .test-section h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        /* Section-specific colors */
+        .get-section h2::after { background: linear-gradient(45deg, #4CAF50, #45a049); }
+        .post-section h2::after { background: linear-gradient(45deg, #2196F3, #1976D2); }
+        .delete-section h2::after { background: linear-gradient(45deg, #f44336, #d32f2f); }
+        .cgi-section h2::after { background: linear-gradient(45deg, #FF9800, #F57C00); }
+        .session-section h2::after { background: linear-gradient(45deg, #9C27B0, #673AB7); }
+        
+        /* Section background gradients */
+        .get-section { 
+            background: linear-gradient(145deg, rgba(76,175,80,0.05) 0%, rgba(255,255,255,0.9) 100%);
+        }
+        .post-section { 
+            background: linear-gradient(145deg, rgba(33,150,243,0.05) 0%, rgba(255,255,255,0.9) 100%);
+        }
+        .delete-section { 
+            background: linear-gradient(145deg, rgba(244,67,54,0.05) 0%, rgba(255,255,255,0.9) 100%);
+        }
+        .cgi-section { 
+            background: linear-gradient(145deg, rgba(255,152,0,0.05) 0%, rgba(255,255,255,0.9) 100%);
+        }
+        .session-section { 
+            background: linear-gradient(145deg, rgba(156,39,176,0.05) 0%, rgba(255,255,255,0.9) 100%);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.95em;
+        }
+        
+        input[type="text"], input[type="file"], textarea, input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            box-sizing: border-box;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        input[type="text"]:focus, textarea:focus, input[type="password"]:focus {
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.95);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            background: white;
+            border: 2px dashed #e0e0e0;
+            cursor: pointer;
+        }
+
+        input[type="file"]:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        button {
+            padding: 12px 24px;
+            margin: 8px 5px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        /* Default button style */
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, #5a67d8, #6b46c1);
+        }
+        
+        .delete-btn { 
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+        .delete-btn:hover { 
+            background: linear-gradient(45deg, #d32f2f, #b71c1c);
+        }
+        
+        .cgi-btn { 
+            background: linear-gradient(45deg, #FF9800, #F57C00);
+        }
+        .cgi-btn:hover { 
+            background: linear-gradient(45deg, #F57C00, #E65100);
+        }
+
+        .get-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+        .get-btn:hover {
+            background: linear-gradient(45deg, #45a049, #388e3c);
+        }
+
+        .post-btn {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+        }
+        .post-btn:hover {
+            background: linear-gradient(45deg, #1976D2, #1565C0);
+        }
+
+        .session-btn {
+            background: linear-gradient(45deg, #9C27B0, #673AB7);
+        }
+        .session-btn:hover {
+            background: linear-gradient(45deg, #8E24AA, #5E35B1);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            border-left: 5px solid;
+            backdrop-filter: blur(5px);
+        }
+        
+        .result.success {
+            background: linear-gradient(145deg, #d4edda 0%, #c3e6cb 100%);
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: linear-gradient(145deg, #f8d7da 0%, #f5c6cb 100%);
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+
+        .result.info {
+            background: linear-gradient(145deg, #d1ecf1 0%, #bee5eb 100%);
+            border-left-color: #17a2b8;
+            color: #0c5460;
+        }
+
+        /* Add some icons with CSS */
+        .test-section h2::before {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .get-section h2::before { content: "🔍"; }
+        .post-section h2::before { content: "📤"; }
+        .delete-section h2::before { content: "🗑️"; }
+        .cgi-section h2::before { content: "⚙️"; }
+        .session-section h2::before { content: "🍪"; }
+
+        /* Loading animation */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 25px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+            
+            .form-group {
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Webserver</h1>
+            <p>Test POST (file/text), GET, DELETE, and CGI functionality</p>
+            <div style="margin-top: 20px;">
+                <a href="session_test.html" style="text-decoration: none;">
+                    <button style="background: linear-gradient(45deg, #9C27B0, #673AB7); color: white; padding: 12px 24px; border: none; border-radius: 25px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        🍪 Go to Session Test
+                    </button>
+                </a>
+            </div>
+        </div>
+        
+        <!-- GET Test -->
+        <div class="test-section get-section">
+            <h2>GET Test</h2>
+            <div class="form-group">
+                <label>URL to test:</label>
+                <input type="text" id="getUrl" value="/" placeholder="Enter URL path">
+            </div>
+            <button class="get-btn" onclick="testGet()">Test GET</button>
+            <div id="get-result" class="result"></div>
+        </div>
+        
+        <!-- POST Tests -->
+        <div class="test-section post-section">
+            <h2>POST Tests</h2>
+            
+            <!-- File Upload -->
+            <div class="form-group">
+                <label>Upload File:</label>
+                <input type="file" id="fileInput">
+                <button class="post-btn" onclick="testPostFile()">Upload File</button>
+            </div>
+            
+            <!-- Text Upload -->
+            <div class="form-group">
+                <label>Upload Text:</label>
+                <textarea id="textInput" rows="3" placeholder="Enter text to upload">This is test text data.</textarea>
+                <button class="post-btn" onclick="testPostText()">Upload Text</button>
+            </div>
+            
+            <div id="post-result" class="result"></div>
+        </div>
+        
+        <!-- DELETE Test -->
+        <div class="test-section delete-section">
+            <h2>DELETE Test</h2>
+            <div class="form-group">
+                <label>File path to delete (relative to server root):</label>
+                <input type="text" id="deleteFile" value="test.txt" placeholder="e.g., test.txt or uploads/file.txt">
+                <small style="color: #666; font-size: 0.9em;">Enter the file path as it exists on your server</small>
+            </div>
+            <button class="delete-btn" onclick="testDelete()">Delete File</button>
+            <div id="delete-result" class="result"></div>
+        </div>
+        
+        <!-- CGI Tests -->
+        <div class="test-section cgi-section">
+            <h2>CGI Tests</h2>
+            
+            <!-- CGI GET -->
+            <div class="form-group">
+                <label>CGI GET Test:</label>
+                <input type="text" id="cgiGetUrl" value="/cgi-bin/simple_get.py" placeholder="Enter CGI script path">
+                <button class="cgi-btn" onclick="testCgiGet()">Test CGI GET</button>
+            </div>
+            
+            <!-- CGI POST Text -->
+            <div class="form-group">
+                <label>CGI POST Text:</label>
+                <textarea id="cgiTextInput" rows="3" placeholder="Enter text for CGI POST">username=test&message=Hello CGI</textarea>
+                <button class="cgi-btn" onclick="testCgiPostText()">Send Text to CGI</button>
+            </div>
+            
+            <!-- CGI POST File -->
+            <div class="form-group">
+                <label>CGI POST File:</label>
+                <input type="file" id="cgiFileInput">
+                <button class="cgi-btn" onclick="testCgiPostFile()">Send File to CGI</button>
+            </div>
+            
+            <div id="cgi-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Utility function to show results
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+            element.innerHTML = content;
+            
+            // Add smooth scroll to result
+            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function setLoading(elementId, message = 'Loading...') {
+            const element = document.getElementById(elementId);
+            element.className = 'result info loading';
+            element.style.display = 'block';
+            element.innerHTML = `<div style="display: flex; align-items: center;">
+                <div style="width: 20px; height: 20px; border: 2px solid #17a2b8; border-top: 2px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px;"></div>
+                ${message}
+            </div>`;
+            
+            // Add spin animation
+            if (!document.querySelector('#spin-style')) {
+                const style = document.createElement('style');
+                style.id = 'spin-style';
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        // GET Test
+        function testGet() {
+            const url = document.getElementById('getUrl').value || '/';
+            setLoading('get-result', 'Testing GET request...');
+            
+            fetch(url)
+                .then(response => {
+                    const status = response.status;
+                    return response.text().then(data => ({ status, data }));
+                })
+                .then(result => {
+                    const content = `
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                            <strong style="color: #28a745;">GET Request Successful</strong>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
+                            <strong>URL:</strong> <span style="color: #667eea;">${url}</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
+                            <strong>Response:</strong><br>
+                            <pre style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 8px; font-size: 12px;">${result.data.substring(0, 1000)}${result.data.length > 1000 ? '\n... (truncated)' : ''}</pre>
+                        </div>`;
+                    showResult('get-result', content, 'success');
+                })
+                .catch(error => {
+                    const content = `
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                            <strong style="color: #dc3545;">GET Request Failed</strong>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
+                            <strong>Error:</strong> ${error.message}
+                        </div>`;
+                    showResult('get-result', content, 'error');
+                });
+        }
+
+        // POST File Test
+        function testPostFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('post-result', 'Please select a file first', 'error');
+                return;
+            }
+            
+            showResult('post-result', `Uploading file: ${file.name}...`, 'info');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                const status = response.status;
+                return response.text().then(data => ({ status, data }));
+            })
+            .then(result => {
+                const content = `<strong>Status:</strong> ${result.status}<br>
+                    <strong>File:</strong> ${file.name} (${file.size} bytes)<br>
+                    <strong>Response:</strong> ${result.data}`;
+                showResult('post-result', content, 'success');
+            })
+            .catch(error => {
+                showResult('post-result', `Upload Error: ${error.message}`, 'error');
+            });
+        }
+
+        // POST Text Test
+        function testPostText() {
+            const textData = document.getElementById('textInput').value;
+            
+            if (!textData.trim()) {
+                showResult('post-result', 'Please enter some text first', 'error');
+                return;
+            }
+            
+            showResult('post-result', 'Uploading text data...', 'info');
+            
+            fetch('/upload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain',
+                    'X-File-Name': 'test_text.txt'
+                },
+                body: textData
+            })
+            .then(response => {
+                const status = response.status;
+                return response.text().then(data => ({ status, data }));
+            })
+            .then(result => {
+                const content = `<strong>Status:</strong> ${result.status}<br>
+                    <strong>Data:</strong> ${textData.length} characters<br>
+                    <strong>Response:</strong> ${result.data}`;
+                showResult('post-result', content, 'success');
+            })
+            .catch(error => {
+                showResult('post-result', `Text Upload Error: ${error.message}`, 'error');
+            });
+        }
+
+        // DELETE Test
+        function testDelete() {
+            const filename = document.getElementById('deleteFile').value;
+            
+            if (!filename.trim()) {
+                showResult('delete-result', 'Please enter a file path', 'error');
+                return;
+            }
+            
+            showResult('delete-result', `Deleting file: ${filename}...`, 'info');
+            
+            fetch(`/${filename}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                const status = response.status;
+                return response.text().then(data => ({ status, data }));
+            })
+            .then(result => {
+                const content = `<strong>Status:</strong> ${result.status}<br>
+                    <strong>File:</strong> ${filename}<br>
+                    <strong>Response:</strong> ${result.data}`;
+                showResult('delete-result', content, 'success');
+            })
+            .catch(error => {
+                showResult('delete-result', `Delete Error: ${error.message}`, 'error');
+            });
+        }
+
+        // CGI GET Test
+        function testCgiGet() {
+            const url = document.getElementById('cgiGetUrl').value || '/cgi-bin/simple_get.py';
+            showResult('cgi-result', `Testing CGI GET: ${url}...`, 'info');
+            
+            fetch(url)
+                .then(response => {
+                    const status = response.status;
+                    return response.text().then(data => ({ status, data }));
+                })
+                .then(result => {
+                    const content = `<strong>CGI GET Status:</strong> ${result.status}<br>
+                        <strong>URL:</strong> ${url}<br>
+                        <strong>Response:</strong><br>
+                        <div style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; margin-top: 5px;">
+                            ${result.data}
+                        </div>`;
+                    showResult('cgi-result', content, 'success');
+                })
+                .catch(error => {
+                    showResult('cgi-result', `CGI GET Error: ${error.message}`, 'error');
+                });
+        }
+
+        // CGI POST Text Test
+        function testCgiPostText() {
+            const textData = document.getElementById('cgiTextInput').value;
+            
+            if (!textData.trim()) {
+                showResult('cgi-result', 'Please enter some text for CGI POST', 'error');
+                return;
+            }
+            
+            showResult('cgi-result', 'Sending text to CGI...', 'info');
+            
+            fetch('/cgi-bin/post_test.py', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: textData
+            })
+            .then(response => {
+                const status = response.status;
+                return response.text().then(data => ({ status, data }));
+            })
+            .then(result => {
+                const content = `<strong>CGI POST Text Status:</strong> ${result.status}<br>
+                    <strong>Data:</strong> ${textData}<br>
+                    <strong>Response:</strong><br>
+                    <div style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; margin-top: 5px;">
+                        ${result.data}
+                    </div>`;
+                showResult('cgi-result', content, 'success');
+            })
+            .catch(error => {
+                showResult('cgi-result', `CGI POST Text Error: ${error.message}`, 'error');
+            });
+        }
+
+        // CGI POST File Test
+        function testCgiPostFile() {
+            const fileInput = document.getElementById('cgiFileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('cgi-result', 'Please select a file for CGI POST', 'error');
+                return;
+            }
+            
+            showResult('cgi-result', `Sending file to CGI: ${file.name}...`, 'info');
+            
+            fetch('/cgi-bin/file_handler.py', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/octet-stream',
+                    'X-File-Name': file.name,
+                    'X-File-Size': file.size.toString(),
+                    'X-File-Type': file.type
+                },
+                body: file
+            })
+            .then(response => {
+                const status = response.status;
+                return response.text().then(data => ({ status, data }));
+            })
+            .then(result => {
+                const content = `<strong>CGI POST File Status:</strong> ${result.status}<br>
+                    <strong>File:</strong> ${file.name} (${file.size} bytes)<br>
+                    <strong>Response:</strong><br>
+                    <div style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; margin-top: 5px;">
+                        ${result.data}
+                    </div>`;
+                showResult('cgi-result', content, 'success');
+            })
+            .catch(error => {
+                showResult('cgi-result', `CGI POST File Error: ${error.message}`, 'error');
+            });
+        }
+
+        // Test Simple Session
+        function testSimpleSession() {
+            setLoading('session-result', 'Testing session...');
+            
+            fetch('/cgi-bin/simple_session_test.py')
+                .then(response => {
+                    const status = response.status;
+                    return response.text().then(data => ({ status, data }));
+                })
+                .then(result => {
+                    const content = `
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                            <strong style="color: #28a745;">Session Test Complete</strong>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
+                            <strong>URL:</strong> /cgi-bin/simple_session_test.py
+                        </div>
+                        <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto;">
+                            <strong>Server Response:</strong><br>
+                            <div style="margin-top: 10px; font-family: monospace; font-size: 12px; background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                                ${result.data.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                            </div>
+                        </div>`;
+                    showResult('session-result', content, 'success');
+                })
+                .catch(error => {
+                    const content = `
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                            <strong style="color: #dc3545;">Session Test Failed</strong>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
+                            <strong>Error:</strong> ${error.message}
+                        </div>`;
+                    showResult('session-result', content, 'error');
+                });
+        }
+
+        // Show Current Cookies
+        function showCurrentCookies() {
+            const cookies = document.cookie;
+            
+            if (!cookies) {
+                showResult('session-result', 
+                    `<div style="text-align: center; padding: 20px;">
+                        <span style="font-size: 48px;">🍪</span>
+                        <h3 style="color: #666; margin: 10px 0;">No Cookies Found</h3>
+                        <p>No cookies are currently set in your browser for this domain.</p>
+                    </div>`, 'info');
+                return;
+            }
+
+            const cookieList = cookies.split(';').map(cookie => {
+                const [name, value] = cookie.trim().split('=');
+                return { name: name.trim(), value: value ? value.trim() : '' };
+            });
+
+            const content = `
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <span style="color: #9C27B0; font-size: 18px; margin-right: 8px;">🍪</span>
+                    <strong style="color: #9C27B0;">Current Cookies</strong>
+                </div>
+                <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <strong>Total Cookies:</strong> ${cookieList.length}<br>
+                    <strong>Raw Cookie String:</strong> ${cookies}
+                </div>
+                <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
+                    <strong>Cookie Details:</strong><br>
+                    ${cookieList.map(cookie => 
+                        `<div style="margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                            <strong>${cookie.name}:</strong> ${cookie.value}
+                        </div>`
+                    ).join('')}
+                </div>`;
+
+            showResult('session-result', content, 'info');
+        }
+
+        // Clear All Cookies
+        function clearAllCookies() {
+            const cookies = document.cookie.split(";");
+            let clearedCount = 0;
+
+            for (let cookie of cookies) {
+                const eqPos = cookie.indexOf("=");
+                const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+                if (name) {
+                    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+                    clearedCount++;
+                }
+            }
+
+            const content = `
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <span style="color: #28a745; font-size: 18px; margin-right: 8px;">🗑️</span>
+                    <strong style="color: #28a745;">Cookies Cleared</strong>
+                </div>
+                <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <strong>Cookies Cleared:</strong> ${clearedCount}<br>
+                    <strong>Remaining Cookies:</strong> ${document.cookie || 'None'}
+                </div>
+                <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
+                    <p>All cookies for this domain have been cleared. You can now test session creation from scratch!</p>
+                    <p style="margin-top: 10px;"><em>Note: Some cookies might be restored by the server or other scripts running on this page.</em></p>
+                </div>`;
+
+            showResult('session-result', content, 'success');
+        }
+    </script>
+</body>
+</html>
