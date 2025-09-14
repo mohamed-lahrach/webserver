@@ -23,6 +23,10 @@ void Server::run()
 	while (true)
 	{
 		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, 1000);
+		
+		// 🔥 CHECK FOR CGI TIMEOUTS ON EVERY LOOP ITERATION
+		cgi_runner.check_cgi_timeouts();
+		
 		if (num_events == -1)
 		{
 			throw std::runtime_error("Error in epoll_wait");
@@ -88,7 +92,6 @@ void Server::run()
 							std::map<int, Client>::iterator client_it = active_clients.find(client_fd);
 							if (client_it != active_clients.end())
 							{
-								// Send CGI response to client
 								ssize_t bytes_sent = send(client_fd, response_data.c_str(), response_data.size(), 0);
 								if (bytes_sent == -1 || bytes_sent == 0)
 								{
@@ -107,9 +110,8 @@ void Server::run()
 				}
 				else if (events[i].events & (EPOLLHUP | EPOLLERR))
 				{
-					// CGI process closed or error occurred
+					
 					std::cout << "CGI process fd " << fd << " closed or error occurred" << std::endl;
-					// Try to read any remaining data before closing
 					std::string response_data;
 					if (cgi_runner.handle_cgi_output(fd, response_data))
 					{
@@ -119,7 +121,6 @@ void Server::run()
 							std::map<int, Client>::iterator client_it = active_clients.find(client_fd);
 							if (client_it != active_clients.end())
 							{
-								// Send CGI response to client
 								ssize_t bytes_sent = send(client_fd, response_data.c_str(), response_data.size(), 0);
 								if (bytes_sent == -1 || bytes_sent == 0)
 								{

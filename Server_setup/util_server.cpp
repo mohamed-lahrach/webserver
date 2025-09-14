@@ -68,7 +68,7 @@ ServerContext *Server::get_client_config(int client_fd)
 {
 	int	server_fd;
 
-	// Find which server this client belongs to
+	// Find which server of this client
 	std::map<int, int>::iterator server_it = client_to_server.find(client_fd);
 	if (server_it != client_to_server.end())
 	{

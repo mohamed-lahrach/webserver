@@ -138,8 +138,8 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 					}
 					else
 					{
-						if (cgi_output_fd == -2)
-						{ 
+						if (cgi_output_fd == -2) // not found
+						{
 							request_status = NOT_FOUND;
 							std::cerr << "CGI script resulted in 404 Not Found" << std::endl;
 						}
