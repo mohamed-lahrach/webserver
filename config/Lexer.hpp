@@ -44,8 +44,8 @@ enum TokenType
     BOOLEAN_LITERAL, // (if you decide to use it later)
     SIZE,            // (if you decide to use a distinct type later; not used here)
 
-    EOF_TOKEN, // end-of-file
-    UNKNOWN    // anything unrecognised
+    EOF_TOKEN, 
+    UNKNOWN  
 };
 
 struct Token

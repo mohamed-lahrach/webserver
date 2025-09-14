@@ -304,19 +304,13 @@ RequestStatus Request::figure_out_http_method()
 bool Request::is_cgi_request() const
 {
 	if (!location || location->cgiExtensions.empty() || location->cgiPaths.empty())
-	{
 		return false;
-	}
 
-	// Strip query string for extension checking
 	std::string path = requested_path;
 	size_t query_pos = path.find('?');
 	if (query_pos != std::string::npos)
-	{
 		path = path.substr(0, query_pos);
-	}
 
-	// Check if the requested path ends with any of the CGI extensions
 	for (size_t i = 0; i < location->cgiExtensions.size(); ++i)
 	{
 		const std::string &ext = location->cgiExtensions[i];
@@ -324,9 +318,7 @@ bool Request::is_cgi_request() const
 		{
 			std::string file_ext = path.substr(path.size() - ext.size());
 			if (file_ext == ext)
-			{
 				return true;
-			}
 		}
 	}
 

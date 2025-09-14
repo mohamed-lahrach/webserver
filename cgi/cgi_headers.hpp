@@ -7,13 +7,13 @@
 
 struct CgiProcess
 {
-    int pid;                   // pid of forked CGI
-    int input_fd;              // parent writes request body -> child's stdin
-    int output_fd;             // parent reads response <- child's stdout
-    int client_fd;             // the original client socket
-    std::string script_path;   // resolved script path
-    bool finished;             // set when EOF + child reaped
-    std::string output_buffer; // accumulates CGI stdout (headers+body)
+    int pid;                 
+    int input_fd;           
+    int output_fd;     
+    int client_fd;             
+    std::string script_path;  
+    bool finished;             
+    std::string output_buffer; 
 
     CgiProcess() : pid(-1), input_fd(-1), output_fd(-1), client_fd(-1), finished(false) {}
 };
