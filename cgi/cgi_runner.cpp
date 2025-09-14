@@ -19,7 +19,7 @@ CgiRunner::CgiRunner() {
 
 CgiRunner::~CgiRunner()
 {
-    // Clean up any remaining processes
+
     for (std::map<int, CgiProcess>::iterator it = active_cgi_processes.begin();
          it != active_cgi_processes.end(); ++it)
     {

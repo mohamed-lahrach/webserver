@@ -40,7 +40,6 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 	}
 
 	std::cout << "✓ New client connected: " << client.client_fd << std::endl;
-	// Add client to epoll
 	client_event.events = EPOLLIN;
 	client_event.data.fd = client.client_fd;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client.client_fd, &client_event) == -1)
@@ -49,11 +48,10 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 		close(client.client_fd);
 		return -1;
 	}
-	// Add to active clients map
 	active_clients[client.client_fd] = client;
 	std::cout << "✓ Client " << client.client_fd << " added to map" << std::endl;
 	std::cout << "✓ Total active clients: " << active_clients.size() << std::endl;
-	return client.client_fd; // Return the new client fd
+	return client.client_fd; 
 }
 
 void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &active_clients, ServerContext &server_config, CgiRunner &cgi_runner)
@@ -121,7 +119,6 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 					int cgi_output_fd = cgi_runner.start_cgi_process(current_request, *location, client_fd, script_path);
 					if (cgi_output_fd >= 0)
 					{
-						// Add CGI output fd to epoll for monitoring
 						struct epoll_event cgi_ev;
 						cgi_ev.events = EPOLLIN;
 						cgi_ev.data.fd = cgi_output_fd;
@@ -138,7 +135,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 					}
 					else
 					{
-						if (cgi_output_fd == -2) // not found
+						if (cgi_output_fd == -2) 
 						{
 							request_status = NOT_FOUND;
 							std::cerr << "CGI script resulted in 404 Not Found" << std::endl;
@@ -251,7 +248,6 @@ void Client::cleanup_connection(int epoll_fd, std::map<int,
 	{
 		std::cout << "✓ Client " << client_fd << " removed from epoll" << std::endl;
 	}
-	// Close the socket
 	if (close(client_fd) == -1)
 	{
 		std::cout << "Warning: Failed to close client " << client_fd << " socket" << std::endl;

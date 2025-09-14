@@ -68,7 +68,6 @@ ServerContext *Server::get_client_config(int client_fd)
 {
 	int	server_fd;
 
-	// Find which server of this client
 	std::map<int, int>::iterator server_it = client_to_server.find(client_fd);
 	if (server_it != client_to_server.end())
 	{
@@ -83,7 +82,6 @@ void Server::init_data(const std::vector<ServerContext> &configs)
 	int					server_fd;
 	struct epoll_event	event;
 
-	// 1. Create epoll instance (no sockets added yet)
 	epoll_fd = setup_epoll();
 	if (epoll_fd == -1)
 	{
@@ -93,7 +91,6 @@ void Server::init_data(const std::vector<ServerContext> &configs)
 	{
 		const ServerContext &config = configs[i];
 		port = atoi(config.port.c_str());
-		// DEBUG: print what we're trying to setup
 		std::cout << "=== SERVER " << (i + 1) << " SETUP ===" << std::endl;
 		std::cout << "Config host: '" << config.host << "'" << std::endl;
 		std::cout << "Config port: '" << config.port << "'" << std::endl;
