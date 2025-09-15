@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 Webserver </title>
+    <title>Webserver Test</title>
     <style>
         * {
             margin: 0;
@@ -152,30 +152,6 @@
             background: linear-gradient(45deg, #667eea, #764ba2);
             border-radius: 2px;
         }
-
-        /* Section-specific colors */
-        .get-section h2::after { background: linear-gradient(45deg, #4CAF50, #45a049); }
-        .post-section h2::after { background: linear-gradient(45deg, #2196F3, #1976D2); }
-        .delete-section h2::after { background: linear-gradient(45deg, #f44336, #d32f2f); }
-        .cgi-section h2::after { background: linear-gradient(45deg, #FF9800, #F57C00); }
-        .session-section h2::after { background: linear-gradient(45deg, #9C27B0, #673AB7); }
-        
-        /* Section background gradients */
-        .get-section { 
-            background: linear-gradient(145deg, rgba(76,175,80,0.05) 0%, rgba(255,255,255,0.9) 100%);
-        }
-        .post-section { 
-            background: linear-gradient(145deg, rgba(33,150,243,0.05) 0%, rgba(255,255,255,0.9) 100%);
-        }
-        .delete-section { 
-            background: linear-gradient(145deg, rgba(244,67,54,0.05) 0%, rgba(255,255,255,0.9) 100%);
-        }
-        .cgi-section { 
-            background: linear-gradient(145deg, rgba(255,152,0,0.05) 0%, rgba(255,255,255,0.9) 100%);
-        }
-        .session-section { 
-            background: linear-gradient(145deg, rgba(156,39,176,0.05) 0%, rgba(255,255,255,0.9) 100%);
-        }
         
         .form-group {
             margin-bottom: 20px;
@@ -189,7 +165,7 @@
             font-size: 0.95em;
         }
         
-        input[type="text"], input[type="file"], textarea, input[type="password"] {
+        input[type="text"], input[type="file"], textarea {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e0e0e0;
@@ -201,7 +177,7 @@
             backdrop-filter: blur(5px);
         }
 
-        input[type="text"]:focus, textarea:focus, input[type="password"]:focus {
+        input[type="text"]:focus, textarea:focus {
             border-color: #667eea;
             background: rgba(255, 255, 255, 0.95);
             outline: none;
@@ -232,6 +208,8 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
         }
 
         button::before {
@@ -250,53 +228,9 @@
         }
 
         button:hover {
+            background: linear-gradient(45deg, #5a67d8, #6b46c1);
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-        }
-
-        /* Default button style */
-        button {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-        }
-
-        button:hover {
-            background: linear-gradient(45deg, #5a67d8, #6b46c1);
-        }
-        
-        .delete-btn { 
-            background: linear-gradient(45deg, #f44336, #d32f2f);
-        }
-        .delete-btn:hover { 
-            background: linear-gradient(45deg, #d32f2f, #b71c1c);
-        }
-        
-        .cgi-btn { 
-            background: linear-gradient(45deg, #FF9800, #F57C00);
-        }
-        .cgi-btn:hover { 
-            background: linear-gradient(45deg, #F57C00, #E65100);
-        }
-
-        .get-btn {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-        }
-        .get-btn:hover {
-            background: linear-gradient(45deg, #45a049, #388e3c);
-        }
-
-        .post-btn {
-            background: linear-gradient(45deg, #2196F3, #1976D2);
-        }
-        .post-btn:hover {
-            background: linear-gradient(45deg, #1976D2, #1565C0);
-        }
-
-        .session-btn {
-            background: linear-gradient(45deg, #9C27B0, #673AB7);
-        }
-        .session-btn:hover {
-            background: linear-gradient(45deg, #8E24AA, #5E35B1);
         }
         
         .result {
@@ -330,30 +264,6 @@
             color: #0c5460;
         }
 
-        /* Add some icons with CSS */
-        .test-section h2::before {
-            margin-right: 10px;
-            font-size: 1.2em;
-        }
-
-        .get-section h2::before { content: "🔍"; }
-        .post-section h2::before { content: "📤"; }
-        .delete-section h2::before { content: "🗑️"; }
-        .cgi-section h2::before { content: "⚙️"; }
-        .session-section h2::before { content: "🍪"; }
-
-        /* Loading animation */
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        .loading {
-            animation: pulse 1.5s infinite;
-        }
-
-        /* Responsive design */
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -377,106 +287,98 @@
             }
         }
     </style>
-    </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 Webserver</h1>
+            <h1>Webserver</h1>
             <p>Test POST (file/text), GET, DELETE, and CGI functionality</p>
             <div style="margin-top: 20px;">
                 <a href="session_test.html" style="text-decoration: none;">
                     <button style="background: linear-gradient(45deg, #9C27B0, #673AB7); color: white; padding: 12px 24px; border: none; border-radius: 25px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
-                        🍪 Go to Session Test
+                        Go to Session Test
                     </button>
                 </a>
             </div>
         </div>
         
         <!-- GET Test -->
-        <div class="test-section get-section">
+        <div class="test-section">
             <h2>GET Test</h2>
             <div class="form-group">
                 <label>URL to test:</label>
                 <input type="text" id="getUrl" value="/" placeholder="Enter URL path">
             </div>
-            <button class="get-btn" onclick="testGet()">Test GET</button>
+            <button onclick="testGet()">Test GET</button>
             <div id="get-result" class="result"></div>
         </div>
         
         <!-- POST Tests -->
-        <div class="test-section post-section">
+        <div class="test-section">
             <h2>POST Tests</h2>
             
             <!-- File Upload -->
             <div class="form-group">
                 <label>Upload File:</label>
                 <input type="file" id="fileInput">
-                <button class="post-btn" onclick="testPostFile()">Upload File</button>
+                <button onclick="testPostFile()">Upload File</button>
             </div>
             
             <!-- Text Upload -->
             <div class="form-group">
                 <label>Upload Text:</label>
                 <textarea id="textInput" rows="3" placeholder="Enter text to upload">This is test text data.</textarea>
-                <button class="post-btn" onclick="testPostText()">Upload Text</button>
+                <button onclick="testPostText()">Upload Text</button>
             </div>
             
             <div id="post-result" class="result"></div>
         </div>
         
         <!-- DELETE Test -->
-        <div class="test-section delete-section">
+        <div class="test-section">
             <h2>DELETE Test</h2>
             <div class="form-group">
                 <label>URL path to delete:</label>
                 <input type="text" id="deleteFile" value="upload/test" placeholder="e.g., upload/image.webp, test.txt, index.html">
-                <small style="color: #666; font-size: 0.9em;">Examples: upload/file.jpg, test.txt, index.html (exact path as you want to send)</small>
             </div>
-            <button class="delete-btn" onclick="testDelete()">Delete File</button>
+            <button onclick="testDelete()">Delete File</button>
             <div id="delete-result" class="result"></div>
         </div>
         
         <!-- CGI Tests -->
-        <div class="test-section cgi-section">
+        <div class="test-section">
             <h2>CGI Tests</h2>
             
             <!-- CGI GET -->
             <div class="form-group">
                 <label>CGI GET Test:</label>
-                <input type="text" id="cgiGetUrl" value="cgi-bin/simple_get.py" placeholder="Enter CGI script path">
-                <button class="cgi-btn" onclick="testCgiGet()">Test CGI GET</button>
+                <input type="text" id="cgiGetUrl" value="cgi-bin/get.py" placeholder="Enter CGI script path">
+                <button onclick="testCgiGet()">Test CGI GET</button>
             </div>
             
             <!-- CGI POST Text -->
             <div class="form-group">
                 <label>CGI POST Text:</label>
                 <textarea id="cgiTextInput" rows="3" placeholder="Enter text for CGI POST">username=test&message=Hello CGI</textarea>
-                <button class="cgi-btn" onclick="testCgiPostText()">Send Text to CGI</button>
+                <button onclick="testCgiPostText()">Send Text to CGI</button>
             </div>
             
             <!-- CGI POST File -->
             <div class="form-group">
                 <label>CGI POST File:</label>
                 <input type="file" id="cgiFileInput">
-                <button class="cgi-btn" onclick="testCgiPostFile()">Send File to CGI</button>
+                <button onclick="testCgiPostFile()">Send File to CGI</button>
+            </div>
+            
+            <!-- Session Test -->
+            <div class="form-group">
+                <label>Session & Cookie Test:</label>
+                <a href="/cgi-bin/session_test.py" target="_blank" style="text-decoration: none;">
+                    <button>Test Sessions & Cookies</button>
+                </a>
             </div>
             
             <div id="cgi-result" class="result"></div>
-        </div>
-
-        <!-- Video/Media Test -->
-        <div class="test-section" style="background: linear-gradient(145deg, rgba(128,0,128,0.05) 0%, rgba(255,255,255,0.9) 100%);">
-            <h2 style="position: relative;">🎬 Video/Media Test</h2>
-            <div class="form-group">
-                <label>Test Video/Media URLs:</label>
-                <input type="text" id="videoUrl" value="video.mp4" placeholder="e.g., video.mp4, movie.avi, audio.mp3">
-                <small style="color: #666; font-size: 0.9em;">
-                    Supported formats: .mp4 (video/mp4), .avi (video/x-msvideo), .mp3 (audio/mpeg), .wav (audio/wav)
-                </small>
-            </div>
-            <button style="background: linear-gradient(45deg, #8E24AA, #673AB7);" onclick="testVideo()">Test Video/Media</button>
-            <div id="video-result" class="result"></div>
         </div>
     </div>
 
@@ -492,36 +394,12 @@
             element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
-        function setLoading(elementId, message = 'Loading...') {
-            const element = document.getElementById(elementId);
-            element.className = 'result info loading';
-            element.style.display = 'block';
-            element.innerHTML = `<div style="display: flex; align-items: center;">
-                <div style="width: 20px; height: 20px; border: 2px solid #17a2b8; border-top: 2px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px;"></div>
-                ${message}
-            </div>`;
-            
-            // Add spin animation
-            if (!document.querySelector('#spin-style')) {
-                const style = document.createElement('style');
-                style.id = 'spin-style';
-                style.textContent = `
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-        }
-
         // GET Test
         function testGet() {
             const url = document.getElementById('getUrl').value || '/';
             const fullUrl = `${window.location.origin}${url}`;
             const curlCommand = `curl -X GET "${fullUrl}" -v`;
             
-            // Show request details
             const requestInfo = `
                 <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
                     <strong>🔍 Request Details:</strong><br>
@@ -537,75 +415,38 @@
             
             showResult('get-result', requestInfo, 'info');
             
-            // Use XMLHttpRequest with proper URL construction for raw paths
-            const xhr = new XMLHttpRequest();
-            
-            // Set up the response handler BEFORE opening the request
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    const status = xhr.status;
-                    const data = xhr.responseText;
-                    
+            fetch(url)
+                .then(response => {
+                    const status = response.status;
+                    return response.text().then(data => ({ status, data }));
+                })
+                .then(result => {
                     const content = `
                         <div style="display: flex; align-items: center; margin-bottom: 10px;">
                             <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
                             <strong style="color: #28a745;">GET Request Successful</strong>
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
-                            <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${status}</span><br>
+                            <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
                             <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code>
                         </div>
                         <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
                             <strong>Response:</strong><br>
-                            <pre style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 8px; font-size: 12px;">${data.substring(0, 1000)}${data.length > 1000 ? '\n... (truncated)' : ''}</pre>
+                            <pre style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 8px; font-size: 12px;">${result.data.substring(0, 1000)}${result.data.length > 1000 ? '\n... (truncated)' : ''}</pre>
                         </div>`;
                     showResult('get-result', content, 'success');
-                }
-            };
-            
-            xhr.onerror = function() {
-                const content = `
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
-                        <strong style="color: #dc3545;">GET Request Failed</strong>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
-                        <strong>Error:</strong> XMLHttpRequest network error
-                    </div>`;
-                showResult('get-result', content, 'error');
-            };
-            
-            xhr.ontimeout = function() {
-                const content = `
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">⏰</span>
-                        <strong style="color: #dc3545;">GET Request Timeout</strong>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
-                        <strong>Error:</strong> Request timed out after 10 seconds
-                    </div>`;
-                showResult('get-result', content, 'error');
-            };
-            
-            try {
-                // Construct the URL more carefully to handle raw paths
-                const baseUrl = window.location.protocol + '//' + window.location.host;
-                const targetUrl = url.startsWith('/') ? baseUrl + url : baseUrl + '/' + url;
-                
-                xhr.open('GET', targetUrl, true);
-                xhr.timeout = 10000; // 10 second timeout
-                xhr.send();
-            } catch (error) {
-                const content = `
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
-                        <strong style="color: #dc3545;">GET Request Failed</strong>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
-                        <strong>Error:</strong> ${error.message}
-                    </div>`;
-                showResult('get-result', content, 'error');
-            }
+                })
+                .catch(error => {
+                    const content = `
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                            <strong style="color: #dc3545;">GET Request Failed</strong>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
+                            <strong>Error:</strong> ${error.message}
+                        </div>`;
+                    showResult('get-result', content, 'error');
+                });
         }
 
         // POST File Test
@@ -651,14 +492,32 @@
                 return response.text().then(data => ({ status, data }));
             })
             .then(result => {
-                const content = `<strong>Status:</strong> ${result.status}<br>
-                    <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
-                    <strong>File:</strong> ${file.name} (${file.size} bytes)<br>
-                    <strong>Response:</strong> ${result.data}`;
+                const content = `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                        <strong style="color: #28a745;">File Upload Successful</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
+                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
+                        <strong>File:</strong> ${file.name} (${file.size} bytes)
+                    </div>
+                    <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
+                        <strong>Response:</strong><br>
+                        <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 8px; font-size: 12px;">${result.data}</pre>
+                    </div>`;
                 showResult('post-result', content, 'success');
             })
             .catch(error => {
-                showResult('post-result', `Upload Error: ${error.message}`, 'error');
+                const content = `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                        <strong style="color: #dc3545;">File Upload Failed</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
+                        <strong>Error:</strong> ${error.message}
+                    </div>`;
+                showResult('post-result', content, 'error');
             });
         }
 
@@ -706,14 +565,32 @@
                 return response.text().then(data => ({ status, data }));
             })
             .then(result => {
-                const content = `<strong>Status:</strong> ${result.status}<br>
-                    <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
-                    <strong>Data:</strong> ${textData.length} characters<br>
-                    <strong>Response:</strong> ${result.data}`;
+                const content = `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                        <strong style="color: #28a745;">Text Upload Successful</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
+                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
+                        <strong>Data:</strong> ${textData.length} characters
+                    </div>
+                    <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
+                        <strong>Response:</strong><br>
+                        <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 8px; font-size: 12px;">${result.data}</pre>
+                    </div>`;
                 showResult('post-result', content, 'success');
             })
             .catch(error => {
-                showResult('post-result', `Text Upload Error: ${error.message}`, 'error');
+                const content = `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                        <strong style="color: #dc3545;">Text Upload Failed</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
+                        <strong>Error:</strong> ${error.message}
+                    </div>`;
+                showResult('post-result', content, 'error');
             });
         }
 
@@ -726,63 +603,65 @@
                 return;
             }
             
-            // Use the exact input as the URL - no manipulation
-            const exactUrl = filename;
-            const fullUrl = `${window.location.origin}${filename}`;
+            const fullUrl = `${window.location.origin}/${filename}`;
             const curlCommand = `curl -X DELETE "${fullUrl}" -v`;
             
-            // Show request details
             const requestInfo = `
                 <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
                     <strong>🔍 Request Details:</strong><br>
                     <strong>Method:</strong> DELETE<br>
-                    <strong>URL:</strong> ${exactUrl}<br>
+                    <strong>URL:</strong> ${filename}<br>
                     <strong>Full URL:</strong> ${fullUrl}
                 </div>
                 <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace; font-size: 12px;">
                     <strong>💻 Curl Equivalent:</strong><br>
                     <code style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: block; margin-top: 5px;">${curlCommand}</code>
                 </div>
-                Deleting file: ${exactUrl}...`;
+                Deleting: ${filename}...`;
             
             showResult('delete-result', requestInfo, 'info');
             
-            // Use XMLHttpRequest with proper URL construction for raw paths
-            const xhr = new XMLHttpRequest();
-            
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    const status = xhr.status;
-                    const data = xhr.responseText;
-                    
-                    const content = `<strong>Status:</strong> ${status}<br>
+            fetch(filename, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                const status = response.status;
+                return response.text().then(data => ({ status, data }));
+            })
+            .then(result => {
+                const content = `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                        <strong style="color: #28a745;">DELETE Request Successful</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
                         <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
-                        <strong>File:</strong> ${exactUrl}<br>
-                        <strong>Response:</strong> ${data}`;
-                    showResult('delete-result', content, 'success');
-                }
-            };
-            
-            xhr.onerror = function() {
-                showResult('delete-result', `Delete Error: XMLHttpRequest network error`, 'error');
-            };
-            
-            try {
-                // Construct the URL more carefully to handle raw paths
-                const baseUrl = window.location.protocol + '//' + window.location.host;
-                const targetUrl = exactUrl.startsWith('/') ? baseUrl + exactUrl : baseUrl + '/' + exactUrl;
-                
-                xhr.open('DELETE', targetUrl, true);
-                xhr.send();
-            } catch (error) {
-                showResult('delete-result', `Delete Error: ${error.message}`, 'error');
-            }
+                        <strong>File:</strong> ${filename}
+                    </div>
+                    <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
+                        <strong>Response:</strong><br>
+                        <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 8px; font-size: 12px;">${result.data}</pre>
+                    </div>`;
+                showResult('delete-result', content, 'success');
+            })
+            .catch(error => {
+                const content = `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                        <strong style="color: #dc3545;">DELETE Request Failed</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
+                        <strong>Error:</strong> ${error.message}
+                    </div>`;
+                showResult('delete-result', content, 'error');
+            });
         }
 
         // CGI GET Test
         function testCgiGet() {
-            const url = document.getElementById('cgiGetUrl').value || 'cgi-bin/simple_get.py';
-            const fullUrl = `${window.location.origin}${url.startsWith('/') ? url : '/' + url}`;
+            const url = document.getElementById('cgiGetUrl').value || 'cgi-bin/get.py';
+            const fullUrl = `${window.location.origin}/${url}`;
             const curlCommand = `curl -X GET "${fullUrl}" -v`;
             
             const requestInfo = `
@@ -796,42 +675,42 @@
                     <strong>💻 Curl Equivalent:</strong><br>
                     <code style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: block; margin-top: 5px;">${curlCommand}</code>
                 </div>
-                Testing CGI GET: ${url}...`;
+                Testing CGI GET...`;
             
             showResult('cgi-result', requestInfo, 'info');
             
-            // Use XMLHttpRequest with proper URL construction for raw paths
-            const xhr = new XMLHttpRequest();
-            
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    const status = xhr.status;
-                    const data = xhr.responseText;
-                    
-                    const content = `<strong>CGI GET Status:</strong> ${status}<br>
-                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
-                        <strong>Response:</strong><br>
-                        <div style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; margin-top: 5px;">
-                            ${data}
+            fetch(url)
+                .then(response => {
+                    const status = response.status;
+                    return response.text().then(data => ({ status, data }));
+                })
+                .then(result => {
+                    const content = `
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                            <strong style="color: #28a745;">CGI GET Successful</strong>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
+                            <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto;">
+                            <strong>Response:</strong><br>
+                            <div style="margin-top: 8px;">${result.data}</div>
                         </div>`;
                     showResult('cgi-result', content, 'success');
-                }
-            };
-            
-            xhr.onerror = function() {
-                showResult('cgi-result', `CGI GET Error: XMLHttpRequest network error`, 'error');
-            };
-            
-            try {
-                // Construct the URL more carefully to handle raw paths
-                const baseUrl = window.location.protocol + '//' + window.location.host;
-                const targetUrl = url.startsWith('/') ? baseUrl + url : baseUrl + '/' + url;
-                
-                xhr.open('GET', targetUrl, true);
-                xhr.send();
-            } catch (error) {
-                showResult('cgi-result', `CGI GET Error: ${error.message}`, 'error');
-            }
+                })
+                .catch(error => {
+                    const content = `
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                            <strong style="color: #dc3545;">CGI GET Failed</strong>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
+                            <strong>Error:</strong> ${error.message}
+                        </div>`;
+                    showResult('cgi-result', content, 'error');
+                });
         }
 
         // CGI POST Text Test
@@ -839,7 +718,7 @@
             const textData = document.getElementById('cgiTextInput').value;
             
             if (!textData.trim()) {
-                showResult('cgi-result', 'Please enter some text for CGI POST', 'error');
+                showResult('cgi-result', 'Please enter some text first', 'error');
                 return;
             }
             
@@ -853,7 +732,7 @@
                     <strong>URL:</strong> cgi-bin/post_test.py<br>
                     <strong>Full URL:</strong> ${fullUrl}<br>
                     <strong>Content-Type:</strong> application/x-www-form-urlencoded<br>
-                    <strong>Data:</strong> ${textData}
+                    <strong>Data Length:</strong> ${textData.length} characters
                 </div>
                 <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace; font-size: 12px;">
                     <strong>💻 Curl Equivalent:</strong><br>
@@ -875,17 +754,32 @@
                 return response.text().then(data => ({ status, data }));
             })
             .then(result => {
-                const content = `<strong>CGI POST Text Status:</strong> ${result.status}<br>
-                    <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
-                    <strong>Data:</strong> ${textData}<br>
-                    <strong>Response:</strong><br>
-                    <div style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; margin-top: 5px;">
-                        ${result.data}
+                const content = `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                        <strong style="color: #28a745;">CGI POST Text Successful</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
+                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
+                        <strong>Data:</strong> ${textData.length} characters
+                    </div>
+                    <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto;">
+                        <strong>Response:</strong><br>
+                        <div style="margin-top: 8px;">${result.data}</div>
                     </div>`;
                 showResult('cgi-result', content, 'success');
             })
             .catch(error => {
-                showResult('cgi-result', `CGI POST Text Error: ${error.message}`, 'error');
+                const content = `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                        <strong style="color: #dc3545;">CGI POST Text Failed</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
+                        <strong>Error:</strong> ${error.message}
+                    </div>`;
+                showResult('cgi-result', content, 'error');
             });
         }
 
@@ -895,7 +789,7 @@
             const file = fileInput.files[0];
             
             if (!file) {
-                showResult('cgi-result', 'Please select a file for CGI POST', 'error');
+                showResult('cgi-result', 'Please select a file first', 'error');
                 return;
             }
             
@@ -924,7 +818,7 @@
                 headers: {
                     'Content-Type': 'application/octet-stream',
                     'X-File-Name': file.name,
-                    'X-File-Size': file.size.toString(),
+                    'X-File-Size': file.size,
                     'X-File-Type': file.type
                 },
                 body: file
@@ -934,315 +828,33 @@
                 return response.text().then(data => ({ status, data }));
             })
             .then(result => {
-                const content = `<strong>CGI POST File Status:</strong> ${result.status}<br>
-                    <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
-                    <strong>File:</strong> ${file.name} (${file.size} bytes)<br>
-                    <strong>Response:</strong><br>
-                    <div style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; margin-top: 5px;">
-                        ${result.data}
+                const content = `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                        <strong style="color: #28a745;">CGI POST File Successful</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
+                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
+                        <strong>File:</strong> ${file.name} (${file.size} bytes)
+                    </div>
+                    <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto;">
+                        <strong>Response:</strong><br>
+                        <div style="margin-top: 8px;">${result.data}</div>
                     </div>`;
                 showResult('cgi-result', content, 'success');
             })
             .catch(error => {
-                showResult('cgi-result', `CGI POST File Error: ${error.message}`, 'error');
-            });
-        }
-
-        // Test Simple Session
-        function testSimpleSession() {
-            const requestInfo = `
-                <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🔍 Request Details:</strong><br>
-                    <strong>Method:</strong> GET<br>
-                    <strong>URL:</strong> cgi-bin/simple_session_test.py<br>
-                    <strong>Full URL:</strong> ${window.location.origin}/cgi-bin/simple_session_test.py
-                </div>
-                <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace; font-size: 12px;">
-                    <strong>💻 Curl Equivalent:</strong><br>
-                    <code style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: block; margin-top: 5px;">curl -X GET "${window.location.origin}/cgi-bin/simple_session_test.py" -v</code>
-                </div>
-                Testing session...`;
-            
-            showResult('session-result', requestInfo, 'info');
-            
-            // Use XMLHttpRequest with proper URL construction for raw paths
-            const xhr = new XMLHttpRequest();
-            
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    const status = xhr.status;
-                    const data = xhr.responseText;
-                    
-                    const content = `
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
-                            <strong style="color: #28a745;">Session Test Complete</strong>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
-                            <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${status}</span><br>
-                            <strong>URL:</strong> /cgi-bin/simple_session_test.py
-                        </div>
-                        <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto;">
-                            <strong>Server Response:</strong><br>
-                            <div style="margin-top: 10px; font-family: monospace; font-size: 12px; background: #f8f9fa; padding: 10px; border-radius: 4px;">
-                                ${data.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-                            </div>
-                        </div>`;
-                    showResult('session-result', content, 'success');
-                }
-            };
-            
-            xhr.onerror = function() {
                 const content = `
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
                         <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
-                        <strong style="color: #dc3545;">Session Test Failed</strong>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
-                        <strong>Error:</strong> XMLHttpRequest network error
-                    </div>`;
-                showResult('session-result', content, 'error');
-            };
-            
-            try {
-                // Construct the URL more carefully to handle raw paths
-                const baseUrl = window.location.protocol + '//' + window.location.host;
-                const targetUrl = baseUrl + '/cgi-bin/simple_session_test.py';
-                
-                xhr.open('GET', targetUrl, true);
-                xhr.send();
-            } catch (error) {
-                const content = `
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
-                        <strong style="color: #dc3545;">Session Test Failed</strong>
+                        <strong style="color: #dc3545;">CGI POST File Failed</strong>
                     </div>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
                         <strong>Error:</strong> ${error.message}
                     </div>`;
-                showResult('session-result', content, 'error');
-            }
-        }
-
-        // Show Current Cookies
-        function showCurrentCookies() {
-            const cookies = document.cookie;
-            
-            if (!cookies) {
-                showResult('session-result', 
-                    `<div style="text-align: center; padding: 20px;">
-                        <span style="font-size: 48px;">🍪</span>
-                        <h3 style="color: #666; margin: 10px 0;">No Cookies Found</h3>
-                        <p>No cookies are currently set in your browser for this domain.</p>
-                    </div>`, 'info');
-                return;
-            }
-
-            const cookieList = cookies.split(';').map(cookie => {
-                const [name, value] = cookie.trim().split('=');
-                return { name: name.trim(), value: value ? value.trim() : '' };
+                showResult('cgi-result', content, 'error');
             });
-
-            const content = `
-                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <span style="color: #9C27B0; font-size: 18px; margin-right: 8px;">🍪</span>
-                    <strong style="color: #9C27B0;">Current Cookies</strong>
-                </div>
-                <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
-                    <strong>Total Cookies:</strong> ${cookieList.length}<br>
-                    <strong>Raw Cookie String:</strong> ${cookies}
-                </div>
-                <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
-                    <strong>Cookie Details:</strong><br>
-                    ${cookieList.map(cookie => 
-                        `<div style="margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px;">
-                            <strong>${cookie.name}:</strong> ${cookie.value}
-                        </div>`
-                    ).join('')}
-                </div>`;
-
-            showResult('session-result', content, 'info');
-        }
-
-        // Clear All Cookies
-        function clearAllCookies() {
-            const cookies = document.cookie.split(";");
-            let clearedCount = 0;
-
-            for (let cookie of cookies) {
-                const eqPos = cookie.indexOf("=");
-                const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-                if (name) {
-                    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-                    clearedCount++;
-                }
-            }
-
-            const content = `
-                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <span style="color: #28a745; font-size: 18px; margin-right: 8px;">🗑️</span>
-                    <strong style="color: #28a745;">Cookies Cleared</strong>
-                </div>
-                <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
-                    <strong>Cookies Cleared:</strong> ${clearedCount}<br>
-                    <strong>Remaining Cookies:</strong> ${document.cookie || 'None'}
-                </div>
-                <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
-                    <p>All cookies for this domain have been cleared. You can now test session creation from scratch!</p>
-                    <p style="margin-top: 10px;"><em>Note: Some cookies might be restored by the server or other scripts running on this page.</em></p>
-                </div>`;
-
-            showResult('session-result', content, 'success');
-        }
-
-        // Video/Media Test
-        function testVideo() {
-            const url = document.getElementById('videoUrl').value.trim(); // Trim whitespace
-            
-            if (!url) {
-                showResult('video-result', 'Please enter a video/media URL', 'error');
-                return;
-            }
-            
-            const fullUrl = `${window.location.origin}${url.startsWith('/') ? url : '/' + url}`;
-            const curlCommand = `curl -X GET "${fullUrl}" -v`;
-            
-            // Determine file type for display
-            const extension = url.toLowerCase().split('.').pop();
-            let fileType = 'Media';
-            let isVideo = false;
-            let isAudio = false;
-            
-            if (['mp4', 'avi', 'mov', 'webm', 'mkv'].includes(extension)) {
-                fileType = 'Video';
-                isVideo = true;
-            } else if (['mp3', 'wav', 'ogg', 'flac'].includes(extension)) {
-                fileType = 'Audio';
-                isAudio = true;
-            }
-            
-            const requestInfo = `
-                <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🎬 Request Details:</strong><br>
-                    <strong>Method:</strong> GET<br>
-                    <strong>URL:</strong> ${url}<br>
-                    <strong>Full URL:</strong> ${fullUrl}<br>
-                    <strong>File Type:</strong> ${fileType} (.${extension})
-                </div>
-                <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace; font-size: 12px;">
-                    <strong>💻 Curl Equivalent:</strong><br>
-                    <code style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: block; margin-top: 5px;">${curlCommand}</code>
-                </div>
-                Testing ${fileType} request...`;
-            
-            showResult('video-result', requestInfo, 'info');
-            
-            // Use XMLHttpRequest with proper URL construction for raw paths
-            const xhr = new XMLHttpRequest();
-            
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    const status = xhr.status;
-                    const contentType = xhr.getResponseHeader('content-type') || 'unknown';
-                    const contentLength = xhr.getResponseHeader('content-length') || 'unknown';
-                    
-                    let mediaPreview = '';
-                    
-                    if (status === 200) {
-                        if (isVideo) {
-                            // For video preview, use the cleaned URL
-                            mediaPreview = `
-                                <div style="margin-top: 15px; text-align: center;">
-                                    <strong>📹 Video Preview:</strong><br>
-                                    <video controls style="max-width: 100%; max-height: 200px; margin-top: 10px; border-radius: 8px;">
-                                        <source src="${url}" type="${contentType}">
-                                        Your browser does not support the video tag.
-                                    </video>
-                                </div>`;
-                        } else if (isAudio) {
-                            mediaPreview = `
-                                <div style="margin-top: 15px; text-align: center;">
-                                    <strong>🎵 Audio Preview:</strong><br>
-                                    <audio controls style="margin-top: 10px;">
-                                        <source src="${url}" type="${contentType}">
-                                        Your browser does not support the audio tag.
-                                    </audio>
-                                </div>`;
-                        }
-                    }
-                    
-                    const content = `
-                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                            <span style="color: ${status === 200 ? '#28a745' : '#dc3545'}; font-size: 18px; margin-right: 8px;">
-                                ${status === 200 ? '✅' : '❌'}
-                            </span>
-                            <strong style="color: ${status === 200 ? '#28a745' : '#dc3545'};">
-                                ${fileType} Request ${status === 200 ? 'Successful' : 'Failed'}
-                            </strong>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
-                            <strong>Status:</strong> <span style="color: ${status === 200 ? '#28a745' : '#dc3545'}; font-weight: bold;">${status}</span><br>
-                            <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
-                            <strong>Content-Type:</strong> ${contentType}<br>
-                            <strong>Content-Length:</strong> ${contentLength} bytes<br>
-                            <strong>File Size:</strong> ${contentLength !== 'unknown' ? Math.round(parseInt(contentLength) / 1024 / 1024) + ' MB' : 'unknown'}
-                        </div>
-                        ${mediaPreview}
-                        ${status !== 200 && xhr.responseText ? `<div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
-                            <strong>Response:</strong><br>
-                            <pre style="max-height: 100px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 8px; font-size: 12px;">${xhr.responseText}</pre>
-                        </div>` : ''}`;
-                    
-                    showResult('video-result', content, status === 200 ? 'success' : 'error');
-                }
-            };
-            
-            xhr.onerror = function() {
-                const content = `
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
-                        <strong style="color: #dc3545;">${fileType} Request Failed</strong>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
-                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
-                        <strong>Error:</strong> XMLHttpRequest network error<br>
-                        <strong>Hint:</strong> Check if the server is running and the file exists
-                    </div>`;
-                showResult('video-result', content, 'error');
-            };
-            
-            xhr.ontimeout = function() {
-                const content = `
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">⏰</span>
-                        <strong style="color: #dc3545;">${fileType} Request Timeout</strong>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
-                        <strong>Error:</strong> Request timed out (large video files may take time to load)
-                    </div>`;
-                showResult('video-result', content, 'error');
-            };
-            
-            try {
-                // Construct the URL more carefully to handle raw paths
-                const baseUrl = window.location.protocol + '//' + window.location.host;
-                const targetUrl = url.startsWith('/') ? baseUrl + url : baseUrl + '/' + url;
-                
-                xhr.open('GET', targetUrl, true);
-                xhr.timeout = 30000; // 30 second timeout for large video files
-                xhr.send();
-            } catch (error) {
-                const content = `
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
-                        <strong style="color: #dc3545;">${fileType} Request Failed</strong>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
-                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
-                        <strong>Error:</strong> ${error.message}
-                    </div>`;
-                showResult('video-result', content, 'error');
-            }
         }
     </script>
 </body>

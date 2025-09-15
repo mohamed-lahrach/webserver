@@ -1,3 +1,0 @@
-This is a test file for GET requests.
-Line 2 of the test file.
-Line 3 with some content.

@@ -61,7 +61,7 @@ LocationContext *Request::match_location(const std::string &resquested_path)
 		if (it_location->path[it_location->path.length() - 1] == '/' && it_location->path.length() > 1)
 			it_location->path = it_location->path.substr(0, it_location->path.length() - 1);
 
-		std::cout << "  Checking location: '" << it_location->path << "'" << std::endl;
+	
 		if (resquested_path.compare(0, it_location->path.length(), it_location->path) == 0)
 		{
 			if (it_location->path == "/" ||
@@ -268,8 +268,7 @@ RequestStatus Request::figure_out_http_method()
 	}
 	if (!location->cgiExtensions.empty() && !location->cgiPaths.empty())
 	{
-		std::cout << "Checking for CGI request..." << std::endl;
-
+	
 		for (size_t i = 0; i < location->cgiExtensions.size(); ++i)
 		{
 			const std::string &ext = location->cgiExtensions[i];
@@ -278,6 +277,7 @@ RequestStatus Request::figure_out_http_method()
 				std::string file_ext = requested_path.substr(requested_path.size() - ext.size());
 				if (file_ext == ext)
 				{
+					std::cout<<"its a cgi request..\n";
 					if (http_method == "POST")
 					{
 						return post_handler.handle_post_request(http_headers, incoming_data, expected_body_size, config, location, requested_path);
