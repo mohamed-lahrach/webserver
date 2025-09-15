@@ -402,13 +402,13 @@
             
             const requestInfo = `
                 <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🔍 Request Details:</strong><br>
+                    <strong>Request Details:</strong><br>
                     <strong>Method:</strong> GET<br>
                     <strong>URL:</strong> ${url}<br>
                     <strong>Full URL:</strong> ${fullUrl}
                 </div>
                 <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace; font-size: 12px;">
-                    <strong>💻 Curl Equivalent:</strong><br>
+                    <strong>Curl Equivalent:</strong><br>
                     <code style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: block; margin-top: 5px;">${curlCommand}</code>
                 </div>
                 Testing GET request...`;
@@ -423,12 +423,12 @@
                 .then(result => {
                     const content = `
                         <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                            <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                            
                             <strong style="color: #28a745;">GET Request Successful</strong>
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
                             <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
-                            <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code>
+                            <strong>Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code>
                         </div>
                         <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
                             <strong>Response:</strong><br>
@@ -439,7 +439,7 @@
                 .catch(error => {
                     const content = `
                         <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                            <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                            
                             <strong style="color: #dc3545;">GET Request Failed</strong>
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
@@ -465,7 +465,7 @@
             
             const requestInfo = `
                 <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🔍 Request Details:</strong><br>
+                    <strong>Request Details:</strong><br>
                     <strong>Method:</strong> POST<br>
                     <strong>URL:</strong> ${uploadUrl}<br>
                     <strong>Full URL:</strong> ${fullUrl}<br>
@@ -473,7 +473,7 @@
                     <strong>File:</strong> ${file.name} (${file.size} bytes)
                 </div>
                 <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace; font-size: 12px;">
-                    <strong>💻 Curl Equivalent:</strong><br>
+                    <strong>Curl Equivalent:</strong><br>
                     <code style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: block; margin-top: 5px;">${curlCommand}</code>
                 </div>
                 Uploading file: ${file.name}...`;
@@ -494,12 +494,12 @@
             .then(result => {
                 const content = `
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                        
                         <strong style="color: #28a745;">File Upload Successful</strong>
                     </div>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
                         <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
-                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
+                        <strong>Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
                         <strong>File:</strong> ${file.name} (${file.size} bytes)
                     </div>
                     <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
@@ -511,7 +511,7 @@
             .catch(error => {
                 const content = `
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                        
                         <strong style="color: #dc3545;">File Upload Failed</strong>
                     </div>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
@@ -536,7 +536,7 @@
             
             const requestInfo = `
                 <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🔍 Request Details:</strong><br>
+                    <strong>Request Details:</strong><br>
                     <strong>Method:</strong> POST<br>
                     <strong>URL:</strong> ${uploadUrl}<br>
                     <strong>Full URL:</strong> ${fullUrl}<br>
@@ -545,7 +545,7 @@
                     <strong>Data Length:</strong> ${textData.length} characters
                 </div>
                 <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace; font-size: 12px;">
-                    <strong>💻 Curl Equivalent:</strong><br>
+                    <strong>Curl Equivalent:</strong><br>
                     <code style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: block; margin-top: 5px;">${curlCommand}</code>
                 </div>
                 Uploading text data...`;
@@ -567,12 +567,12 @@
             .then(result => {
                 const content = `
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                        
                         <strong style="color: #28a745;">Text Upload Successful</strong>
                     </div>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
                         <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
-                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
+                        <strong>Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
                         <strong>Data:</strong> ${textData.length} characters
                     </div>
                     <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
@@ -584,7 +584,7 @@
             .catch(error => {
                 const content = `
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                        
                         <strong style="color: #dc3545;">Text Upload Failed</strong>
                     </div>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
@@ -608,13 +608,13 @@
             
             const requestInfo = `
                 <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🔍 Request Details:</strong><br>
+                    <strong>Request Details:</strong><br>
                     <strong>Method:</strong> DELETE<br>
                     <strong>URL:</strong> ${filename}<br>
                     <strong>Full URL:</strong> ${fullUrl}
                 </div>
                 <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace; font-size: 12px;">
-                    <strong>💻 Curl Equivalent:</strong><br>
+                    <strong>Curl Equivalent:</strong><br>
                     <code style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: block; margin-top: 5px;">${curlCommand}</code>
                 </div>
                 Deleting: ${filename}...`;
@@ -631,12 +631,12 @@
             .then(result => {
                 const content = `
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                        
                         <strong style="color: #28a745;">DELETE Request Successful</strong>
                     </div>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
                         <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
-                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
+                        <strong>Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
                         <strong>File:</strong> ${filename}
                     </div>
                     <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px;">
@@ -648,7 +648,7 @@
             .catch(error => {
                 const content = `
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                        
                         <strong style="color: #dc3545;">DELETE Request Failed</strong>
                     </div>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
@@ -666,13 +666,13 @@
             
             const requestInfo = `
                 <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🔍 Request Details:</strong><br>
+                    <strong>Request Details:</strong><br>
                     <strong>Method:</strong> GET<br>
                     <strong>URL:</strong> ${url}<br>
                     <strong>Full URL:</strong> ${fullUrl}
                 </div>
                 <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace; font-size: 12px;">
-                    <strong>💻 Curl Equivalent:</strong><br>
+                    <strong>Curl Equivalent:</strong><br>
                     <code style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: block; margin-top: 5px;">${curlCommand}</code>
                 </div>
                 Testing CGI GET...`;
@@ -687,12 +687,12 @@
                 .then(result => {
                     const content = `
                         <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                            <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                            
                             <strong style="color: #28a745;">CGI GET Successful</strong>
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
                             <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
-                            <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code>
+                            <strong>Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code>
                         </div>
                         <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto;">
                             <strong>Response:</strong><br>
@@ -703,7 +703,7 @@
                 .catch(error => {
                     const content = `
                         <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                            <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                            
                             <strong style="color: #dc3545;">CGI GET Failed</strong>
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
@@ -727,7 +727,7 @@
             
             const requestInfo = `
                 <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🔍 Request Details:</strong><br>
+                    <strong>Request Details:</strong><br>
                     <strong>Method:</strong> POST<br>
                     <strong>URL:</strong> cgi-bin/post_test.py<br>
                     <strong>Full URL:</strong> ${fullUrl}<br>
@@ -735,7 +735,7 @@
                     <strong>Data Length:</strong> ${textData.length} characters
                 </div>
                 <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace; font-size: 12px;">
-                    <strong>💻 Curl Equivalent:</strong><br>
+                    <strong>Curl Equivalent:</strong><br>
                     <code style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: block; margin-top: 5px;">${curlCommand}</code>
                 </div>
                 Sending text to CGI...`;
@@ -756,12 +756,12 @@
             .then(result => {
                 const content = `
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                        
                         <strong style="color: #28a745;">CGI POST Text Successful</strong>
                     </div>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
                         <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
-                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
+                        <strong>Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
                         <strong>Data:</strong> ${textData.length} characters
                     </div>
                     <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto;">
@@ -773,7 +773,7 @@
             .catch(error => {
                 const content = `
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                        
                         <strong style="color: #dc3545;">CGI POST Text Failed</strong>
                     </div>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">
@@ -798,7 +798,7 @@
             
             const requestInfo = `
                 <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🔍 Request Details:</strong><br>
+                    <strong>Request Details:</strong><br>
                     <strong>Method:</strong> POST<br>
                     <strong>URL:</strong> cgi-bin/file_handler.py<br>
                     <strong>Full URL:</strong> ${fullUrl}<br>
@@ -806,7 +806,7 @@
                     <strong>File:</strong> ${file.name} (${file.size} bytes)
                 </div>
                 <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace; font-size: 12px;">
-                    <strong>💻 Curl Equivalent:</strong><br>
+                    <strong>Curl Equivalent:</strong><br>
                     <code style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: block; margin-top: 5px;">${curlCommand}</code>
                 </div>
                 Sending file to CGI: ${file.name}...`;
@@ -830,12 +830,12 @@
             .then(result => {
                 const content = `
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #28a745; font-size: 18px; margin-right: 8px;">✅</span>
+                        
                         <strong style="color: #28a745;">CGI POST File Successful</strong>
                     </div>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin: 10px 0;">
                         <strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${result.status}</span><br>
-                        <strong>💻 Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
+                        <strong>Curl Equivalent:</strong> <code style="background: #f8f9fa; padding: 3px 6px; border-radius: 3px; font-size: 11px;">${curlCommand}</code><br>
                         <strong>File:</strong> ${file.name} (${file.size} bytes)
                     </div>
                     <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto;">
@@ -847,7 +847,7 @@
             .catch(error => {
                 const content = `
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #dc3545; font-size: 18px; margin-right: 8px;">❌</span>
+                        
                         <strong style="color: #dc3545;">CGI POST File Failed</strong>
                     </div>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px;">

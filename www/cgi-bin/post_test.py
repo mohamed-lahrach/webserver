@@ -22,7 +22,7 @@ print(f"""<!DOCTYPE html>
 <html>
 <head><title>POST Test</title></head>
 <body>
-    <h1>✅ POST Request Works!</h1>
+    <h1>POST Request Works!</h1>
     <p><strong>Method:</strong> {method}</p>
     <p><strong>Content Length:</strong> {content_length}</p>
     <p><strong>Data Received:</strong> {len(post_data)} bytes</p>

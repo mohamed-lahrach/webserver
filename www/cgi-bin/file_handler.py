@@ -29,7 +29,7 @@ print(f"""<!DOCTYPE html>
 <html>
 <head><title>File Upload Test</title></head>
 <body>
-    <h1>✅ File Upload Works!</h1>
+    <h1>File Upload Works!</h1>
     <p><strong>Method:</strong> {method}</p>
     <p><strong>File Name:</strong> {file_name or 'text data'}</p>
     <p><strong>File Size:</strong> {file_size if file_processed else 0} bytes</p>

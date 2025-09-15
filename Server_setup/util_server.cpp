@@ -3,7 +3,7 @@
 Server::Server() : server_fd(-1), epoll_fd(-1)
 {
 	std::cout << "=== CREATING SERVER ===" << std::endl;
-	std::cout << "✓ Server object created" << std::endl;
+	std::cout << "Server object created" << std::endl;
 }
 
 Server::~Server()
@@ -12,25 +12,25 @@ Server::~Server()
 	if (epoll_fd != -1)
 	{
 		close(epoll_fd);
-		std::cout << "✓ Epoll closed" << std::endl;
+		std::cout << "Epoll closed" << std::endl;
 	}
 	for (size_t i = 0; i < server_fds.size(); i++)
 	{
 		if (server_fds[i] != -1)
 		{
 			close(server_fds[i]);
-			std::cout << "✓ Server socket " << server_fds[i] << " closed" << std::endl;
+			std::cout << "Server socket " << server_fds[i] << " closed" << std::endl;
 		}
 	}
 	if (!active_clients.empty())
 	{
-		std::cout << "✓ Cleaning up " << active_clients.size() << " remaining clients" << std::endl;
+		std::cout << "Cleaning up " << active_clients.size() << " remaining clients" << std::endl;
 		active_clients.clear(); 
 	}
 	client_to_server.clear();
 	fd_to_port.clear();
 	fd_to_config.clear();
-	std::cout << "✓ Server object destroyed" << std::endl;
+	std::cout << "Server object destroyed" << std::endl;
 }
 
 bool Server::is_server_socket(int fd)
@@ -107,11 +107,11 @@ void Server::init_data(const std::vector<ServerContext> &configs)
 			close(server_fd);
 			throw std::runtime_error("Failed to add server socket to epoll");
 		}
-		std::cout << "✓ Server socket " << server_fd << " added to epoll for port " << port << std::endl;
+		std::cout << "Server socket " << server_fd << " added to epoll for port " << port << std::endl;
 		// store in mapping tables
 		server_fds.push_back(server_fd);
 		fd_to_port[server_fd] = port;
 		fd_to_config[server_fd] = const_cast<ServerContext *>(&configs[i]);
-		std::cout << "✅ Server socket created on port " << port << " (fd: " << server_fd << ")" << std::endl;
+		std::cout << "Server socket created on port " << port << " (fd: " << server_fd << ")" << std::endl;
 	}
 }

@@ -17,7 +17,7 @@ void Server::run()
 	{
 		server_fd = server_fds[i];
 		port = fd_to_port[server_fd];
-		std::cout << "✅ Server " << (i
+		std::cout << "Server " << (i
 			+ 1) << " listening on port " << port << " (fd: " << server_fd << ")" << std::endl;
 	}
 	while (true)
@@ -35,16 +35,16 @@ void Server::run()
 			{
 				port = fd_to_port[fd];
 				server_config = fd_to_config[fd];
-				std::cout << "📥 New connection on server port " << port << " (server fd: " << fd << ")" << std::endl;
+				std::cout << "New connection on server port " << port << " (server fd: " << fd << ")" << std::endl;
 				client_fd = Client::handle_new_connection(fd, epoll_fd,
 						active_clients);
 				if (client_fd == -1)
 				{
-					std::cout << "❌ Failed to handle new connection on port " << port << std::endl;
+					std::cout << "Failed to handle new connection on port " << port << std::endl;
 					continue; // skip this connection and continue with next event
 				}
 				client_to_server[client_fd] = fd;
-				std::cout << "👤 Client " << client_fd << " connected to server " << port << std::endl;
+				std::cout << "Client " << client_fd << " connected to server " << port << std::endl;
 			}
 			else if (is_client_socket(fd))
 			{
@@ -54,20 +54,20 @@ void Server::run()
 					server_config = get_client_config(fd);
 					if (server_config == NULL)
 					{
-						std::cout << "❌ No server config found for client " << fd << std::endl;
+						std::cout << "No server config found for client " << fd << std::endl;
 						continue ;
 					}
 					server_fd = client_to_server[fd];
 					port = fd_to_port[server_fd];
 					if (events[i].events & EPOLLIN)
 					{
-						std::cout << "📨 Data input from client " << fd << " (server port " << port << ")" << std::endl;
+						std::cout << "Data input from client " << fd << " (server port " << port << ")" << std::endl;
 						it->second.handle_client_data_input(epoll_fd,
 							active_clients, *server_config, cgi_runner);
 					}
 					else if (events[i].events & EPOLLOUT)
 					{
-						std::cout << "📤 Data output to client " << fd << " (server port " << port << ")" << std::endl;
+						std::cout << "Data output to client " << fd << " (server port " << port << ")" << std::endl;
 						it->second.handle_client_data_output(fd, epoll_fd,
 							active_clients, *server_config);
 					}
@@ -75,7 +75,7 @@ void Server::run()
 			}
 			else if (is_cgi_socket(fd))
 			{
-				std::cout << "⚙️ Handling CGI process I/O on fd " << fd << std::endl;
+				std::cout << "Handling CGI process I/O on fd " << fd << std::endl;
 				
 				if (events[i].events & EPOLLIN)
 				{
@@ -138,7 +138,7 @@ void Server::run()
 			}
 			else
 			{
-				std::cout << "⚠️ Warning: Unknown fd " << fd << " - not a server or client socket or CGI" << std::endl;
+				std::cout << "Warning: Unknown fd " << fd << " - not a server or client socket or CGI" << std::endl;
 			}
 		}
 	}

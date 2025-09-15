@@ -12,7 +12,7 @@ int Server::setup_epoll()
 		std::cout << "Failed to create epoll" << std::endl;
 		return (-1);
 	}
-	std::cout << "✓ Epoll created" << std::endl;
-	std::cout << "✓ Epoll setup complete!" << std::endl;
+	std::cout << "Epoll created" << std::endl;
+	std::cout << "Epoll setup complete!" << std::endl;
 	return (epoll_fd);
 }

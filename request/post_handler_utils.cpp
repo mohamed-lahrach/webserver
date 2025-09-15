@@ -93,7 +93,7 @@ RequestStatus PostHandler::save_request_body(const std::string &filename,
     file.write(body.data(), body.size());
     file.close();
     
-    std::cout << "✓ File saved: " << full_path << std::endl;
+    std::cout << "File saved: " << full_path << std::endl;
 	return (POSTED_SUCCESSFULLY);
 }
 
@@ -258,7 +258,7 @@ RequestStatus PostHandler::save_cgi_body(const std::string &data)
 	file.write(data.data(), data.size());
 	file.close();
 	
-	std::cout << "✓ CGI data saved: " << full_path << " (" << data.size() << " bytes)" << std::endl;
+	std::cout << "CGI data saved: " << full_path << " (" << data.size() << " bytes)" << std::endl;
 	return POSTED_SUCCESSFULLY;
 }
 
@@ -292,7 +292,7 @@ RequestStatus PostHandler::save_cgi_body_with_filename(const std::string &data, 
 	file.write(data.data(), data.size());
 	file.close();
 	
-	std::cout << "✓ CGI data saved: " << full_path << " (" << data.size() << " bytes)" << std::endl;
+	std::cout << "CGI data saved: " << full_path << " (" << data.size() << " bytes)" << std::endl;
 	return POSTED_SUCCESSFULLY;
 }
 

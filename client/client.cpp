@@ -39,7 +39,7 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 		return -1;
 	}
 
-	std::cout << "✓ New client connected: " << client.client_fd << std::endl;
+	std::cout << "New client connected: " << client.client_fd << std::endl;
 	client_event.events = EPOLLIN;
 	client_event.data.fd = client.client_fd;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client.client_fd, &client_event) == -1)
@@ -49,8 +49,8 @@ int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Cli
 		return -1;
 	}
 	active_clients[client.client_fd] = client;
-	std::cout << "✓ Client " << client.client_fd << " added to map" << std::endl;
-	std::cout << "✓ Total active clients: " << active_clients.size() << std::endl;
+	std::cout << "Client " << client.client_fd << " added to map" << std::endl;
+	std::cout << "Total active clients: " << active_clients.size() << std::endl;
 	return client.client_fd; 
 }
 
@@ -92,7 +92,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 					  << " Path: " << current_request.get_requested_path() << std::endl;
 			if (current_request.is_cgi_request())
 			{
-				std::cout << "🔧 Detected CGI request - starting CGI process" << std::endl;
+				std::cout << "Detected CGI request - starting CGI process" << std::endl;
 				LocationContext *location = current_request.get_location();
 				if (location)
 				{
@@ -246,7 +246,7 @@ void Client::cleanup_connection(int epoll_fd, std::map<int,
 	}
 	else
 	{
-		std::cout << "✓ Client " << client_fd << " removed from epoll" << std::endl;
+		std::cout << "Client " << client_fd << " removed from epoll" << std::endl;
 	}
 	if (close(client_fd) == -1)
 	{
@@ -254,8 +254,8 @@ void Client::cleanup_connection(int epoll_fd, std::map<int,
 	}
 	else
 	{
-		std::cout << "✓ Client " << client_fd << " socket closed" << std::endl;
+		std::cout << "Client " << client_fd << " socket closed" << std::endl;
 	}
 	active_clients.erase(client_fd);
-	std::cout << "✓ Client removed from active clients map" << std::endl;
+	std::cout << "Client removed from active clients map" << std::endl;
 }

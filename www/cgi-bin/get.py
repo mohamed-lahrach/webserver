@@ -9,7 +9,7 @@ print(f"""<!DOCTYPE html>
 <html>
 <head><title>GET Test</title></head>
 <body>
-    <h1>✅ GET Request Works!</h1>
+    <h1>GET Request Works!</h1>
     <p><strong>Method:</strong> {os.environ.get('REQUEST_METHOD', 'UNKNOWN')}</p>
     <p><strong>Status:</strong> CGI execution successful</p>
 </body>
