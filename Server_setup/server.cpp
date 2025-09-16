@@ -31,7 +31,6 @@ void Server::run()
 		}
 		else if (num_events == 0)
 		{
-			std::cout<<"cleint timeout check"<<std::endl;
 			check_client_timeouts(active_clients);
 			continue; // No events, continue waiting
 		}
