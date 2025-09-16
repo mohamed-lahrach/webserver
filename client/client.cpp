@@ -115,7 +115,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 				}
 				if (location)
 				{
-					std::string script_path = location->root + current_request.get_requested_path();
+					std::string script_path = resolve_file_path(current_request.get_requested_path(), location);
 					int cgi_output_fd = cgi_runner.start_cgi_process(current_request, *location, client_fd, script_path);
 					if (cgi_output_fd >= 0)
 					{

@@ -18,6 +18,7 @@
 # include <sys/socket.h>
 # include <unistd.h>
 #include "../config/parser.hpp"
+#include "../utils/utils.hpp"
 
 class	Response;
 class	Request;
