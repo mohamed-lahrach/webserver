@@ -24,12 +24,7 @@ void Server::run()
 	while (true)
 	{
 		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, TIMEOUT);
-		
-		if (num_events == -1)
-		{
-			throw std::runtime_error("Error in epoll_wait");
-		}
-		else if (num_events == 0)
+		if (num_events == 0)
 		{
 			check_client_timeouts(active_clients);
 			continue; // No events, continue waiting
