@@ -22,7 +22,7 @@ void Server::run()
 	}
 	while (true)
 	{
-		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, 1000);
+		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
 		
 		if (num_events == -1)
 		{
