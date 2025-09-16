@@ -49,6 +49,9 @@ public:
 private:
     // Format CGI output into HTTP response
     std::string format_cgi_response(const std::string& cgi_output);
+    
+    // Debug helper function
+    void debug_cgi_timing(int fd, const std::string& event, time_t bytes = -1) const;
 };
 
 #endif
