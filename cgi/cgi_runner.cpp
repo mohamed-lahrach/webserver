@@ -14,7 +14,8 @@
 #include <sstream>
 #include <vector>
 
-CgiRunner::CgiRunner() {
+CgiRunner::CgiRunner()
+{
 }
 
 CgiRunner::~CgiRunner()
@@ -50,7 +51,7 @@ static std::vector<char *> vector_to_char_array(const std::vector<std::string> &
 static std::string create_error_response(int error_code, const std::string &message)
 {
     std::ostringstream response;
-    
+
     switch (error_code)
     {
     case 404:
@@ -64,15 +65,15 @@ static std::string create_error_response(int error_code, const std::string &mess
         response << "HTTP/1.1 500 Internal Server Error\r\n";
         break;
     }
-    
+
     response << "Content-Type: text/html; charset=utf-8\r\n";
     response << "Connection: close\r\n";
-    
+
     std::string body = "<html><body><h1>CGI Error</h1><p>" + message + "</p></body></html>";
     response << "Content-Length: " << body.size() << "\r\n";
     response << "\r\n";
     response << body;
-    
+
     return response.str();
 }
 
@@ -172,15 +173,12 @@ std::vector<std::string> CgiRunner::build_cgi_env(const Request &request,
 //   -2 : script not found (404)
 //   -3 : script not readable (403)
 
-int CgiRunner::start_cgi_process(const Request &request,
-                                 const LocationContext &location,
-                                 int client_fd,
-                                 const std::string &script_path)
+int CgiRunner::start_cgi_process(const Request &request, const LocationContext &location, int client_fd, const std::string &script_path)
 {
 
     // message with green color
     std::cout << "\033[32mStarting CGI process for script: " << script_path << "\033[0m" << std::endl;
-        // Find the appropriate interpreter for this script
+    // Find the appropriate interpreter for this script
     std::string interpreter_path;
     std::string file_ext;
 
@@ -299,6 +297,12 @@ int CgiRunner::start_cgi_process(const Request &request,
     cgi_proc.finished = false;
 
     active_cgi_processes[output_pipe[0]] = cgi_proc;
+    
+    // Debug: Show CGI process start with time 0 as reference
+    std::cout << "\033[35m[CGI START] fd=" << output_pipe[0] 
+              << ", pid=" << pid
+              << ", time=0s (start)"
+              << ", script=" << script_path << "\033[0m" << std::endl;
 
     // Write request body to CGI stdin if it's a POST request
     if (request.get_http_method() == "POST")
@@ -345,6 +349,21 @@ bool CgiRunner::handle_cgi_output(int fd, std::string &response_data)
 
     if (bytes_read > 0)
     {
+        // Update activity timestamp when new data arrives
+        time_t old_activity = it->second.last_activity;
+        time_t current_time = time(NULL);
+        it->second.last_activity = current_time;
+        
+        time_t total_elapsed = current_time - it->second.start_time;
+        time_t gap = current_time - old_activity;
+        
+        // Debug: Show data arrival and timer reset
+        std::cout << "\033[32m[DATA RECEIVED] CGI fd=" << fd 
+                  << ", bytes=" << bytes_read
+                  << ", gap=" << gap << "s"
+                  << ", total_time=" << total_elapsed << "s"
+                  << " (start+" << total_elapsed << "s)\033[0m" << std::endl;
+        
         it->second.output_buffer.append(buffer, bytes_read);
         return false; // Continue reading, don't send response yet
     }
@@ -361,10 +380,10 @@ bool CgiRunner::handle_cgi_output(int fd, std::string &response_data)
             pid_t result = waitpid(it->second.pid, &status, WNOHANG);
             if (result == 0)
             {
-                // Process still running, wait for it
-                waitpid(it->second.pid, &status, 0);
+                // Process still running, wait for it 
+                waitpid(it->second.pid, &status, 0); // Wait without WNOHANG
             }
-            
+
             // Extract exit code
             if (WIFEXITED(status))
             {
@@ -376,7 +395,7 @@ bool CgiRunner::handle_cgi_output(int fd, std::string &response_data)
         if (exit_status != 0)
         {
             // Any non-zero exit code indicates CGI failure - return HTTP 500
-            std::cout << "\033[31mCGI script failed with exit code " << exit_status 
+            std::cout << "\033[31mCGI script failed with exit code " << exit_status
                       << " for: " << it->second.script_path << "\033[0m" << std::endl;
             response_data = create_error_response(500, "Error 500 internal errors in the server");
             return true;
@@ -384,7 +403,7 @@ bool CgiRunner::handle_cgi_output(int fd, std::string &response_data)
         else
         {
             // Exit code 0 - success
-            std::cout << "\033[32mCGI script completed successfully for: " 
+            std::cout << "\033[32mCGI script completed successfully for: "
                       << it->second.script_path << "\033[0m" << std::endl;
         }
 
@@ -607,4 +626,97 @@ std::string CgiRunner::format_cgi_response(const std::string &cgi_output)
     response << body;
 
     return response.str();
+}
+
+bool CgiRunner::check_cgi_timeout(int fd, std::string& response_data)
+{
+    std::map<int, CgiProcess>::iterator it = active_cgi_processes.find(fd);
+    if (it == active_cgi_processes.end())
+    {
+        return false;
+    }
+    
+    time_t current_time = time(NULL);
+    time_t elapsed = current_time - it->second.last_activity;
+    time_t total_elapsed = current_time - it->second.start_time;
+    
+    // Debug: Show timeout check details with relative timing
+    std::cout << "\033[36m[TIMEOUT CHECK] CGI fd=" << fd 
+              << ", total_time=" << total_elapsed << "s"
+              << ", inactive_time=" << elapsed << "s"
+              << " (start+" << total_elapsed << "s)\033[0m" << std::endl;
+    
+    // Timeout after 10 seconds of no activity
+    if (elapsed >= 10)
+    {
+        std::cout << "\033[31mCGI process timed out after " << elapsed 
+                  << " seconds of inactivity (total: " << total_elapsed << "s) for: " << it->second.script_path << "\033[0m" << std::endl;
+        
+        // Kill the CGI process
+        if (it->second.pid > 0)
+        {
+            kill(it->second.pid, SIGTERM);
+            // Give it a moment to terminate gracefully
+            usleep(100000); // 100ms
+            // Force kill if still alive
+            kill(it->second.pid, SIGKILL);
+        }
+        
+        // Create timeout error response
+        std::ostringstream error_response;
+        error_response << "HTTP/1.1 500 Internal Server Error\r\n";
+        error_response << "Content-Type: text/html; charset=utf-8\r\n";
+        error_response << "Connection: close\r\n";
+        
+        std::string body = "<html><body><h1>CGI Timeout</h1><p>The CGI script exceeded the maximum execution time of 10 seconds.</p></body></html>";
+        error_response << "Content-Length: " << body.size() << "\r\n";
+        error_response << "\r\n";
+        error_response << body;
+        
+        response_data = error_response.str();
+        return true; // Timeout occurred
+    }
+    
+    return false; // No timeout
+}
+
+void CgiRunner::update_cgi_activity(int fd)
+{
+    std::map<int, CgiProcess>::iterator it = active_cgi_processes.find(fd);
+    if (it != active_cgi_processes.end())
+    {
+        time_t old_activity = it->second.last_activity;
+        time_t current_time = time(NULL);
+        it->second.last_activity = current_time;
+        
+        time_t total_elapsed = current_time - it->second.start_time;
+        time_t gap = current_time - old_activity;
+        
+        // Debug: Show activity reset with relative timing
+        std::cout << "\033[33m[ACTIVITY RESET] CGI fd=" << fd 
+                  << ", gap=" << gap << "s"
+                  << ", total_time=" << total_elapsed << "s"
+                  << " (start+" << total_elapsed << "s)\033[0m" << std::endl;
+    }
+}
+
+std::vector<int> CgiRunner::get_timed_out_cgi_fds() const
+{
+    std::vector<int> timed_out_fds;
+    time_t current_time = time(NULL);
+    
+    for (std::map<int, CgiProcess>::const_iterator it = active_cgi_processes.begin();
+         it != active_cgi_processes.end(); ++it)
+    {
+        if (!it->second.finished)
+        {
+            time_t elapsed = current_time - it->second.last_activity;
+            if (elapsed >= 10)
+            {
+                timed_out_fds.push_back(it->first);
+            }
+        }
+    }
+    
+    return timed_out_fds;
 }

@@ -41,6 +41,11 @@ public:
     // Check for finished processes
     void check_finished_processes();
     
+    // Timeout management
+    bool check_cgi_timeout(int fd, std::string& response_data);
+    void update_cgi_activity(int fd);
+    std::vector<int> get_timed_out_cgi_fds() const;
+    
 private:
     // Format CGI output into HTTP response
     std::string format_cgi_response(const std::string& cgi_output);

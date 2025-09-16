@@ -23,14 +23,54 @@ void Server::run()
 	}
 	while (true)
 	{
-
+		// Check for CGI timeouts before waiting for new events
+		std::vector<int> timed_out_fds = cgi_runner.get_timed_out_cgi_fds();
+		if (!timed_out_fds.empty())
+		{
+			std::cout << "\033[34m[TIMEOUT SCAN] Found " << timed_out_fds.size() << " timed out CGI processes\033[0m" << std::endl;
+		}
+		
+		for (size_t i = 0; i < timed_out_fds.size(); ++i)
+		{
+			int cgi_fd = timed_out_fds[i];
+			std::string timeout_response;
+			if (cgi_runner.check_cgi_timeout(cgi_fd, timeout_response))
+			{
+				std::cout << "CGI timeout detected on fd " << cgi_fd << std::endl;
+				
+				// Send timeout response to client
+				int client_fd = cgi_runner.get_client_fd(cgi_fd);
+				if (client_fd >= 0 && !timeout_response.empty())
+				{
+					std::map<int, Client>::iterator client_it = active_clients.find(client_fd);
+					if (client_it != active_clients.end())
+					{
+						ssize_t bytes_sent = send(client_fd, timeout_response.c_str(), timeout_response.size(), 0);
+						if (bytes_sent == -1 || bytes_sent == 0)
+						{
+							std::cout << "Failed to send CGI timeout response to client " << client_fd << std::endl;
+						}
+						else
+						{
+							std::cout << "Sent " << bytes_sent << " bytes of CGI timeout response to client " << client_fd << std::endl;
+						}
+						client_it->second.cleanup_connection(epoll_fd, active_clients);
+					}
+				}
+				
+				// Clean up the timed out CGI process
+				epoll_ctl(epoll_fd, EPOLL_CTL_DEL, cgi_fd, NULL);
+				cgi_runner.cleanup_cgi_process(cgi_fd);
+			}
+		}
 		
 		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, TIMEOUT);
-		if (num_events == 0)
-		{
-			check_client_timeouts(active_clients);
-			continue; // No events, continue waiting
-		}
+        if (num_events == 0)
+        {
+            check_client_timeouts(active_clients);
+            continue; // No events, continue waiting
+        }
+		
 		for (int i = 0; i < num_events; i++)
 		{
 			fd = events[i].data.fd;
@@ -83,6 +123,8 @@ void Server::run()
 				if (events[i].events & EPOLLIN)
 				{
 					std::string response_data;
+					// Update activity timestamp when we receive data
+					cgi_runner.update_cgi_activity(fd);
 					if (cgi_runner.handle_cgi_output(fd, response_data))
 					{
 						epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
@@ -110,7 +152,7 @@ void Server::run()
 				}
 				else if (events[i].events & (EPOLLHUP | EPOLLERR))
 				{
-					
+					std::cout<<"----------------------+++++++++++++++++\n";
 					std::cout << "CGI process fd " << fd << " closed or error occurred" << std::endl;
 					std::string response_data;
 					if (cgi_runner.handle_cgi_output(fd, response_data))
@@ -146,3 +188,4 @@ void Server::run()
 		}
 	}
 }
+
