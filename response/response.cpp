@@ -110,6 +110,10 @@ void Response::set_error_response(RequestStatus status)
 		set_code(405);
 		set_content("<html><body><h1>405 Method Not Allowed</h1><p>The request method is not supported for this resource.</p></body></html>");
 		break;
+	case REQUEST_TIMEOUT:
+		set_code(408);
+		set_content("<html><body><h1>408 Request Timeout</h1><p>The client did not produce a request within the time that the server was prepared to wait.</p></body></html>");
+		break;
 	case LENGTH_REQUIRED:
 		set_code(411);
 		set_content("<html><body><h1>411 Length Required</h1><p>The request did not specify the Content-Length header.</p></body></html>");
@@ -163,6 +167,8 @@ std::string Response::what_reason(int code)
 		return "Not Found";
 	case 405:
 		return "Method Not Allowed";
+	case 408:
+		return "Request Timeout";
 	case 413:
 		return "Payload Too Large";
 	case 500:

@@ -52,6 +52,7 @@ class Server
     bool is_cgi_socket(int fd);
     ServerContext* get_server_config(int fd);
     ServerContext* get_client_config(int client_fd);
+    void check_client_timeouts(std::map<int, Client> &active_clients);
 };
 
 #endif

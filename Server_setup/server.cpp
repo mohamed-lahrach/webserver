@@ -3,6 +3,7 @@
 void Server::run()
 {
 	const int			MAX_EVENTS = 10;
+	const int			TIMEOUT = 30000; // 30 seconds
 	struct epoll_event	events[MAX_EVENTS];
 	int					num_events;
 	int					fd;
@@ -22,11 +23,17 @@ void Server::run()
 	}
 	while (true)
 	{
-		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, TIMEOUT);
 		
 		if (num_events == -1)
 		{
 			throw std::runtime_error("Error in epoll_wait");
+		}
+		else if (num_events == 0)
+		{
+			std::cout<<"cleint timeout check"<<std::endl;
+			check_client_timeouts(active_clients);
+			continue; // No events, continue waiting
 		}
 		for (int i = 0; i < num_events; i++)
 		{

@@ -31,7 +31,8 @@ class Client
 	Request current_request;
 	Response current_response;
 	RequestStatus request_status;
-
+	time_t last_activity;
+	
   public:
 	Client();
 	~Client();
@@ -42,6 +43,9 @@ class Client
 	void handle_client_data_output(int client_fd, int epoll_fd, std::map<int,
 		Client> &active_clients,ServerContext& server_config);
 	void cleanup_connection(int epoll_fd, std::map<int, Client> &active_clients);
+	void update_last_activity();
+	bool is_timed_out(int timeout_seconds) const;
+	void send_timeout_response();
 };
 
 #endif // CLIENT_HPP

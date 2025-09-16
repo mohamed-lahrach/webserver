@@ -1,12 +1,44 @@
 #include "client.hpp"
 
-Client::Client() : client_fd(-1), request_status(NEED_MORE_DATA)
+Client::Client() : client_fd(-1), request_status(NEED_MORE_DATA), last_activity(time(NULL))
 {
 	std::cout << "Client constructor called" << std::endl;
 }
 
+void Client::update_last_activity()
+{
+    last_activity = time(NULL);
+}
+
+bool Client::is_timed_out(int timeout_seconds) const
+{
+    time_t current_time = time(NULL);
+    return (current_time - last_activity) >= timeout_seconds;
+}
+
+void Client::send_timeout_response()
+{
+    std::string timeout_response = 
+        "HTTP/1.0 408 Request Timeout\r\n"
+        "Content-Type: text/html\r\n"
+        "Connection: close\r\n"
+        "Content-Length: 140\r\n"
+        "\r\n"
+        "<html><body><h1>408 Request Timeout</h1><p>The server timed out waiting for the request after 30 seconds.</p></body></html>";
+    
+    ssize_t bytes_sent = send(client_fd, timeout_response.c_str(), timeout_response.length(), 0);
+    if (bytes_sent == -1)
+    {
+        std::cout << "Failed to send timeout response to client " << client_fd << std::endl;
+    }
+    else
+    {
+        std::cout << "Sent 408 timeout response to client " << client_fd << std::endl;
+    }
+}
 Client::~Client()
 {
+
 }
 
 int Client::handle_new_connection(int server_fd, int epoll_fd, std::map<int, Client> &active_clients)

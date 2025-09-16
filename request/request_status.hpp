@@ -10,6 +10,7 @@ enum RequestStatus {
 	
 	DELETED_SUCCESSFULLY ,
 	POSTED_SUCCESSFULLY,
+	REQUEST_TIMEOUT = 408,     // 408 - Client did not send data in time
 	MOVED_PERMANENTLY = 301,    // 301 - Permanent redirect
 	FOUND = 302,                // 302 - Temporary redirect  
 	BAD_REQUEST = 400,          // 400 

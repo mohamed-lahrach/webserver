@@ -115,3 +115,27 @@ void Server::init_data(const std::vector<ServerContext> &configs)
 		std::cout << "Server socket created on port " << port << " (fd: " << server_fd << ")" << std::endl;
 	}
 }
+void Server::check_client_timeouts(std::map<int, Client> &active_clients)
+{
+    const int TIMEOUT_SECONDS = 30;
+    std::vector<int> clients_to_remove;
+    
+    for (std::map<int, Client>::iterator it = active_clients.begin(); 
+         it != active_clients.end(); ++it)
+    {
+        if (it->second.is_timed_out(TIMEOUT_SECONDS))
+        {
+            std::cout << "Client " << it->first << " timed out after " << TIMEOUT_SECONDS << " seconds" << std::endl;
+            it->second.send_timeout_response();
+            clients_to_remove.push_back(it->first);
+        }
+    }
+    
+    // Remove timed out clients
+    for (std::vector<int>::iterator it = clients_to_remove.begin(); 
+         it != clients_to_remove.end(); ++it)
+    {
+        int client_fd = *it;
+        active_clients[client_fd].cleanup_connection(epoll_fd, active_clients);
+    }
+}
