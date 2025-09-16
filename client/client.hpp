@@ -45,7 +45,7 @@ class Client
 	void cleanup_connection(int epoll_fd, std::map<int, Client> &active_clients);
 	void update_last_activity();
 	bool is_timed_out(int timeout_seconds) const;
-	void send_timeout_response();
+	void send_timeout_response(const ServerContext* server_config = NULL);
 };
 
-#endif // CLIENT_HPP
+#endif

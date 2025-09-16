@@ -16,25 +16,13 @@ bool Client::is_timed_out(int timeout_seconds) const
     return (current_time - last_activity) >= timeout_seconds;
 }
 
-void Client::send_timeout_response()
+void Client::send_timeout_response(const ServerContext* server_config)
 {
-    std::string timeout_response = 
-        "HTTP/1.0 408 Request Timeout\r\n"
-        "Content-Type: text/html\r\n"
-        "Connection: close\r\n"
-        "Content-Length: 140\r\n"
-        "\r\n"
-        "<html><body><h1>408 Request Timeout</h1><p>The server timed out waiting for the request after 30 seconds.</p></body></html>";
-    
-    ssize_t bytes_sent = send(client_fd, timeout_response.c_str(), timeout_response.length(), 0);
-    if (bytes_sent == -1)
-    {
-        std::cout << "Failed to send timeout response to client " << client_fd << std::endl;
-    }
-    else
-    {
-        std::cout << "Sent 408 timeout response to client " << client_fd << std::endl;
-    }
+    if (server_config != NULL)
+        current_response.set_server_config(server_config);
+
+    current_response.set_error_response(REQUEST_TIMEOUT);
+    current_response.handle_response(client_fd);
 }
 Client::~Client()
 {
@@ -126,25 +114,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 			{
 				std::cout << "Detected CGI request - starting CGI process" << std::endl;
 				LocationContext *location = current_request.get_location();
-				if (location)
-				{
-					std::cout << "CGI Extensions: ";
-					for (size_t i = 0; i < location->cgiExtensions.size(); ++i)
-					{
-						std::cout << location->cgiExtensions[i];
-						if (i < location->cgiExtensions.size() - 1)
-							std::cout << " ";
-					}
-					std::cout << std::endl;
-					std::cout << "CGI Paths: ";
-					for (size_t i = 0; i < location->cgiPaths.size(); ++i)
-					{
-						std::cout << location->cgiPaths[i];
-						if (i < location->cgiPaths.size() - 1)
-							std::cout << " ";
-					}
-					std::cout << std::endl;
-				}
+
 				if (location)
 				{
 					std::string script_path = resolve_file_path(current_request.get_requested_path(), location);
@@ -215,7 +185,7 @@ void Client::handle_client_data_input(int epoll_fd, std::map<int, Client> &activ
 void Client::handle_client_data_output(int client_fd, int epoll_fd,
 									   std::map<int, Client> &active_clients, ServerContext &server_config)
 {
-	std::cout << "=== GENERATING RESPONSE FOR CLIENT ===========>" << client_fd << " ===" << std::endl;
+	std::cout << "GENERATING RESPONSE FOR CLIENT " << client_fd << " ===" << std::endl;
 
 	current_response.set_server_config(&server_config);
 

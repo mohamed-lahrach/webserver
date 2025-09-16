@@ -126,12 +126,13 @@ void Server::check_client_timeouts(std::map<int, Client> &active_clients)
         if (it->second.is_timed_out(TIMEOUT_SECONDS))
         {
             std::cout << "Client " << it->first << " timed out after " << TIMEOUT_SECONDS << " seconds" << std::endl;
-            it->second.send_timeout_response();
+            ServerContext* server_config = get_client_config(it->first);
+            it->second.send_timeout_response(server_config);
+            
             clients_to_remove.push_back(it->first);
         }
     }
     
-    // Remove timed out clients
     for (std::vector<int>::iterator it = clients_to_remove.begin(); 
          it != clients_to_remove.end(); ++it)
     {
