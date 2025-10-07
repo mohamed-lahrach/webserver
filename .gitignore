@@ -6,5 +6,4 @@ webserv
 *.log
 *.jpg
 *.txt
-*.md
 uploads/*
