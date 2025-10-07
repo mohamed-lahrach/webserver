@@ -4,7 +4,7 @@ A small HTTP web server implemented in C++ (C++98). This project implements a co
 
 you can see the subject in folder /subject
 
-<img src="/subject/1.png" with = 500>
+<img src="/subject/1.png" with = 400>
 
 ## Quick summary
 
@@ -22,11 +22,11 @@ you can see the subject in folder /subject
 - Configurable servers and locations via a config file parser
 - epoll-based I/O (edge-triggered/reactor style) for efficiency
 
-<img src="/subject/2.png" with = 500>
+<img src="/subject/2.png" with = 400>
 
-<img src="/subject/3.png" with = 500>
+<img src="/subject/3.png" with = 400>
 
-<img src="/subject/1.png" with = 500>
+<img src="/subject/4.png" with = 400>
 
 ## Repository layout (important files)
 
